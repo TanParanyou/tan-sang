@@ -7,7 +7,8 @@ import { useLiff } from '@/features/line/liff-provider';
 export function DevPersonaBar({ hostUserId }: { hostUserId?: string }) {
   const { profile, isInLineClient, personas, setDevPersona } = useLiff();
 
-  if (isInLineClient) {
+  // Hide simulator completely in production or when in LINE client
+  if (process.env.NODE_ENV === 'production' || isInLineClient) {
     return null;
   }
 

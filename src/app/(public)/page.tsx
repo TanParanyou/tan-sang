@@ -48,46 +48,28 @@ export default async function PublicLandingPage() {
           <QuickStartSessionForm stores={stores} />
         </section>
 
-        {/* Quick Action Links */}
-        <section className="mt-8 space-y-3" aria-label="ทางลัดสำหรับทดสอบระบบ">
+        {/* Action Links */}
+        <section className="mt-8 space-y-3" aria-label="เมนูหลัก">
           <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-            ทางลัดเข้าใช้งานห้องตัวอย่าง (Pre-loaded Demo Session)
+            เมนูและการจัดการ
           </h2>
 
           <Card className="divide-y divide-hairline overflow-hidden">
             <Link
-              href={`/order/${DEMO_SESSION_ID}`}
+              href="/history"
               className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-subtle"
             >
               <div>
                 <p className="text-base font-semibold text-ink">
-                  1. หน้าสั่งอาหารกลุ่ม (LIFF Order View)
+                  1. ประวัติบิลและการสั่งอาหาร (Order History)
                 </p>
                 <p className="mt-0.5 text-xs text-ink-secondary">
-                  ทดสอบเลือกเมนู แก้ไขรายการ สลับตัวละคร (Host / สมาชิก) กด Ready และล็อกบิล
-                </p>
-              </div>
-              <Button size="sm" variant="primary" className="shrink-0 pointer-events-none">
-                เปิดห้องตัวอย่าง
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
-
-            <Link
-              href={`/receipt/${DEMO_SESSION_ID}`}
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-subtle"
-            >
-              <div>
-                <p className="text-base font-semibold text-ink">
-                  2. หน้าใบเสร็จ & แชร์เข้า LINE (Printable Receipt 80mm / A4)
-                </p>
-                <p className="mt-0.5 text-xs text-ink-secondary">
-                  สลับมุมมองสลิปความร้อน 80mm / A4, คัดลอกข้อความส่งร้าน และ Share to LINE
+                  ดูรายการบิลที่เปิดอยู่และบิลที่ปิดแล้ว สรุปยอดรวม และดูใบเสร็จ
                 </p>
               </div>
               <Button size="sm" variant="secondary" className="shrink-0 pointer-events-none">
-                <Printer className="h-3.5 w-3.5" />
-                ดูใบเสร็จ
+                ดูประวัติบิล
+                <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
 
@@ -97,10 +79,10 @@ export default async function PublicLandingPage() {
             >
               <div>
                 <p className="text-base font-semibold text-ink">
-                  3. ระบบจัดการร้านค้าและเมนูอาหาร (Admin Console)
+                  2. ระบบจัดการร้านค้าและเมนูอาหาร (Admin Console)
                 </p>
                 <p className="mt-0.5 text-xs text-ink-secondary">
-                  เพิ่มร้านค้า ตั้งค่าราคาธรรมดา/พิเศษ ท็อปปิ้ง และโหวตแบนเมนูไม่อร่อย
+                  เพิ่มร้านค้า จัดการเมนู ราคาธรรมดา/พิเศษ ท็อปปิ้ง และโหวตแบนเมนู
                 </p>
               </div>
               <Button size="sm" variant="secondary" className="shrink-0 pointer-events-none">

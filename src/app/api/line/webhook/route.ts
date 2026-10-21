@@ -89,6 +89,12 @@ export async function POST(request: NextRequest) {
     const { sessionRepo } = getRepositories();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
+    const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+    const getOrderUrl = (id: string) =>
+      liffId ? `https://liff.line.me/${liffId}/order/${id}` : `${appUrl}/order/${id}`;
+    const getReceiptUrl = (id: string) =>
+      liffId ? `https://liff.line.me/${liffId}/receipt/${id}` : `${appUrl}/receipt/${id}`;
+
     const results = [];
 
     for (const event of parsed.events) {
@@ -114,8 +120,8 @@ export async function POST(request: NextRequest) {
             storeDisplayName: summary.storeDisplayName,
             totalQuantity: summary.totalItemsCount,
             grandTotalAmount: summary.grandTotalAmount,
-            orderUrl: `${appUrl}/order/${existingSession.id}`,
-            receiptUrl: `${appUrl}/receipt/${existingSession.id}`,
+            orderUrl: getOrderUrl(existingSession.id),
+            receiptUrl: getReceiptUrl(existingSession.id),
           });
 
           await replyToLineIfConfigured(event.replyToken, [
@@ -141,8 +147,8 @@ export async function POST(request: NextRequest) {
           storeDisplayName: customStoreArg || 'ครัวตาล (ตามสั่งโชคชัย 4)',
           totalQuantity: 0,
           grandTotalAmount: 0,
-          orderUrl: `${appUrl}/order/${session.id}`,
-          receiptUrl: `${appUrl}/receipt/${session.id}`,
+          orderUrl: getOrderUrl(session.id),
+          receiptUrl: getReceiptUrl(session.id),
         });
 
         await replyToLineIfConfigured(event.replyToken, [flexMessage]);
@@ -176,8 +182,8 @@ export async function POST(request: NextRequest) {
             storeDisplayName: summary.storeDisplayName,
             totalQuantity: summary.totalItemsCount,
             grandTotalAmount: summary.grandTotalAmount,
-            orderUrl: `${appUrl}/order/${openSession.id}`,
-            receiptUrl: `${appUrl}/receipt/${openSession.id}`,
+            orderUrl: getOrderUrl(openSession.id),
+            receiptUrl: getReceiptUrl(openSession.id),
           },
           summary.recipientBreakdowns,
         );

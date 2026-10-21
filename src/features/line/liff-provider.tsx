@@ -6,18 +6,23 @@ import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
 import { buildBillSummaryFlexMessage } from '@/server/services/line-flex.service';
 
+const DEFAULT_PROFILE: LiffUserProfile = {
+  userId: 'U_MEMBER_ME',
+  displayName: 'ฉัน (ผู้สั่งอาหาร)',
+};
+
 const DEV_PERSONAS: LiffUserProfile[] = [
   {
-    userId: 'U_HOST_TAN',
-    displayName: 'ตาน (Host)',
+    userId: 'U_HOST_1',
+    displayName: 'หัวห้อง (Host)',
   },
   {
-    userId: 'U_MEMBER_PRAEW',
-    displayName: 'แพรว (Design)',
+    userId: 'U_MEMBER_2',
+    displayName: 'เพื่อน 1',
   },
   {
-    userId: 'U_MEMBER_BANK',
-    displayName: 'แบงค์ (Backend)',
+    userId: 'U_MEMBER_3',
+    displayName: 'เพื่อน 2',
   },
 ];
 
@@ -27,6 +32,7 @@ interface LiffContextValue {
   isReady: boolean;
   personas: LiffUserProfile[];
   setDevPersona: (userId: string) => void;
+  updateProfileName: (name: string) => void;
   shareBillToLine: (
     payload: LineFlexReceiptSharePayload,
     recipientBreakdowns: RecipientOrderBreakdown[],
@@ -36,7 +42,7 @@ interface LiffContextValue {
 const LiffContext = createContext<LiffContextValue | null>(null);
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
-  const [profile, setProfile] = useState<LiffUserProfile>(DEV_PERSONAS[0]!);
+  const [profile, setProfile] = useState<LiffUserProfile>(DEFAULT_PROFILE);
   const [isInLineClient, setIsInLineClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -61,6 +67,8 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             pictureUrl: userProfile.pictureUrl,
           });
           setIsInLineClient(liff.isInClient());
+        } else if (liff.isInClient()) {
+          liff.login();
         }
         setIsReady(true);
       })
@@ -74,6 +82,14 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
     };
   }, []);
+
+  const updateProfileName = (name: string) => {
+    if (!name.trim()) return;
+    setProfile((prev) => ({
+      ...prev,
+      displayName: name.trim(),
+    }));
+  };
 
   const setDevPersona = (userId: string) => {
     const found = DEV_PERSONAS.find((p) => p.userId === userId);
@@ -127,6 +143,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         isReady,
         personas: DEV_PERSONAS,
         setDevPersona,
+        updateProfileName,
         shareBillToLine,
       }}
     >
