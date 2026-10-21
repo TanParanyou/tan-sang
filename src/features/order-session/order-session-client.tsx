@@ -1,0 +1,1193 @@
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Ban,
+  Check,
+  CheckCircle2,
+  Copy,
+  Lock,
+  Pencil,
+  Plus,
+  Printer,
+  Search,
+  Share2,
+  Trash2,
+  UtensilsCrossed,
+  X,
+} from 'lucide-react';
+import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
+import { useLiff } from '@/features/line/liff-provider';
+import type {
+  OrderItem,
+  OrderSession,
+  OrderSessionSummary,
+} from '@/features/order-session/order-session.schema';
+import type {
+  MenuOption,
+  StoreCatalogAggregate,
+  StoreMenu,
+} from '@/features/store-catalog/store-catalog.schema';
+import { getLocalizedText, type SupportedLocale } from '@/lib/utils/i18n.schema';
+import {
+  calculateOrderItemTotals,
+  formatOrderItemTitle,
+} from '@/server/services/order-calculator.service';
+import {
+  Button,
+  Input,
+  Card,
+  Badge,
+  Chip,
+  QuantityStepper,
+} from '@/components/ui';
+
+interface SessionDetailPayload {
+  session: OrderSession;
+  catalog: StoreCatalogAggregate | null;
+  summary: OrderSessionSummary;
+}
+
+export function OrderSessionClient({
+  sessionId,
+  initialData,
+}: {
+  sessionId: string;
+  initialData: SessionDetailPayload;
+}) {
+  const { profile, shareBillToLine } = useLiff();
+  const queryClient = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
+  const [closedViewMode, setClosedViewMode] = useState<'GROUPED' | 'INDIVIDUAL'>('GROUPED');
+  const [locale, setLocale] = useState<SupportedLocale>('th');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Drawer state for selecting menu item, custom item, or editing existing item
+  const [selectedMenu, setSelectedMenu] = useState<StoreMenu | null>(null);
+  const [isCustomDrawerOpen, setIsCustomDrawerOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
+
+  // Form states inside drawer
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [recipientName, setRecipientName] = useState<string>(profile.displayName);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [note, setNote] = useState<string>('');
+  const [customMenuName, setCustomMenuName] = useState<string>('');
+  const [customUnitPrice, setCustomUnitPrice] = useState<string>('60');
+
+  useEffect(() => {
+    if (!editingItem) {
+      setRecipientName(profile.displayName);
+    }
+  }, [profile.displayName, editingItem]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 2800);
+  };
+
+  const handleVoteBan = async (e: React.MouseEvent, menuId: string) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch('/api/v1/stores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'VOTE_BAN_MENU',
+          payload: { menuId, autoBanThreshold: 3 },
+        }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: { id: string; voteBanCount: number; status: string };
+      };
+      if (json.ok) {
+        await queryClient.invalidateQueries({ queryKey: ['order-session', sessionId] });
+        showToast('บันทึกการโหวตแบนแล้ว (ครบ 3 โหวตจะงดสั่งอัตโนมัติ)');
+      }
+    } catch {
+      showToast('ไม่สามารถโหวตแบนเมนูได้');
+    }
+  };
+
+  const { data } = useQuery<SessionDetailPayload>({
+    queryKey: ['order-session', sessionId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/sessions/${sessionId}`);
+      const json = (await res.json()) as { ok: boolean; data: SessionDetailPayload };
+      if (!json.ok) {
+        throw new Error('ไม่สามารถดึงข้อมูลห้องสั่งอาหารได้');
+      }
+      return json.data;
+    },
+    initialData,
+    refetchInterval: (query) =>
+      query.state.data?.session.status === 'OPEN' ? 4000 : false,
+  });
+
+  const { session, catalog, summary } = data;
+  const isOpen = session.status === 'OPEN';
+  const isHost = session.hostUserId === profile.userId;
+  const isCurrentUserReady = session.readyUsers.some((u) => u.userId === profile.userId);
+
+  const availableOptions = useMemo<MenuOption[]>(() => {
+    if (!catalog) return [];
+    if (!selectedMenu) return catalog.storeWideOptions;
+    return [...catalog.storeWideOptions, ...selectedMenu.options].filter(
+      (opt) => opt.isAvailable,
+    );
+  }, [catalog, selectedMenu]);
+
+  const filteredMenus = useMemo(() => {
+    if (!catalog) return [];
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return catalog.menus;
+    return catalog.menus.filter((m) => {
+      const th = m.name.th.toLowerCase();
+      const en = (m.name.en ?? '').toLowerCase();
+      return th.includes(q) || en.includes(q);
+    });
+  }, [catalog, searchQuery]);
+
+  const myItems = useMemo(
+    () => session.items.filter((i) => i.orderedByUserId === profile.userId),
+    [session.items, profile.userId],
+  );
+
+  const myTotalAmount = useMemo(
+    () =>
+      myItems.reduce((sum, item) => sum + calculateOrderItemTotals(item).lineTotal, 0),
+    [myItems],
+  );
+
+  const openMenuDrawer = (menu: StoreMenu) => {
+    if (!isOpen || menu.status !== 'ACTIVE') return;
+    const defaultVariant =
+      menu.variants.find((v) => v.isDefault) ?? menu.variants[0];
+    setEditingItem(null);
+    setSelectedMenu(menu);
+    setIsCustomDrawerOpen(false);
+    setSelectedVariantId(defaultVariant?.id ?? '');
+    setSelectedOptionIds([]);
+    setRecipientName(profile.displayName);
+    setQuantity(1);
+    setNote('');
+  };
+
+  const openCustomItemDrawer = () => {
+    if (!isOpen) return;
+    setEditingItem(null);
+    setSelectedMenu(null);
+    setIsCustomDrawerOpen(true);
+    setCustomMenuName('');
+    setCustomUnitPrice('60');
+    setSelectedOptionIds([]);
+    setRecipientName(profile.displayName);
+    setQuantity(1);
+    setNote('');
+  };
+
+  const openEditItemDrawer = (item: OrderItem) => {
+    if (!isOpen) return;
+    setEditingItem(item);
+    setRecipientName(item.recipientName);
+    setQuantity(item.quantity);
+    setNote(item.note ?? '');
+
+    const matchedMenu = catalog?.menus.find((m) => m.id === item.menuId) ?? null;
+    const matchedOptionIds = item.options
+      .map((o) => o.optionId)
+      .filter((id): id is string => Boolean(id));
+    setSelectedOptionIds(matchedOptionIds);
+
+    if (matchedMenu) {
+      setSelectedMenu(matchedMenu);
+      setIsCustomDrawerOpen(false);
+      const matchedVariant =
+        matchedMenu.variants.find(
+          (v) =>
+            getLocalizedText(v.name, 'th') === item.variantName ||
+            getLocalizedText(v.name, 'en') === item.variantName,
+        ) ?? matchedMenu.variants[0];
+      setSelectedVariantId(matchedVariant?.id ?? '');
+    } else {
+      setSelectedMenu(null);
+      setIsCustomDrawerOpen(true);
+      setCustomMenuName(item.menuName);
+      setCustomUnitPrice(String(item.unitPrice));
+    }
+  };
+
+  const closeDrawer = () => {
+    setSelectedMenu(null);
+    setIsCustomDrawerOpen(false);
+    setEditingItem(null);
+  };
+
+  const upsertItemMutation = useMutation({
+    mutationFn: async () => {
+      const chosenOptions = availableOptions
+        .filter((opt) => selectedOptionIds.includes(opt.id))
+        .map((opt) => ({
+          optionId: opt.id,
+          optionName: getLocalizedText(opt.name, locale),
+          price: opt.price,
+        }));
+
+      let payload: Record<string, unknown>;
+
+      if (selectedMenu) {
+        const chosenVariant =
+          selectedMenu.variants.find((v) => v.id === selectedVariantId) ??
+          selectedMenu.variants[0];
+        payload = {
+          orderedByUserId: editingItem?.orderedByUserId ?? profile.userId,
+          recipientName: recipientName.trim() || profile.displayName,
+          menuId: selectedMenu.id,
+          menuName: getLocalizedText(selectedMenu.name, locale),
+          variantName: chosenVariant ? getLocalizedText(chosenVariant.name, locale) : null,
+          unitPrice: chosenVariant?.price ?? 0,
+          quantity,
+          note: note.trim() || null,
+          options: chosenOptions,
+        };
+      } else {
+        const parsedPrice = Number(customUnitPrice);
+        payload = {
+          orderedByUserId: editingItem?.orderedByUserId ?? profile.userId,
+          recipientName: recipientName.trim() || profile.displayName,
+          menuId: null,
+          menuName: customMenuName.trim(),
+          variantName: null,
+          unitPrice: Number.isFinite(parsedPrice) && parsedPrice >= 0 ? parsedPrice : 0,
+          quantity,
+          note: note.trim() || null,
+          options: chosenOptions,
+        };
+      }
+
+      if (editingItem) {
+        const res = await fetch(`/api/v1/sessions/${sessionId}/items`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            itemId: editingItem.id,
+            actorUserId: profile.userId,
+          }),
+        });
+        const json = (await res.json()) as {
+          ok: boolean;
+          data?: SessionDetailPayload;
+          error?: { message: string };
+        };
+        if (!json.ok || !json.data) {
+          throw new Error(json.error?.message ?? 'ไม่สามารถแก้ไขรายการอาหารได้');
+        }
+        return { updated: json.data, isEdit: true };
+      }
+
+      const res = await fetch(`/api/v1/sessions/${sessionId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? 'ไม่สามารถเพิ่มรายการอาหารได้');
+      }
+      return { updated: json.data, isEdit: false };
+    },
+    onSuccess: ({ updated, isEdit }) => {
+      queryClient.setQueryData(['order-session', sessionId], updated);
+      closeDrawer();
+      showToast(isEdit ? 'บันทึกการแก้ไขรายการแล้ว' : 'เพิ่มรายการลงในบิลกลุ่มแล้ว');
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const res = await fetch(`/api/v1/sessions/${sessionId}/items`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId,
+          actorUserId: profile.userId,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? 'ไม่สามารถลบรายการได้');
+      }
+      return json.data;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['order-session', sessionId], updated);
+      showToast('ลบรายการอาหารเรียบร้อยแล้ว');
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+  });
+
+  const toggleReadyMutation = useMutation({
+    mutationFn: async (nextReadyState: boolean) => {
+      const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'TOGGLE_READY',
+          userId: profile.userId,
+          displayName: profile.displayName,
+          isReady: nextReadyState,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะได้');
+      }
+      return json.data;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['order-session', sessionId], updated);
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+  });
+
+  const closeSessionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'CLOSE_SESSION',
+          actorUserId: profile.userId,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? 'ไม่สามารถปิดบิลได้');
+      }
+      return json.data;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['order-session', sessionId], updated);
+      showToast('ล็อกและปิดรับออเดอร์แล้ว');
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+  });
+
+  const handleCopyForMerchant = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(summary.merchantCopyText);
+      showToast('คัดลอกข้อความสำหรับส่งให้ร้านค้าแล้ว!');
+    }
+  };
+
+  const handleShareToLine = async () => {
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const res = await shareBillToLine(
+      {
+        sessionId: session.id,
+        storeDisplayName: summary.storeDisplayName,
+        totalQuantity: summary.totalItemsCount,
+        grandTotalAmount: summary.grandTotalAmount,
+        orderUrl: `${origin}/order/${session.id}`,
+        receiptUrl: `${origin}/receipt/${session.id}`,
+      },
+      summary.recipientBreakdowns,
+    );
+    showToast(res.message);
+  };
+
+  // Calculate preview price inside drawer
+  const drawerPreviewTotal = useMemo(() => {
+    const optionsSum = availableOptions
+      .filter((o) => selectedOptionIds.includes(o.id))
+      .reduce((s, o) => s + o.price, 0);
+
+    if (selectedMenu) {
+      const v =
+        selectedMenu.variants.find((item) => item.id === selectedVariantId) ??
+        selectedMenu.variants[0];
+      return ((v?.price ?? 0) + optionsSum) * quantity;
+    }
+
+    const base = Number(customUnitPrice) || 0;
+    return (base + optionsSum) * quantity;
+  }, [
+    availableOptions,
+    selectedOptionIds,
+    selectedMenu,
+    selectedVariantId,
+    quantity,
+    customUnitPrice,
+  ]);
+
+  return (
+    <div className="min-h-screen bg-canvas pb-36">
+      <DevPersonaBar hostUserId={session.hostUserId} />
+
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-hairline rounded-theme bg-ink px-4 py-2 text-xs font-medium text-surface shadow-theme"
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Top Store & Session Status Header */}
+      <header className="sticky top-0 z-20 border-b border-hairline bg-surface/95 backdrop-blur">
+        <div className="mx-auto max-w-lg px-4 py-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                {isOpen ? (
+                  <Badge variant="default" className="text-[11px] py-0.5">
+                    ● เปิดรับออเดอร์
+                  </Badge>
+                ) : (
+                  <Badge variant="warning" className="text-[11px] py-0.5">
+                    <Lock className="h-3 w-3" />
+                    ปิดรับออเดอร์
+                  </Badge>
+                )}
+                <span className="font-mono text-xs text-ink-muted tabular-nums">
+                  {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
+                </span>
+              </div>
+              <h1 className="mt-1.5 text-lg font-bold tracking-tight text-ink sm:text-xl">
+                {catalog ? getLocalizedText(catalog.store.name, locale) : summary.storeDisplayName}
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Compact TH / EN Switcher */}
+              <div
+                role="group"
+                aria-label="เปลี่ยนภาษา / Switch Language"
+                className="inline-flex rounded-theme border border-hairline bg-canvas p-0.5 text-xs font-semibold"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLocale('th')}
+                  className={`rounded-theme px-2 py-1 transition ${
+                    locale === 'th'
+                      ? 'bg-ink text-surface'
+                      : 'text-ink-secondary hover:text-ink'
+                  }`}
+                >
+                  TH
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocale('en')}
+                  className={`rounded-theme px-2 py-1 transition ${
+                    locale === 'en'
+                      ? 'bg-ink text-surface'
+                      : 'text-ink-secondary hover:text-ink'
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
+
+              <Link
+                href={`/receipt/${session.id}`}
+                className="inline-flex min-h-[36px] h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 text-xs font-medium text-ink transition hover:bg-subtle"
+              >
+                <Printer className="h-3.5 w-3.5 text-ink-secondary" />
+                ใบเสร็จ
+              </Link>
+            </div>
+          </div>
+
+          {/* Ready Participants Strip */}
+          <div className="mt-2.5 flex items-center gap-2 overflow-x-auto pt-0.5 text-xs text-ink-secondary">
+            <span className="shrink-0 font-medium text-ink-muted">
+              เลือกเสร็จแล้ว ({session.readyUsers.length}):
+            </span>
+            {session.readyUsers.length === 0 ? (
+              <span className="text-ink-muted">ยังไม่มีใครกดยืนยัน</span>
+            ) : (
+              session.readyUsers.map((u) => (
+                <span
+                  key={u.userId}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-subtle px-2 py-0.5 text-xs font-medium text-ink"
+                >
+                  <Check className="h-3 w-3" />
+                  {u.displayName}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="mx-auto max-w-lg px-4 pt-4">
+        {isOpen ? (
+          <>
+            {/* Segmented Tab Switcher (Catalog vs Group Tray) */}
+            <div
+              role="tablist"
+              aria-label="มุมมองการสั่งอาหาร"
+              className="grid grid-cols-2 gap-1 rounded-theme bg-subtle p-1 border border-hairline"
+            >
+              <Chip
+                role="tab"
+                aria-selected={activeTab === 'CATALOG'}
+                selected={activeTab === 'CATALOG'}
+                onClick={() => setActiveTab('CATALOG')}
+                className="w-full text-center"
+              >
+                เลือกเมนูอาหาร
+              </Chip>
+              <Chip
+                role="tab"
+                aria-selected={activeTab === 'TRAY'}
+                selected={activeTab === 'TRAY'}
+                onClick={() => setActiveTab('TRAY')}
+                className="w-full text-center"
+              >
+                รายการในห้อง ({summary.totalItemsCount})
+              </Chip>
+            </div>
+
+            {activeTab === 'CATALOG' ? (
+              <section className="mt-4 space-y-3" aria-label="รายการเมนูร้านค้า">
+                {/* Search & Custom Dish Action */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="ค้นหาเมนู เช่น กะเพรา, ข้าวผัด..."
+                      className="min-h-[44px] h-[44px] w-full rounded-theme border border-hairline bg-surface pl-9 pr-3 text-[16px] text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    onClick={openCustomItemDrawer}
+                    className="shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    พิมพ์เมนูเอง
+                  </Button>
+                </div>
+
+                {/* Impeccable Flat Divider List (No nested cards-in-cards) */}
+                {filteredMenus.length > 0 ? (
+                  <Card className="divide-y divide-hairline overflow-hidden">
+                    {filteredMenus.map((menu) => {
+                      const isAvailable = menu.status === 'ACTIVE';
+                      const defaultVariant =
+                        menu.variants.find((v) => v.isDefault) ?? menu.variants[0];
+                      const maxVariant = menu.variants[menu.variants.length - 1];
+                      const priceLabel =
+                        defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
+                          ? `${defaultVariant.price}–${maxVariant.price} ฿`
+                          : `${defaultVariant?.price ?? 0} ฿`;
+
+                      const subtitle =
+                        locale === 'th' ? menu.name.en : menu.name.th;
+
+                      return (
+                        <div
+                          key={menu.id}
+                          className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-subtle"
+                        >
+                          <div
+                            role="button"
+                            tabIndex={isAvailable ? 0 : -1}
+                            onClick={() => isAvailable && openMenuDrawer(menu)}
+                            onKeyDown={(e) => {
+                              if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
+                                e.preventDefault();
+                                openMenuDrawer(menu);
+                              }
+                            }}
+                            className={`min-w-0 flex-1 ${
+                              isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-55'
+                            }`}
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[15px] font-medium text-ink">
+                                {getLocalizedText(menu.name, locale)}
+                              </span>
+                              {menu.status === 'OUT_OF_STOCK' && (
+                                <Badge variant="muted" className="text-[10px] py-0.5">
+                                  หมดชั่วคราว
+                                </Badge>
+                              )}
+                              {menu.status === 'BANNED' && (
+                                <Badge variant="warning" className="text-[10px] py-0.5">
+                                  งดสั่ง (Banned)
+                                </Badge>
+                              )}
+                              {menu.voteBanCount > 0 && menu.status !== 'BANNED' && (
+                                <span className="font-mono text-xs font-semibold text-red-600 tabular-nums">
+                                  (โหวตแบน {menu.voteBanCount}/3)
+                                </span>
+                              )}
+                            </div>
+                            {subtitle && (
+                              <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            {/* Member Vote-Ban Action Button */}
+                            {isOpen && menu.status !== 'BANNED' && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleVoteBan(e, menu.id)}
+                                title="โหวตแบนเมนูไม่อร่อย (ครบ 3 โหวตแบนอัตโนมัติ)"
+                                className="inline-flex min-h-[32px] items-center gap-1 rounded-theme border border-hairline bg-canvas px-2.5 py-1 text-[11px] font-medium text-red-600 transition hover:bg-red-50"
+                              >
+                                <Ban className="h-3 w-3" />
+                                <span className="hidden sm:inline">โหวตแบน</span>
+                                {menu.voteBanCount > 0 && (
+                                  <span className="font-mono tabular-nums">+{menu.voteBanCount}</span>
+                                )}
+                              </button>
+                            )}
+
+                            <span
+                              role="button"
+                              tabIndex={isAvailable ? 0 : -1}
+                              onClick={() => isAvailable && openMenuDrawer(menu)}
+                              className={`font-mono text-sm font-semibold text-ink tabular-nums ${
+                                isAvailable ? 'cursor-pointer' : 'opacity-55'
+                              }`}
+                            >
+                              {priceLabel}
+                            </span>
+                            {isAvailable && (
+                              <button
+                                type="button"
+                                aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
+                                onClick={() => openMenuDrawer(menu)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:bg-neutral-800"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Card>
+                ) : (
+                  <Card className="p-8 text-center">
+                    <UtensilsCrossed className="mx-auto h-6 w-6 text-ink-muted" />
+                    <p className="mt-2 text-sm font-medium text-ink">
+                      ไม่พบเมนูที่ค้นหา หรือร้านนี้เป็นโหมดพิมพ์ชื่อเมนูอิสระ
+                    </p>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      onClick={openCustomItemDrawer}
+                      className="mt-4"
+                    >
+                      <Plus className="h-4 w-4" />
+                      พิมพ์ชื่อเมนูอาหารเอง
+                    </Button>
+                  </Card>
+                )}
+              </section>
+            ) : (
+              /* Group Tray Tab (while OPEN) */
+              <section className="mt-4 space-y-3" aria-label="รายการอาหารในห้อง">
+                {session.items.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-sm text-ink-secondary">
+                      ยังไม่มีรายการอาหารในห้องนี้ กดเลือกเมนูจากแท็บแรกได้เลย
+                    </p>
+                  </Card>
+                ) : (
+                  <Card className="divide-y divide-hairline overflow-hidden">
+                    {session.items.map((item) => {
+                      const { lineTotal } = calculateOrderItemTotals(item);
+                      const canMutate =
+                        item.orderedByUserId === profile.userId || isHost;
+                      const title = formatOrderItemTitle(
+                        item.menuName,
+                        item.variantName,
+                        item.options.map((o) => o.optionName),
+                      );
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between gap-3 px-4 py-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="muted" className="text-[11px] py-0.5">
+                                {item.recipientName}
+                              </Badge>
+                              <span className="font-mono text-xs font-semibold text-ink tabular-nums">
+                                x {item.quantity}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[15px] font-medium text-ink">{title}</p>
+                            {item.note && (
+                              <p className="mt-0.5 text-xs text-ink-secondary">
+                                หมายเหตุ: {item.note}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <span className="mr-1 font-mono text-sm font-semibold text-ink tabular-nums">
+                              {lineTotal.toLocaleString('th-TH')} ฿
+                            </span>
+                            {canMutate && (
+                              <>
+                                <button
+                                  type="button"
+                                  aria-label={`แก้ไขรายการ ${title}`}
+                                  onClick={() => openEditItemDrawer(item)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline text-ink-secondary transition hover:bg-subtle hover:text-ink"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`ลบรายการ ${title}`}
+                                  onClick={() => deleteItemMutation.mutate(item.id)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline text-ink-secondary transition hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Card>
+                )}
+              </section>
+            )}
+          </>
+        ) : (
+          /* ==================================================================
+             CLOSED STATE: Merchant Export & Split Bill Breakdown
+             ================================================================== */
+          <section className="space-y-4" aria-label="สรุปยอดหลังปิดบิล">
+            {/* Primary Export Actions */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={handleCopyForMerchant}
+                className="w-full"
+              >
+                <Copy className="h-4 w-4" />
+                คัดลอกข้อความส่งร้านค้า
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                onClick={handleShareToLine}
+                className="w-full"
+              >
+                <Share2 className="h-4 w-4" />
+                แชร์สรุปบิลเข้าแชท LINE
+              </Button>
+            </div>
+
+            {/* Toggle: Grouped View vs Individual Breakdown */}
+            <div className="grid grid-cols-2 gap-1 rounded-theme bg-subtle p-1 border border-hairline">
+              <Chip
+                selected={closedViewMode === 'GROUPED'}
+                onClick={() => setClosedViewMode('GROUPED')}
+                className="w-full text-center"
+              >
+                รวมตามเมนู ({summary.groupedItems.length})
+              </Chip>
+              <Chip
+                selected={closedViewMode === 'INDIVIDUAL'}
+                onClick={() => setClosedViewMode('INDIVIDUAL')}
+                className="w-full text-center"
+              >
+                แยกตามรายชื่อ ({summary.recipientBreakdowns.length})
+              </Chip>
+            </div>
+
+            {closedViewMode === 'GROUPED' ? (
+              <Card className="divide-y divide-hairline overflow-hidden">
+                {summary.groupedItems.map((group, idx) => {
+                  const title = formatOrderItemTitle(
+                    group.menuName,
+                    group.variantName,
+                    group.optionNames,
+                  );
+                  return (
+                    <div
+                      key={group.fingerprint}
+                      className="flex items-start justify-between gap-3 px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[15px] font-medium text-ink">
+                          <span className="mr-1.5 font-mono text-xs text-ink-muted">
+                            {idx + 1}.
+                          </span>
+                          {title}
+                        </p>
+                        {group.note && (
+                          <p className="mt-0.5 text-xs font-medium text-ink">
+                            หมายเหตุ: {group.note}
+                          </p>
+                        )}
+                        <p className="mt-1 text-xs text-ink-secondary">
+                          คนสั่ง:{' '}
+                          {group.recipients
+                            .map((r) =>
+                              r.quantity > 1
+                                ? `${r.recipientName} (${r.quantity})`
+                                : r.recipientName,
+                            )
+                            .join(', ')}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right font-mono tabular-nums">
+                        <span className="inline-block border border-hairline rounded-theme bg-subtle px-2 py-0.5 text-xs font-bold text-ink">
+                          x {group.totalQuantity}
+                        </span>
+                        <p className="mt-1 text-xs text-ink-secondary">
+                          {group.totalPrice.toLocaleString('th-TH')} ฿
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </Card>
+            ) : (
+              <Card className="divide-y divide-hairline overflow-hidden">
+                {summary.recipientBreakdowns.map((person) => (
+                  <div key={person.recipientName} className="px-4 py-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-ink">
+                        {person.recipientName}
+                      </span>
+                      <span className="font-mono text-sm font-bold text-ink tabular-nums">
+                        {person.totalAmount.toLocaleString('th-TH')} ฿
+                      </span>
+                    </div>
+                    <ul className="mt-1.5 space-y-1">
+                      {person.items.map((item) => (
+                        <li
+                          key={item.itemId}
+                          className="flex items-baseline justify-between gap-2 text-xs text-ink-secondary"
+                        >
+                          <span>
+                            • {item.displayTitle}
+                            {item.note ? ` [${item.note}]` : ''} × {item.quantity}
+                          </span>
+                          <span className="font-mono tabular-nums">
+                            {item.lineTotal.toLocaleString('th-TH')} ฿
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </Card>
+            )}
+
+            {/* Merchant Text Preview Box */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                  ข้อความพร้อมส่งร้านค้า
+                </span>
+                <Link
+                  href={`/receipt/${session.id}`}
+                  className="text-xs font-semibold text-ink underline underline-offset-2 hover:text-neutral-700"
+                >
+                  เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4) →
+                </Link>
+              </div>
+              <pre className="mt-2 whitespace-pre-wrap rounded-theme border border-hairline bg-canvas p-3 font-mono text-xs leading-relaxed text-ink">
+                {summary.merchantCopyText}
+              </pre>
+            </Card>
+          </section>
+        )}
+      </main>
+
+      {/* ====================================================================
+          Slide-Up Menu / Custom Item / Edit Selection Drawer
+          ==================================================================== */}
+      {(selectedMenu || isCustomDrawerOpen) && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="เลือกรายละเอียดเมนูอาหาร"
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-theme border border-hairline bg-surface p-5 shadow-theme">
+            <div className="flex items-start justify-between gap-3 border-b border-hairline pb-3">
+              <div>
+                <h2 className="text-base font-bold text-ink">
+                  {editingItem
+                    ? `แก้ไข: ${selectedMenu ? getLocalizedText(selectedMenu.name, locale) : customMenuName}`
+                    : selectedMenu
+                      ? getLocalizedText(selectedMenu.name, locale)
+                      : 'สั่งเมนูพิเศษนอกรายการ'}
+                </h2>
+                <p className="text-xs text-ink-secondary">
+                  เลือกขนาด ท็อปปิ้ง และระบุชื่อคนรับอาหาร
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="ปิดหน้าต่างเลือกเมนู"
+                onClick={closeDrawer}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline bg-subtle text-ink-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              {/* Custom Menu Fields */}
+              {isCustomDrawerOpen && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <Input
+                      label="ชื่อเมนูอาหาร"
+                      required
+                      value={customMenuName}
+                      onChange={(e) => setCustomMenuName(e.target.value)}
+                      placeholder="เช่น ข้าวผัดแหนม"
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="ราคา (บาท)"
+                      type="number"
+                      min={0}
+                      required
+                      value={customUnitPrice}
+                      onChange={(e) => setCustomUnitPrice(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Variants Radio Pills */}
+              {selectedMenu && selectedMenu.variants.length > 0 && (
+                <div>
+                  <span className="block text-xs font-semibold text-ink">เลือกขนาด / ราคา</span>
+                  <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    {selectedMenu.variants.map((variant) => {
+                      const active = variant.id === selectedVariantId;
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          onClick={() => setSelectedVariantId(variant.id)}
+                          className={`flex min-h-[44px] h-[44px] items-center justify-between rounded-theme border px-3.5 text-sm font-medium transition ${
+                            active
+                              ? 'border-ink bg-ink text-surface'
+                              : 'border-hairline bg-surface text-ink hover:bg-subtle'
+                          }`}
+                        >
+                          <span>{getLocalizedText(variant.name, locale)}</span>
+                          <span className="font-mono font-semibold tabular-nums">
+                            {variant.price} ฿
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Add-on Options Checkboxes */}
+              {availableOptions.length > 0 && (
+                <div>
+                  <span className="block text-xs font-semibold text-ink">
+                    เพิ่มเติม / ท็อปปิ้ง (เลือกได้หลายข้อ)
+                  </span>
+                  <div className="mt-1.5 divide-y divide-hairline rounded-theme border border-hairline bg-surface">
+                    {availableOptions.map((opt) => {
+                      const checked = selectedOptionIds.includes(opt.id);
+                      return (
+                        <label
+                          key={opt.id}
+                          className="flex min-h-[44px] cursor-pointer items-center justify-between px-3.5 py-2 text-sm"
+                        >
+                          <span className="flex items-center gap-2.5 text-ink">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedOptionIds((prev) => [...prev, opt.id]);
+                                } else {
+                                  setSelectedOptionIds((prev) =>
+                                    prev.filter((id) => id !== opt.id),
+                                  );
+                                }
+                              }}
+                              className="h-4 w-4 rounded-theme border-hairline text-ink accent-black focus:ring-ink"
+                            />
+                            {getLocalizedText(opt.name, locale)}
+                          </span>
+                          <span className="font-mono text-xs font-semibold text-ink-secondary tabular-nums">
+                            +{opt.price} ฿
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recipient Name & Quantity */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <Input
+                    label="สั่งให้ใคร"
+                    helperText="เปลี่ยนชื่อได้ถ้าฝากสั่ง"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ink mb-1">จำนวน</label>
+                  <QuantityStepper
+                    value={quantity}
+                    onChange={setQuantity}
+                    className="w-full justify-between"
+                  />
+                </div>
+              </div>
+
+              {/* Special Note */}
+              <div>
+                <Input
+                  label="หมายเหตุถึงร้าน (ถ้ามี)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="เช่น เผ็ดน้อย, ไม่ใส่กระเทียม, แยกน้ำ"
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                disabled={
+                  upsertItemMutation.isPending ||
+                  (isCustomDrawerOpen && customMenuName.trim().length === 0)
+                }
+                onClick={() => upsertItemMutation.mutate()}
+                className="w-full justify-between"
+              >
+                <span>{editingItem ? 'บันทึกการแก้ไข' : 'เพิ่มลงในบิลกลุ่ม'}</span>
+                <span className="font-mono font-bold tabular-nums">
+                  {drawerPreviewTotal.toLocaleString('th-TH')} ฿
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          Sticky Bottom Dock (while OPEN)
+          ==================================================================== */}
+      {isOpen && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface px-4 py-3 shadow-theme">
+          <div className="mx-auto flex max-w-lg flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-ink-secondary">
+                  ของ <strong className="text-ink">{profile.displayName}</strong> ({myItems.length}{' '}
+                  รายการ)
+                </p>
+                <p className="font-mono text-base font-bold text-ink tabular-nums">
+                  {myTotalAmount.toLocaleString('th-TH')} ฿
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={isCurrentUserReady ? 'primary' : 'secondary'}
+                  size="md"
+                  disabled={toggleReadyMutation.isPending}
+                  onClick={() => toggleReadyMutation.mutate(!isCurrentUserReady)}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {isCurrentUserReady ? 'เลือกเสร็จแล้ว' : 'กดเมื่อเลือกเสร็จ'}
+                </Button>
+
+                {isHost && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    disabled={closeSessionMutation.isPending}
+                    onClick={() => closeSessionMutation.mutate()}
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    ปิดบิล
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Tan-Sang (ทันสั่ง) — ระบบเปิดบิลสั่งอาหารกลุ่มผ่าน LINE",
+  "short_name": "ทันสั่ง",
+  "description": "สั่งอาหารกลุ่มในแชท LINE เลือกเมนู ท็อปปิ้ง แยกบิลรายคน และคัดลอกข้อความส่งร้านในคลิกเดียว",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAFA",
+  "theme_color": "#FAFAFA",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
