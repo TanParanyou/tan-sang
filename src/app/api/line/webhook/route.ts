@@ -100,9 +100,10 @@ export async function POST(request: NextRequest) {
       const lineGroupId = event.source.groupId ?? event.source.roomId ?? 'C_DEFAULT_GROUP';
       const actorUserId = event.source.userId ?? 'U_DEFAULT_HOST';
 
-      // Command 1: Open Session ("ทันสั่ง" or "เปิดบิล [ชื่อร้าน]")
-      if (text.startsWith('ทันสั่ง') || text.startsWith('เปิดบิล')) {
-        const customStoreArg = text.replace(/^(ทันสั่ง|เปิดบิล)\s*/, '').trim();
+      // Command 1: Open Session ("ตาลสั่ง", "69", "ทันสั่ง", or "เปิดบิล [ชื่อร้าน]")
+      const openMatch = text.match(/^(ตาลสั่ง|69|ทันสั่ง|เปิดบิล)(?:\s+(.*))?$/i);
+      if (openMatch) {
+        const customStoreArg = openMatch[2]?.trim() || '';
 
         const session = await service.createSession({
           lineGroupId,
@@ -125,8 +126,8 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Command 2: Close & Summarize Active Session ("ปิดบิล" or "สรุปบิล")
-      if (text === 'ปิดบิล' || text === 'สรุปบิล') {
+      // Command 2: Close & Summarize Active Session ("ปิดบิล", "สรุปบิล", "ปิดตี้")
+      if (text === 'ปิดบิล' || text === 'สรุปบิล' || text === 'ปิดตี้' || text === 'จบ') {
         const openSession = await sessionRepo.findOpenSessionByGroupId(lineGroupId);
         if (!openSession) {
           continue;
