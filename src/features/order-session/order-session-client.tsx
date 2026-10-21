@@ -465,7 +465,7 @@ export function OrderSessionClient({
   ]);
 
   return (
-    <div className="min-h-screen bg-canvas pb-48">
+    <div className="min-h-screen bg-canvas pb-32">
       <DevPersonaBar hostUserId={session.hostUserId} />
 
       {/* Toast Feedback */}
@@ -484,25 +484,27 @@ export function OrderSessionClient({
         backHref="/history"
         backLabel="ประวัติ"
         title={catalog ? getLocalizedText(catalog.store.name, locale) : summary.storeDisplayName}
-        badge={
-          isOpen ? (
-            <Badge variant="default" className="text-[10px] py-0 px-1.5 shrink-0">
-              ● เปิดรับ
-            </Badge>
-          ) : (
-            <Badge variant="warning" className="text-[10px] py-0 px-1.5 shrink-0">
-              <Lock className="h-2.5 w-2.5 mr-0.5 inline" />
-              ปิดรับ
-            </Badge>
-          )
-        }
         subtitle={
-          <span className="font-mono text-xs text-ink-muted tabular-nums">
-            {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
-          </span>
+          <div className="flex items-center gap-1.5 leading-tight">
+            {isOpen ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                เปิดรับ
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-amber-600">
+                <Lock className="h-2.5 w-2.5 mr-0.5 inline" />
+                ปิดรับ
+              </span>
+            )}
+            <span className="text-ink-muted">•</span>
+            <span className="font-mono text-[11px] text-ink-muted tabular-nums">
+              {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
+            </span>
+          </div>
         }
         actions={
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Compact TH / EN Switcher */}
             <div
               role="group"
@@ -512,9 +514,9 @@ export function OrderSessionClient({
               <button
                 type="button"
                 onClick={() => setLocale('th')}
-                className={`rounded-theme px-2 py-1 transition ${
+                className={`rounded-theme px-1.5 py-0.5 text-[11px] transition ${
                   locale === 'th'
-                    ? 'bg-ink text-surface'
+                    ? 'bg-ink text-surface font-bold'
                     : 'text-ink-secondary hover:text-ink'
                 }`}
               >
@@ -523,9 +525,9 @@ export function OrderSessionClient({
               <button
                 type="button"
                 onClick={() => setLocale('en')}
-                className={`rounded-theme px-2 py-1 transition ${
+                className={`rounded-theme px-1.5 py-0.5 text-[11px] transition ${
                   locale === 'en'
-                    ? 'bg-ink text-surface'
+                    ? 'bg-ink text-surface font-bold'
                     : 'text-ink-secondary hover:text-ink'
                 }`}
               >
@@ -535,16 +537,23 @@ export function OrderSessionClient({
 
             <Link
               href={`/receipt/${session.id}`}
-              className="inline-flex min-h-[36px] h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 sm:px-3 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
+              aria-label="ดูใบเสร็จ"
+              title="ดูใบเสร็จ"
+              className="inline-flex min-h-[34px] min-w-[34px] sm:min-h-[36px] sm:px-2.5 items-center justify-center gap-1 rounded-theme border border-hairline bg-surface text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
             >
               <Printer className="h-3.5 w-3.5 text-ink-secondary" />
-              <span className="hidden sm:inline">ดู</span>ใบเสร็จ
+              <span className="hidden sm:inline">ใบเสร็จ</span>
             </Link>
           </div>
         }
-        subHeader={
-          /* Ready Participants Strip */
-          <div className="flex items-center gap-2 overflow-x-auto py-2 text-xs text-ink-secondary scrollbar-none">
+        maxWidthClassName="max-w-lg"
+      />
+
+      {/* Main Content Area */}
+      <main className="mx-auto max-w-lg px-4 pt-3">
+        {/* Ready Participants Bar (In-flow, clean and spacious) */}
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-theme border border-hairline bg-surface px-3 py-2 text-xs shadow-2xs">
+          <div className="flex items-center gap-1.5 text-ink-secondary overflow-x-auto scrollbar-none">
             <span className="shrink-0 font-medium text-ink-muted">
               เลือกเสร็จแล้ว ({session.readyUsers.length}):
             </span>
@@ -554,7 +563,7 @@ export function OrderSessionClient({
               session.readyUsers.map((u) => (
                 <span
                   key={u.userId}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-0.5 text-xs font-medium text-ink shadow-2xs"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-subtle px-2 py-0.5 text-xs font-medium text-ink"
                 >
                   <Check className="h-3 w-3 text-emerald-600" />
                   {u.displayName}
@@ -562,12 +571,7 @@ export function OrderSessionClient({
               ))
             )}
           </div>
-        }
-        maxWidthClassName="max-w-lg"
-      />
-
-      {/* Main Content Area */}
-      <main className="mx-auto max-w-lg px-4 pt-4">
+        </div>
         {isOpen ? (
           <>
             {/* Segmented Tab Switcher (Catalog vs Group Tray) */}
@@ -671,11 +675,6 @@ export function OrderSessionClient({
                                   งดสั่ง (Banned)
                                 </Badge>
                               )}
-                              {menu.voteBanCount > 0 && menu.status !== 'BANNED' && (
-                                <span className="font-mono text-xs font-semibold text-red-600 tabular-nums">
-                                  (โหวตแบน {menu.voteBanCount}/3)
-                                </span>
-                              )}
                             </div>
                             {subtitle && (
                               <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
@@ -683,22 +682,6 @@ export function OrderSessionClient({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
-                            {/* Member Vote-Ban Action Button */}
-                            {isOpen && menu.status !== 'BANNED' && (
-                              <button
-                                type="button"
-                                onClick={(e) => handleVoteBan(e, menu.id)}
-                                title="โหวตแบนเมนูไม่อร่อย (ครบ 3 โหวตแบนอัตโนมัติ)"
-                                className="inline-flex min-h-[32px] items-center gap-1 rounded-theme border border-hairline bg-canvas px-2.5 py-1 text-[11px] font-medium text-red-600 transition hover:bg-red-50"
-                              >
-                                <Ban className="h-3 w-3" />
-                                <span className="hidden sm:inline">โหวตแบน</span>
-                                {menu.voteBanCount > 0 && (
-                                  <span className="font-mono tabular-nums">+{menu.voteBanCount}</span>
-                                )}
-                              </button>
-                            )}
-
                             <span
                               role="button"
                               tabIndex={isAvailable ? 0 : -1}
@@ -1211,10 +1194,10 @@ export function OrderSessionClient({
       )}
 
       {/* ====================================================================
-          Sticky Bottom Dock (while OPEN) - Placed above BottomNavbar
+          Sticky Bottom Dock (while OPEN) - Docked directly to screen bottom
           ==================================================================== */}
       {isOpen && (
-        <div className="fixed bottom-16 left-0 right-0 z-20 border-t border-hairline bg-surface px-4 py-3 shadow-theme">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/98 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-theme">
           <div className="mx-auto flex max-w-lg flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div>

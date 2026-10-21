@@ -234,7 +234,7 @@ export function StoreMenuManager({
           {getLocalizedText(catalog.store.name, 'th')}
         </h1>
         <p className="mt-1 text-xs text-ink-secondary">
-          จัดการรายการอาหาร ราคาธรรมดา/พิเศษ ท็อปปิ้งประจำร้าน และโหวตแบนเมนูไม่อร่อย (ครบ 3 โหวตแบนอัตโนมัติ)
+          จัดการรายการอาหาร ราคาธรรมดา/พิเศษ ท็อปปิ้งประจำร้าน และสถานะการขายของแต่ละเมนู
         </p>
       </div>
 
@@ -360,11 +360,6 @@ export function StoreMenuManager({
                 <p className="text-base font-medium text-ink">
                   {getLocalizedText(menu.name, 'th')}
                 </p>
-                {menu.voteBanCount > 0 && (
-                  <span className="font-mono text-xs font-semibold text-red-600 tabular-nums">
-                    (โหวตแบน {menu.voteBanCount}/3)
-                  </span>
-                )}
               </div>
               <p className="mt-0.5 font-mono text-xs text-ink-secondary tabular-nums">
                 {menu.variants
@@ -374,15 +369,6 @@ export function StoreMenuManager({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleVoteBan(menu.id)}
-                className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-hairline bg-canvas px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-              >
-                <Ban className="h-3.5 w-3.5" />
-                โหวตแบน (+1)
-              </button>
-
               <div className="inline-flex rounded-lg bg-subtle p-1 text-xs">
                 {(['ACTIVE', 'OUT_OF_STOCK', 'BANNED'] as const).map((status) => {
                   const active = menu.status === status;
