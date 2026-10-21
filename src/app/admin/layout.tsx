@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Store, History } from 'lucide-react';
+import { Store } from 'lucide-react';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { constructMetadata } from '@/config/site';
 
@@ -14,25 +14,25 @@ export const metadata: Metadata = constructMetadata({
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas pb-24">
-      <AppNavbar />
-      <div className="border-b border-hairline bg-surface/50 px-4 py-2 text-xs">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-2 text-ink-secondary">
-            <span className="font-mono font-semibold text-chili">ADMIN CONSOLE</span>
-            <span>•</span>
-            <Link href="/admin/stores" className="hover:text-ink font-medium">
-              รายชื่อร้านค้า
-            </Link>
-          </div>
+      <AppNavbar
+        backHref="/"
+        backLabel="หน้าแรก"
+        title="ระบบจัดการร้านค้า"
+        badge={
+          <span className="rounded bg-chili/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-chili">
+            ADMIN
+          </span>
+        }
+        actions={
           <Link
-            href="/"
-            className="inline-flex items-center gap-1 font-medium text-ink-secondary hover:text-ink"
+            href="/admin/stores"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-subtle"
           >
-            <ArrowLeft className="h-3 w-3" />
-            กลับหน้าแรก
+            <Store className="h-3.5 w-3.5 text-chili" />
+            <span>รายชื่อร้านค้า</span>
           </Link>
-        </div>
-      </div>
+        }
+      />
       <main className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">{children}</main>
     </div>
   );

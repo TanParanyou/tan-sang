@@ -467,7 +467,6 @@ export function OrderSessionClient({
   return (
     <div className="min-h-screen bg-canvas pb-48">
       <DevPersonaBar hostUserId={session.hostUserId} />
-      <AppNavbar />
 
       {/* Toast Feedback */}
       {toastMessage && (
@@ -480,74 +479,72 @@ export function OrderSessionClient({
         </div>
       )}
 
-      {/* Top Store & Session Status Header */}
-      <header className="sticky top-0 z-20 border-b border-hairline bg-surface/95 backdrop-blur">
-        <div className="mx-auto max-w-lg px-4 py-3.5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                {isOpen ? (
-                  <Badge variant="default" className="text-[11px] py-0.5">
-                    ● เปิดรับออเดอร์
-                  </Badge>
-                ) : (
-                  <Badge variant="warning" className="text-[11px] py-0.5">
-                    <Lock className="h-3 w-3" />
-                    ปิดรับออเดอร์
-                  </Badge>
-                )}
-                <span className="font-mono text-xs text-ink-muted tabular-nums">
-                  {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
-                </span>
-              </div>
-              <h1 className="mt-1.5 text-lg font-bold tracking-tight text-ink sm:text-xl">
-                {catalog ? getLocalizedText(catalog.store.name, locale) : summary.storeDisplayName}
-              </h1>
+      {/* Unified App Header */}
+      <AppNavbar
+        backHref="/history"
+        backLabel="ประวัติ"
+        title={catalog ? getLocalizedText(catalog.store.name, locale) : summary.storeDisplayName}
+        badge={
+          isOpen ? (
+            <Badge variant="default" className="text-[10px] py-0 px-1.5 shrink-0">
+              ● เปิดรับ
+            </Badge>
+          ) : (
+            <Badge variant="warning" className="text-[10px] py-0 px-1.5 shrink-0">
+              <Lock className="h-2.5 w-2.5 mr-0.5 inline" />
+              ปิดรับ
+            </Badge>
+          )
+        }
+        subtitle={
+          <span className="font-mono text-xs text-ink-muted tabular-nums">
+            {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Compact TH / EN Switcher */}
+            <div
+              role="group"
+              aria-label="เปลี่ยนภาษา / Switch Language"
+              className="inline-flex rounded-theme border border-hairline bg-canvas p-0.5 text-xs font-semibold"
+            >
+              <button
+                type="button"
+                onClick={() => setLocale('th')}
+                className={`rounded-theme px-2 py-1 transition ${
+                  locale === 'th'
+                    ? 'bg-ink text-surface'
+                    : 'text-ink-secondary hover:text-ink'
+                }`}
+              >
+                TH
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`rounded-theme px-2 py-1 transition ${
+                  locale === 'en'
+                    ? 'bg-ink text-surface'
+                    : 'text-ink-secondary hover:text-ink'
+                }`}
+              >
+                EN
+              </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Compact TH / EN Switcher */}
-              <div
-                role="group"
-                aria-label="เปลี่ยนภาษา / Switch Language"
-                className="inline-flex rounded-theme border border-hairline bg-canvas p-0.5 text-xs font-semibold"
-              >
-                <button
-                  type="button"
-                  onClick={() => setLocale('th')}
-                  className={`rounded-theme px-2 py-1 transition ${
-                    locale === 'th'
-                      ? 'bg-ink text-surface'
-                      : 'text-ink-secondary hover:text-ink'
-                  }`}
-                >
-                  TH
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocale('en')}
-                  className={`rounded-theme px-2 py-1 transition ${
-                    locale === 'en'
-                      ? 'bg-ink text-surface'
-                      : 'text-ink-secondary hover:text-ink'
-                  }`}
-                >
-                  EN
-                </button>
-              </div>
-
-              <Link
-                href={`/receipt/${session.id}`}
-                className="inline-flex min-h-[36px] h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 text-xs font-medium text-ink transition hover:bg-subtle"
-              >
-                <Printer className="h-3.5 w-3.5 text-ink-secondary" />
-                ใบเสร็จ
-              </Link>
-            </div>
+            <Link
+              href={`/receipt/${session.id}`}
+              className="inline-flex min-h-[36px] h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 sm:px-3 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
+            >
+              <Printer className="h-3.5 w-3.5 text-ink-secondary" />
+              <span className="hidden sm:inline">ดู</span>ใบเสร็จ
+            </Link>
           </div>
-
-          {/* Ready Participants Strip */}
-          <div className="mt-2.5 flex items-center gap-2 overflow-x-auto pt-0.5 text-xs text-ink-secondary">
+        }
+        subHeader={
+          /* Ready Participants Strip */
+          <div className="flex items-center gap-2 overflow-x-auto py-2 text-xs text-ink-secondary scrollbar-none">
             <span className="shrink-0 font-medium text-ink-muted">
               เลือกเสร็จแล้ว ({session.readyUsers.length}):
             </span>
@@ -557,16 +554,17 @@ export function OrderSessionClient({
               session.readyUsers.map((u) => (
                 <span
                   key={u.userId}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-subtle px-2 py-0.5 text-xs font-medium text-ink"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-0.5 text-xs font-medium text-ink shadow-2xs"
                 >
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3 w-3 text-emerald-600" />
                   {u.displayName}
                 </span>
               ))
             )}
           </div>
-        </div>
-      </header>
+        }
+        maxWidthClassName="max-w-lg"
+      />
 
       {/* Main Content Area */}
       <main className="mx-auto max-w-lg px-4 pt-4">

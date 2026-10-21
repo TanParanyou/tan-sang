@@ -9,6 +9,7 @@ import {
   ExternalLink,
   History,
   Lock,
+  Plus,
   Printer,
   Sparkles,
   Utensils,
@@ -80,33 +81,30 @@ export function OrderHistoryClient({
   return (
     <div className="min-h-screen bg-canvas pb-24">
       <DevPersonaBar />
-      <AppNavbar />
-
-      <main className="mx-auto max-w-2xl px-4 py-8">
-        {/* Header Breadcrumb & Title */}
-        <div className="border-b border-hairline pb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-              <History className="h-4 w-4 text-chili" />
-              <span>Tan-Sang Ledger</span>
-            </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              ประวัติบิลสั่งอาหาร
-            </h1>
-            <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
-              รายการบิลกลุ่มทั้งหมด สรุปยอดรวม ยอดรายคน และทางลัดเข้าสู่ห้องสั่งและใบเสร็จ
-            </p>
-          </div>
+      <AppNavbar
+        backHref="/"
+        backLabel="หน้าแรก"
+        title="ประวัติบิลสั่งอาหาร"
+        subtitle="Tan-Sang Ledger"
+        maxWidthClassName="max-w-2xl"
+        actions={
           <Link
             href="/"
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-subtle"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-subtle"
           >
-            + เปิดบิลใหม่
+            <Plus className="h-3.5 w-3.5 text-chili" />
+            <span>เปิดบิลใหม่</span>
           </Link>
-        </div>
+        }
+      />
+
+      <main className="mx-auto max-w-2xl px-4 py-6">
+        <p className="text-xs text-ink-secondary sm:text-sm">
+          รายการบิลกลุ่มทั้งหมด สรุปยอดรวม ยอดรายคน และทางลัดเข้าสู่ห้องสั่งและใบเสร็จ
+        </p>
 
         {/* Filter Segmented Control */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <div
             role="tablist"
             aria-label="ตัวกรองประวัติบิล"

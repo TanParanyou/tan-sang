@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Ban, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Ban, Plus, Trash2, X } from 'lucide-react';
 import type {
   MenuOption,
   MenuStatus,
@@ -219,7 +220,16 @@ export function StoreMenuManager({
   return (
     <div className="space-y-8">
       <div>
-        <span className="font-mono text-xs font-bold text-chili">{catalog.store.id}</span>
+        <Link
+          href="/admin/stores"
+          className="inline-flex min-h-[32px] items-center gap-1.5 text-xs font-semibold text-ink-secondary hover:text-ink transition-colors mb-2"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>กลับหน้ารายชื่อร้านค้า</span>
+        </Link>
+        <div>
+          <span className="font-mono text-xs font-bold text-chili">{catalog.store.id}</span>
+        </div>
         <h1 className="text-2xl font-bold text-ink">
           {getLocalizedText(catalog.store.name, 'th')}
         </h1>

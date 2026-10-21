@@ -25,7 +25,7 @@ export function LoadingScreen({
       role="status"
       aria-live="polite"
     >
-      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-subtle border border-hairline shadow-xs">
+      <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline shadow-xs">
         <Utensils className="h-6 w-6 text-chili" />
         <Loader2 className="absolute -inset-1.5 h-[68px] w-[68px] animate-spin text-chili/30" />
       </div>

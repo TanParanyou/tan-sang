@@ -70,7 +70,47 @@ export function ReceiptClient({
     <div className="min-h-screen bg-canvas pb-24 print:bg-white print:pb-0">
       <div className="print:hidden">
         <DevPersonaBar hostUserId={session.hostUserId} />
-        <AppNavbar />
+        <AppNavbar
+          backHref={`/order/${session.id}`}
+          backLabel="ห้องสั่งอาหาร"
+          title="ใบเสร็จสั่งอาหาร"
+          subtitle={summary.storeDisplayName}
+          maxWidthClassName="max-w-2xl"
+          actions={
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleCopy}
+                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
+              >
+                <Copy className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleShareLine}
+                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
+              >
+                <Share2 className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Share LINE</span>
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => window.print()}
+                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
+              >
+                <Printer className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">พิมพ์</span>
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       {toast && (
@@ -82,87 +122,47 @@ export function ReceiptClient({
         </div>
       )}
 
-      {/* Non-Print Control Toolbar */}
-      <div className="border-b border-hairline bg-surface px-4 py-3 print:hidden">
-        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/order/${session.id}`}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              กลับห้องสั่งอาหาร
-            </Link>
-            <Link
-              href="/history"
-              className="inline-flex min-h-[36px] items-center gap-1 text-xs text-ink-secondary hover:text-ink"
-            >
-              <History className="h-3.5 w-3.5" />
-              ประวัติบิล
-            </Link>
-          </div>
+      {/* Non-Print Format & Mode Toolbar */}
+      <div className="border-b border-hairline bg-surface px-4 py-2.5 print:hidden">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2">
+          <Link
+            href="/history"
+            className="inline-flex min-h-[32px] items-center gap-1 text-xs text-ink-secondary hover:text-ink transition-colors"
+          >
+            <History className="h-3.5 w-3.5" />
+            <span>ประวัติบิล</span>
+          </Link>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={handleCopy}
-            >
-              <Copy className="h-4 w-4" />
-              คัดลอกส่งร้าน
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={handleShareLine}
-            >
-              <Share2 className="h-4 w-4" />
-              Share to LINE
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => window.print()}
-            >
-              <Printer className="h-4 w-4" />
-              สั่งพิมพ์ใบเสร็จ
-            </Button>
-          </div>
-        </div>
+            <div className="inline-flex gap-1">
+              <Chip
+                selected={printFormat === 'THERMAL_80MM'}
+                onClick={() => setPrintFormat('THERMAL_80MM')}
+              >
+                สลิป 80mm
+              </Chip>
+              <Chip
+                selected={printFormat === 'A4'}
+                onClick={() => setPrintFormat('A4')}
+              >
+                กระดาษ A4
+              </Chip>
+            </div>
 
-        {/* Paper Format & View Mode Selectors */}
-        <div className="mx-auto mt-3 flex max-w-2xl flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3">
-          <div className="inline-flex gap-1">
-            <Chip
-              selected={printFormat === 'THERMAL_80MM'}
-              onClick={() => setPrintFormat('THERMAL_80MM')}
-            >
-              สลิป 80mm
-            </Chip>
-            <Chip
-              selected={printFormat === 'A4'}
-              onClick={() => setPrintFormat('A4')}
-            >
-              กระดาษ A4
-            </Chip>
-          </div>
-
-          <div className="inline-flex gap-1">
-            <Chip
-              selected={viewMode === 'GROUPED'}
-              onClick={() => setViewMode('GROUPED')}
-            >
-              รวมเมนู + แยกคน
-            </Chip>
-            <Chip
-              selected={viewMode === 'INDIVIDUAL'}
-              onClick={() => setViewMode('INDIVIDUAL')}
-            >
-              เฉพาะแยกรายชื่อ
-            </Chip>
+            <div className="inline-flex gap-1">
+              <Chip
+                selected={viewMode === 'GROUPED'}
+                onClick={() => setViewMode('GROUPED')}
+              >
+                รวมเมนู + แยกคน
+              </Chip>
+              <Chip
+                selected={viewMode === 'INDIVIDUAL'}
+                onClick={() => setViewMode('INDIVIDUAL')}
+              >
+                เฉพาะแยกรายชื่อ
+              </Chip>
+            </div>
           </div>
         </div>
       </div>
