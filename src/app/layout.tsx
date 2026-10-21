@@ -3,6 +3,7 @@ import { Inter, IBM_Plex_Sans_Thai, IBM_Plex_Mono } from 'next/font/google';
 import { siteConfig, constructMetadata } from '@/config/site';
 import './globals.css';
 import { AppProviders } from './providers';
+import { BottomNavbar } from '@/components/shared/bottom-navbar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,7 +47,10 @@ export default function RootLayout({
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${ibmPlexMono.variable}`}
     >
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased selection:bg-neutral-200 selection:text-black">
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          {children}
+          <BottomNavbar />
+        </AppProviders>
       </body>
     </html>
   );

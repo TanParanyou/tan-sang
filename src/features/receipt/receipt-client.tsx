@@ -67,7 +67,7 @@ export function ReceiptClient({
   );
 
   return (
-    <div className="min-h-screen bg-canvas pb-16 print:bg-white print:pb-0">
+    <div className="min-h-screen bg-canvas pb-24 print:bg-white print:pb-0">
       <div className="print:hidden">
         <DevPersonaBar hostUserId={session.hostUserId} />
         <AppNavbar />

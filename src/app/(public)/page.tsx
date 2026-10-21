@@ -21,7 +21,7 @@ export default async function PublicLandingPage() {
   const stores = await storeRepo.findActiveStores();
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="min-h-screen bg-canvas pb-24">
       <DevPersonaBar />
       <AppNavbar />
 

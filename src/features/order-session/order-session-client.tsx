@@ -465,7 +465,7 @@ export function OrderSessionClient({
   ]);
 
   return (
-    <div className="min-h-screen bg-canvas pb-36">
+    <div className="min-h-screen bg-canvas pb-48">
       <DevPersonaBar hostUserId={session.hostUserId} />
       <AppNavbar />
 
@@ -1001,7 +1001,7 @@ export function OrderSessionClient({
           role="dialog"
           aria-modal="true"
           aria-label="เลือกรายละเอียดเมนูอาหาร"
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
         >
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-theme border border-hairline bg-surface p-5 shadow-theme">
             <div className="flex items-start justify-between gap-3 border-b border-hairline pb-3">
@@ -1213,10 +1213,10 @@ export function OrderSessionClient({
       )}
 
       {/* ====================================================================
-          Sticky Bottom Dock (while OPEN)
+          Sticky Bottom Dock (while OPEN) - Placed above BottomNavbar
           ==================================================================== */}
       {isOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface px-4 py-3 shadow-theme">
+        <div className="fixed bottom-16 left-0 right-0 z-20 border-t border-hairline bg-surface px-4 py-3 shadow-theme">
           <div className="mx-auto flex max-w-lg flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div>

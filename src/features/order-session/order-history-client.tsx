@@ -78,7 +78,7 @@ export function OrderHistoryClient({
   );
 
   return (
-    <div className="min-h-screen bg-canvas pb-20">
+    <div className="min-h-screen bg-canvas pb-24">
       <DevPersonaBar />
       <AppNavbar />
 
