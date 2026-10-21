@@ -9,6 +9,7 @@ import type {
   StoreCatalogAggregate,
 } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
+import { Button } from '@/components/ui';
 
 export function StoreMenuManager({
   initialCatalog,
@@ -19,11 +20,11 @@ export function StoreMenuManager({
   const [catalog, setCatalog] = useState<StoreCatalogAggregate>(initialCatalog);
   const [menuTh, setMenuTh] = useState('');
   const [menuEn, setMenuEn] = useState('');
-  const [regPrice, setRegPrice] = useState('55');
-  const [specialPrice, setSpecialPrice] = useState('65');
+  const [regPrice, setRegPrice] = useState('');
+  const [specialPrice, setSpecialPrice] = useState('');
 
   const [optionTh, setOptionTh] = useState('');
-  const [optionPrice, setOptionPrice] = useState('10');
+  const [optionPrice, setOptionPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStatusChange = async (menuId: string, status: MenuStatus) => {
@@ -123,6 +124,9 @@ export function StoreMenuManager({
     setIsSubmitting(true);
 
     try {
+      const parsedReg = regPrice.trim() === '' ? 0 : Number(regPrice);
+      const parsedSpecial = specialPrice.trim() === '' ? 0 : Number(specialPrice);
+
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,12 +142,12 @@ export function StoreMenuManager({
             variants: [
               {
                 name: { th: 'ธรรมดา', en: 'Regular' },
-                price: Number(regPrice) || 50,
+                price: Number.isFinite(parsedReg) && parsedReg >= 0 ? parsedReg : 0,
                 isDefault: true,
               },
               {
                 name: { th: 'พิเศษ', en: 'Large' },
-                price: Number(specialPrice) || 60,
+                price: Number.isFinite(parsedSpecial) && parsedSpecial >= 0 ? parsedSpecial : 0,
                 isDefault: false,
               },
             ],
@@ -162,6 +166,8 @@ export function StoreMenuManager({
         }));
         setMenuTh('');
         setMenuEn('');
+        setRegPrice('');
+        setSpecialPrice('');
         router.refresh();
       }
     } finally {
@@ -175,6 +181,8 @@ export function StoreMenuManager({
     setIsSubmitting(true);
 
     try {
+      const parsedOption = optionPrice.trim() === '' ? 0 : Number(optionPrice);
+
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,7 +192,7 @@ export function StoreMenuManager({
             storeId: catalog.store.id,
             menuId: null,
             name: { th: optionTh.trim() },
-            price: Number(optionPrice) || 0,
+            price: Number.isFinite(parsedOption) && parsedOption >= 0 ? parsedOption : 0,
             isAvailable: true,
           },
         }),
@@ -200,6 +208,7 @@ export function StoreMenuManager({
           storeWideOptions: [...prev.storeWideOptions, created],
         }));
         setOptionTh('');
+        setOptionPrice('');
         router.refresh();
       }
     } finally {
@@ -246,7 +255,7 @@ export function StoreMenuManager({
             min={0}
             value={regPrice}
             onChange={(e) => setRegPrice(e.target.value)}
-            placeholder="ราคาธรรมดา (บาท)"
+            placeholder="ราคาธรรมดา (ค่าเริ่มต้น 0)"
             className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <div className="flex gap-2">
@@ -255,17 +264,19 @@ export function StoreMenuManager({
               min={0}
               value={specialPrice}
               onChange={(e) => setSpecialPrice(e.target.value)}
-              placeholder="ราคาพิเศษ"
+              placeholder="ราคาพิเศษ (ค่าเริ่มต้น 0)"
               className="min-h-[42px] w-full rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
             />
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex min-h-[42px] shrink-0 items-center gap-1 rounded-lg bg-chili px-4 text-xs font-semibold text-white hover:bg-chili-hover"
+              loading={isSubmitting}
+              size="sm"
+              className="shrink-0 bg-chili text-white hover:bg-chili-hover"
             >
               <Plus className="h-4 w-4" />
               เพิ่มเมนู
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -311,17 +322,19 @@ export function StoreMenuManager({
             min={0}
             value={optionPrice}
             onChange={(e) => setOptionPrice(e.target.value)}
-            placeholder="ราคาบวกเพิ่ม"
-            className="min-h-[40px] w-28 rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+            placeholder="ราคา (ค่าเริ่มต้น 0)"
+            className="min-h-[40px] w-36 rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex min-h-[40px] items-center gap-1 rounded-lg border border-hairline bg-canvas px-4 text-xs font-semibold text-ink hover:bg-subtle"
+            loading={isSubmitting}
+            size="sm"
+            variant="secondary"
           >
             <Plus className="h-3.5 w-3.5" />
             เพิ่มท็อปปิ้ง
-          </button>
+          </Button>
         </div>
       </form>
 

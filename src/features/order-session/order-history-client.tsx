@@ -14,6 +14,7 @@ import {
   Utensils,
 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
+import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
 import type { SessionHistoryItem } from '@/features/order-session/order-session.schema';
 import { calculateOrderItemTotals } from '@/server/services/order-calculator.service';
@@ -79,20 +80,29 @@ export function OrderHistoryClient({
   return (
     <div className="min-h-screen bg-canvas pb-20">
       <DevPersonaBar />
+      <AppNavbar />
 
       <main className="mx-auto max-w-2xl px-4 py-8">
         {/* Header Breadcrumb & Title */}
-        <div className="border-b border-hairline pb-5">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-            <History className="h-4 w-4 text-chili" />
-            <span>Tan-Sang Ledger</span>
+        <div className="border-b border-hairline pb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+              <History className="h-4 w-4 text-chili" />
+              <span>Tan-Sang Ledger</span>
+            </div>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+              ประวัติบิลสั่งอาหาร
+            </h1>
+            <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
+              รายการบิลกลุ่มทั้งหมด สรุปยอดรวม ยอดรายคน และทางลัดเข้าสู่ห้องสั่งและใบเสร็จ
+            </p>
           </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-            ประวัติบิลสั่งอาหาร
-          </h1>
-          <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
-            รายการบิลกลุ่มทั้งหมด สรุปยอดรวม ยอดรายคน และทางลัดเข้าสู่ห้องสั่งและใบเสร็จ
-          </p>
+          <Link
+            href="/"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-subtle"
+          >
+            + เปิดบิลใหม่
+          </Link>
         </div>
 
         {/* Filter Segmented Control */}

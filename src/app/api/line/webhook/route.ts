@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const body: unknown = rawBody ? JSON.parse(rawBody) : { events: [] };
     const parsed = LineWebhookBodySchema.parse(body);
     const service = getOrderSessionService();
-    const { sessionRepo } = getRepositories();
+    const { sessionRepo, storeRepo } = getRepositories();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
@@ -124,10 +124,15 @@ export async function POST(request: NextRequest) {
             receiptUrl: getReceiptUrl(existingSession.id),
           });
 
+          const storeLabel =
+            summary.storeDisplayName === 'สั่งอาหารกลุ่ม'
+              ? 'บิล: สั่งอาหารกลุ่ม'
+              : `ร้าน: ${summary.storeDisplayName}`;
+
           await replyToLineIfConfigured(event.replyToken, [
             {
               type: 'text',
-              text: `กลุ่มนี้มีบิลเปิดรับออเดอร์อยู่แล้วครับ! (ร้าน: ${summary.storeDisplayName})\nกดแตะสั่งอาหารต่อได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`,
+              text: `กลุ่มนี้มีบิลเปิดรับออเดอร์อยู่แล้วครับ! (${storeLabel})\nกดแตะสั่งอาหารต่อได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`,
             },
             flexMessage,
           ]);
@@ -135,16 +140,95 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
+        // If user typed "เปิดบิล" or "69" without specifying a store name:
+        // Do NOT guess or fallback randomly! Ask them to choose or specify the store.
+        if (!customStoreArg) {
+          const activeStores = await storeRepo.findActiveStores().catch(() => []);
+          const quickReplyItems: Array<{
+            type: 'action';
+            action: { type: 'message'; label: string; text: string };
+          }> = [];
+
+          for (const s of activeStores.slice(0, 4)) {
+            const storeThName = s.name.th || s.id;
+            quickReplyItems.push({
+              type: 'action',
+              action: {
+                type: 'message',
+                label: `🍳 ${storeThName}`.slice(0, 20),
+                text: `เปิดบิล ${storeThName}`,
+              },
+            });
+          }
+
+          if (quickReplyItems.length < 5) {
+            quickReplyItems.push({
+              type: 'action',
+              action: {
+                type: 'message',
+                label: '🍗 ข้าวมันไก่',
+                text: 'เปิดบิล ข้าวมันไก่',
+              },
+            });
+          }
+          if (quickReplyItems.length < 5) {
+            quickReplyItems.push({
+              type: 'action',
+              action: {
+                type: 'message',
+                label: '🍜 ก๋วยเตี๋ยว',
+                text: 'เปิดบิล ก๋วยเตี๋ยว',
+              },
+            });
+          }
+
+          const storeListText =
+            activeStores.length > 0
+              ? activeStores.map((s) => `• "เปิดบิล ${s.name.th}" (มีเมนูในระบบ)`).join('\n')
+              : '• "เปิดบิล ครัวตาล" (มีเมนูในระบบ)';
+
+          await replyToLineIfConfigured(event.replyToken, [
+            {
+              type: 'text',
+              text: `🍽️ ต้องการเปิดบิลสั่งอาหารร้านไหนดีครับ?\n\nพิมพ์ "เปิดบิล [ชื่อร้าน]" เช่น:\n${storeListText}\n• "เปิดบิล ข้าวมันไก่"\n• "เปิดบิล ส้มตำ"\n\n(หรือแตะปุ่มเลือกร้านด้านล่างได้เลยครับ 👇)`,
+              quickReply: {
+                items: quickReplyItems,
+              },
+            },
+          ]);
+          results.push({ command: 'PROMPT_STORE_SELECTION' });
+          continue;
+        }
+
+        // If user specified a store name (e.g. "เปิดบิล ข้าวมันไก่" or "เปิดบิล ครัวตาล")
+        // Check if it matches an existing registered store catalog
+        const activeStores = await storeRepo.findActiveStores().catch(() => []);
+        const matchedStore = activeStores.find((s) => {
+          const th = s.name.th?.trim().toLowerCase();
+          const en = s.name.en?.trim().toLowerCase();
+          const arg = customStoreArg.toLowerCase();
+          return (
+            (th && (th.includes(arg) || arg.includes(th))) ||
+            (en && (en.includes(arg) || arg.includes(en))) ||
+            s.id.toLowerCase() === arg
+          );
+        });
+
+        const storeId = matchedStore ? matchedStore.id : null;
+        const storeDisplayName = matchedStore
+          ? (matchedStore.name.th || matchedStore.id)
+          : customStoreArg;
+
         const session = await service.createSession({
           lineGroupId,
           hostUserId: actorUserId,
-          storeId: customStoreArg ? null : 'STORE01',
-          customStoreName: customStoreArg || null,
+          storeId,
+          customStoreName: matchedStore ? null : storeDisplayName,
         });
 
         const flexMessage = buildSessionCreatedFlexMessage({
           sessionId: session.id,
-          storeDisplayName: customStoreArg || 'ครัวตาล (ตามสั่งโชคชัย 4)',
+          storeDisplayName,
           totalQuantity: 0,
           grandTotalAmount: 0,
           orderUrl: getOrderUrl(session.id),

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
+import { Button } from '@/components/ui';
 
 export function StoreListManager({ initialStores }: { initialStores: Store[] }) {
   const router = useRouter();
@@ -98,14 +99,16 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
             className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-lg bg-chili px-4 text-xs font-semibold text-white hover:bg-chili-hover"
+            loading={isSubmitting}
+            size="md"
+            className="bg-chili text-white hover:bg-chili-hover"
           >
             <Plus className="h-4 w-4" />
             บันทึกร้านค้า
-          </button>
+          </Button>
         </div>
       </form>
 

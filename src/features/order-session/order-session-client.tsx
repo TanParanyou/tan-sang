@@ -7,6 +7,7 @@ import {
   Ban,
   Check,
   CheckCircle2,
+  Clock,
   Copy,
   Lock,
   Pencil,
@@ -19,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
+import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
   OrderItem,
@@ -78,11 +80,13 @@ export function OrderSessionClient({
   const [quantity, setQuantity] = useState<number>(1);
   const [note, setNote] = useState<string>('');
   const [customMenuName, setCustomMenuName] = useState<string>('');
-  const [customUnitPrice, setCustomUnitPrice] = useState<string>('60');
+  const [customUnitPrice, setCustomUnitPrice] = useState<string>('0');
+  const [showCustomRecipient, setShowCustomRecipient] = useState<boolean>(false);
 
   useEffect(() => {
     if (!editingItem) {
       setRecipientName(profile.displayName);
+      setShowCustomRecipient(false);
     }
   }, [profile.displayName, editingItem]);
 
@@ -177,6 +181,7 @@ export function OrderSessionClient({
     setSelectedVariantId(defaultVariant?.id ?? '');
     setSelectedOptionIds([]);
     setRecipientName(profile.displayName);
+    setShowCustomRecipient(false);
     setQuantity(1);
     setNote('');
   };
@@ -187,9 +192,10 @@ export function OrderSessionClient({
     setSelectedMenu(null);
     setIsCustomDrawerOpen(true);
     setCustomMenuName('');
-    setCustomUnitPrice('60');
+    setCustomUnitPrice('0');
     setSelectedOptionIds([]);
     setRecipientName(profile.displayName);
+    setShowCustomRecipient(false);
     setQuantity(1);
     setNote('');
   };
@@ -198,6 +204,7 @@ export function OrderSessionClient({
     if (!isOpen) return;
     setEditingItem(item);
     setRecipientName(item.recipientName);
+    setShowCustomRecipient(item.recipientName !== profile.displayName);
     setQuantity(item.quantity);
     setNote(item.note ?? '');
 
@@ -229,6 +236,7 @@ export function OrderSessionClient({
     setSelectedMenu(null);
     setIsCustomDrawerOpen(false);
     setEditingItem(null);
+    setShowCustomRecipient(false);
   };
 
   const upsertItemMutation = useMutation({
@@ -312,6 +320,7 @@ export function OrderSessionClient({
     onSuccess: ({ updated, isEdit }) => {
       queryClient.setQueryData(['order-session', sessionId], updated);
       closeDrawer();
+      setActiveTab('TRAY');
       showToast(isEdit ? 'บันทึกการแก้ไขรายการแล้ว' : 'เพิ่มรายการลงในบิลกลุ่มแล้ว');
     },
     onError: (err: Error) => {
@@ -458,6 +467,7 @@ export function OrderSessionClient({
   return (
     <div className="min-h-screen bg-canvas pb-36">
       <DevPersonaBar hostUserId={session.hostUserId} />
+      <AppNavbar />
 
       {/* Toast Feedback */}
       {toastMessage && (
@@ -718,9 +728,14 @@ export function OrderSessionClient({
                   </Card>
                 ) : (
                   <Card className="p-8 text-center">
-                    <UtensilsCrossed className="mx-auto h-6 w-6 text-ink-muted" />
-                    <p className="mt-2 text-sm font-medium text-ink">
-                      ไม่พบเมนูที่ค้นหา หรือร้านนี้เป็นโหมดพิมพ์ชื่อเมนูอิสระ
+                    <UtensilsCrossed className="mx-auto h-8 w-8 text-ink-muted" />
+                    <h3 className="mt-2 text-base font-semibold text-ink">
+                      {searchQuery ? 'ไม่พบเมนูที่ค้นหา' : 'โหมดพิมพ์สั่งอาหารตามใจชอบ'}
+                    </h3>
+                    <p className="mt-1 text-sm text-ink-secondary">
+                      {searchQuery
+                        ? 'สามารถแตะปุ่มด้านล่างเพื่อพิมพ์เมนูนี้เองได้เลยครับ'
+                        : 'แตะปุ่มด้านล่างเพื่อพิมพ์ชื่อเมนู ขนาด ท็อปปิ้ง และราคาได้ทันที'}
                     </p>
                     <Button
                       type="button"
@@ -730,7 +745,7 @@ export function OrderSessionClient({
                       className="mt-4"
                     >
                       <Plus className="h-4 w-4" />
-                      พิมพ์ชื่อเมนูอาหารเอง
+                      พิมพ์สั่งอาหารเลย
                     </Button>
                   </Card>
                 )}
@@ -762,10 +777,28 @@ export function OrderSessionClient({
                           className="flex items-start justify-between gap-3 px-4 py-3"
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <Badge variant="muted" className="text-[11px] py-0.5">
                                 {item.recipientName}
                               </Badge>
+                              {(() => {
+                                const isItemUserReady = session.readyUsers.some(
+                                  (u) =>
+                                    u.userId === item.orderedByUserId ||
+                                    u.displayName === item.recipientName,
+                                );
+                                return isItemUserReady ? (
+                                  <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
+                                    <Check className="h-2.5 w-2.5 text-emerald-600" />
+                                    พร้อมแล้ว
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700">
+                                    <Clock className="h-2.5 w-2.5 text-amber-500" />
+                                    กำลังเลือก
+                                  </span>
+                                );
+                              })()}
                               <span className="font-mono text-xs font-semibold text-ink tabular-nums">
                                 x {item.quantity}
                               </span>
@@ -1012,9 +1045,10 @@ export function OrderSessionClient({
                       label="ราคา (บาท)"
                       type="number"
                       min={0}
-                      required
                       value={customUnitPrice}
                       onChange={(e) => setCustomUnitPrice(e.target.value)}
+                      placeholder="0"
+                      helperText="เว้นว่าง = 0฿"
                     />
                   </div>
                 </div>
@@ -1090,25 +1124,60 @@ export function OrderSessionClient({
                 </div>
               )}
 
-              {/* Recipient Name & Quantity */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <Input
-                    label="สั่งให้ใคร"
-                    helperText="เปลี่ยนชื่อได้ถ้าฝากสั่ง"
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">จำนวน</label>
+              {/* Recipient Name Toggle & Quantity */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-ink">จำนวนจาน</label>
                   <QuantityStepper
                     value={quantity}
                     onChange={setQuantity}
-                    className="w-full justify-between"
+                    className="w-36 justify-between"
                   />
                 </div>
+
+                {!showCustomRecipient ? (
+                  <div className="flex items-center justify-between rounded-lg border border-hairline bg-subtle/50 px-3.5 py-2.5 text-xs">
+                    <span className="text-ink-secondary">
+                      สั่งในชื่อ:{' '}
+                      <strong className="text-ink font-semibold">
+                        {recipientName.trim() || profile.displayName}
+                      </strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomRecipient(true)}
+                      className="font-semibold text-chili hover:underline"
+                    >
+                      + สั่งให้คนอื่น (ฝากสั่ง)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 rounded-lg border border-hairline bg-subtle/40 p-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-ink">
+                        สั่งให้ใคร (ระบุชื่อผู้รับ)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecipientName(profile.displayName);
+                          setShowCustomRecipient(false);
+                        }}
+                        className="text-[11px] font-medium text-ink-muted hover:text-ink hover:underline"
+                      >
+                        ✕ ใช้ชื่อฉันเอง ({profile.displayName})
+                      </button>
+                    </div>
+                    <Input
+                      autoFocus
+                      placeholder="ระบุชื่อเพื่อนที่ฝากสั่ง..."
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      required
+                      helperText="ชื่อนี้จะถูกนำไปสรุปแยกยอดในใบเสร็จรายคน"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Special Note */}
@@ -1129,6 +1198,7 @@ export function OrderSessionClient({
                   upsertItemMutation.isPending ||
                   (isCustomDrawerOpen && customMenuName.trim().length === 0)
                 }
+                loading={upsertItemMutation.isPending}
                 onClick={() => upsertItemMutation.mutate()}
                 className="w-full justify-between"
               >
@@ -1150,10 +1220,22 @@ export function OrderSessionClient({
           <div className="mx-auto flex max-w-lg flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs text-ink-secondary">
-                  ของ <strong className="text-ink">{profile.displayName}</strong> ({myItems.length}{' '}
-                  รายการ)
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-ink-secondary">
+                    ของ <strong className="text-ink">{profile.displayName}</strong> ({myItems.length}{' '}
+                    รายการ)
+                  </p>
+                  {isCurrentUserReady ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
+                      <Check className="h-2.5 w-2.5 text-emerald-600" />
+                      พร้อมแล้ว
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700">
+                      กำลังเลือก
+                    </span>
+                  )}
+                </div>
                 <p className="font-mono text-base font-bold text-ink tabular-nums">
                   {myTotalAmount.toLocaleString('th-TH')} ฿
                 </p>
@@ -1162,13 +1244,14 @@ export function OrderSessionClient({
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
-                  variant={isCurrentUserReady ? 'primary' : 'secondary'}
+                  variant={isCurrentUserReady ? 'secondary' : 'primary'}
                   size="md"
                   disabled={toggleReadyMutation.isPending}
+                  loading={toggleReadyMutation.isPending}
                   onClick={() => toggleReadyMutation.mutate(!isCurrentUserReady)}
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  {isCurrentUserReady ? 'เลือกเสร็จแล้ว' : 'กดเมื่อเลือกเสร็จ'}
+                  {isCurrentUserReady ? 'ยกเลิกพร้อม' : 'กดเมื่อพร้อม'}
                 </Button>
 
                 {isHost && (
@@ -1177,6 +1260,7 @@ export function OrderSessionClient({
                     variant="primary"
                     size="md"
                     disabled={closeSessionMutation.isPending}
+                    loading={closeSessionMutation.isPending}
                     onClick={() => closeSessionMutation.mutate()}
                   >
                     <Lock className="h-3.5 w-3.5" />

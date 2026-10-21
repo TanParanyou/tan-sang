@@ -2,9 +2,14 @@ import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
 
 export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayload) {
+  const title =
+    payload.storeDisplayName === 'สั่งอาหารกลุ่ม'
+      ? 'เปิดบิลสั่งอาหารกลุ่ม — กดเลือกเมนูได้เลย'
+      : `เปิดบิลสั่งอาหารร้าน ${payload.storeDisplayName} — กดเลือกเมนูได้เลย`;
+
   return {
     type: 'flex' as const,
-    altText: `เปิดบิลสั่งอาหารร้าน ${payload.storeDisplayName} — กดเลือกเมนูได้เลย`,
+    altText: title,
     contents: {
       type: 'bubble',
       header: {

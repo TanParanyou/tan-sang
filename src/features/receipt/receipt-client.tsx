@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Printer, Share2 } from 'lucide-react';
+import { ArrowLeft, Copy, Home, History, Printer, Share2 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
+import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
   OrderSession,
@@ -67,7 +68,10 @@ export function ReceiptClient({
 
   return (
     <div className="min-h-screen bg-canvas pb-16 print:bg-white print:pb-0">
-      <DevPersonaBar hostUserId={session.hostUserId} />
+      <div className="print:hidden">
+        <DevPersonaBar hostUserId={session.hostUserId} />
+        <AppNavbar />
+      </div>
 
       {toast && (
         <div
@@ -81,13 +85,22 @@ export function ReceiptClient({
       {/* Non-Print Control Toolbar */}
       <div className="border-b border-hairline bg-surface px-4 py-3 print:hidden">
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
-          <Link
-            href={`/order/${session.id}`}
-            className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-ink-secondary hover:text-ink"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            กลับหน้าสั่งอาหาร
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/order/${session.id}`}
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-hairline bg-canvas px-3 text-xs font-semibold text-ink hover:bg-subtle"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              กลับห้องสั่งอาหาร
+            </Link>
+            <Link
+              href="/history"
+              className="inline-flex min-h-[36px] items-center gap-1 text-xs text-ink-secondary hover:text-ink"
+            >
+              <History className="h-3.5 w-3.5" />
+              ประวัติบิล
+            </Link>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button

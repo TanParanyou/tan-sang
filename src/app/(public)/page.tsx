@@ -1,16 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Printer, Store as StoreIcon, Utensils } from 'lucide-react';
+import { ArrowRight, History, PlusCircle, ShieldCheck, Store as StoreIcon, Utensils } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
+import { AppNavbar } from '@/components/shared/app-navbar';
 import { QuickStartSessionForm } from '@/features/order-session/quick-start-session-form';
-import { DEMO_SESSION_ID, getRepositories } from '@/server/container';
+import { getRepositories } from '@/server/container';
 import { Button, Card, Badge } from '@/components/ui';
 import { constructMetadata } from '@/config/site';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = constructMetadata({
-  title: 'Tan-Sang (ทันสั่ง) — เปิดบิลสั่งอาหารกลุ่มใน LINE',
+  title: 'ตาลสั่ง (Tan-Sang) — เปิดบิลสั่งอาหารกลุ่มใน LINE',
   description:
     'เปิดบิลสั่งอาหารกลุ่มในแชท LINE สมาชิกเลือกเมนู ท็อปปิ้ง แยกบิลรายคน คัดลอกส่งร้านค้าได้ทันที',
 });
@@ -22,75 +23,92 @@ export default async function PublicLandingPage() {
   return (
     <div className="min-h-screen bg-canvas">
       <DevPersonaBar />
-      <main className="mx-auto max-w-2xl px-5 py-8">
-        <div className="border-b border-hairline pb-6">
-          <Badge variant="default" className="mb-3">
-            <Utensils className="h-3 w-3" />
+      <AppNavbar />
+
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:py-10 space-y-8">
+        {/* Hero Section */}
+        <div className="rounded-2xl border border-hairline bg-surface p-6 sm:p-8 shadow-xs">
+          <Badge variant="default" className="mb-3.5 bg-chili/10 text-chili border-chili/20">
+            <Utensils className="h-3.5 w-3.5" />
             ตาลสั่ง (Tan-Sang) • LINE Group Food Ordering
           </Badge>
-          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl leading-snug">
             เปิดบิลสั่งอาหารกลุ่มในแชท LINE จบครบในลิงก์เดียว
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-            สมาชิกกดเลือกเมนู ขนาด ท็อปปิ้ง และกด Ready เมื่อครบแล้ว Host
+          <p className="mt-2.5 text-sm leading-relaxed text-ink-secondary sm:text-base">
+            สมาชิกกดเลือกเมนู ขนาด ท็อปปิ้ง และกดสถานะพร้อม เมื่อครบแล้ว Host
             กดล็อกห้องเพื่อคัดลอกข้อความส่งร้านค้า แยกยอดรายคน หรือสั่งพิมพ์ใบเสร็จ 80mm / A4 ได้ทันที
           </p>
-          <p className="mt-3 font-mono text-xs text-ink-muted">
-            Data Mode:{' '}
-            {isLiveSupabase
-              ? '🟢 Connected to Supabase PostgreSQL'
-              : '⚪ Local Pre-seeded Demo Store (พร้อมทดสอบทันที)'}
-          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-hairline font-mono text-xs text-ink-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              {isLiveSupabase
+                ? 'Connected to Supabase PostgreSQL'
+                : 'Local Pre-seeded Demo Store'}
+            </span>
+            <span>•</span>
+            <span>ร้านค้าพร้อมให้บริการ {stores.length} ร้าน</span>
+          </div>
         </div>
 
         {/* Host Quick Start New Session */}
-        <section className="mt-6" aria-label="เปิดบิลห้องสั่งอาหารใหม่">
+        <section aria-label="เปิดบิลห้องสั่งอาหารใหม่">
           <QuickStartSessionForm stores={stores} />
         </section>
 
-        {/* Action Links */}
-        <section className="mt-8 space-y-3" aria-label="เมนูหลัก">
-          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-            เมนูและการจัดการ
-          </h2>
+        {/* Action Links & Hub Navigation */}
+        <section className="space-y-4" aria-label="เมนูและการจัดการ">
+          <div className="flex items-center justify-between">
+            <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink-secondary">
+              เมนูและการจัดการ (Quick Navigation)
+            </h2>
+            <span className="text-xs text-ink-muted">เลือกดูบิลหรือจัดการร้าน</span>
+          </div>
 
-          <Card className="divide-y divide-hairline overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               href="/history"
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-subtle"
+              className="group flex flex-col justify-between rounded-xl border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
             >
               <div>
-                <p className="text-base font-semibold text-ink">
-                  1. ประวัติบิลและการสั่งอาหาร (Order History)
-                </p>
-                <p className="mt-0.5 text-xs text-ink-secondary">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-subtle text-chili mb-3 group-hover:bg-chili group-hover:text-white transition-colors">
+                  <History className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-ink group-hover:text-chili transition-colors">
+                  ประวัติบิลและการสั่งอาหาร
+                </h3>
+                <p className="mt-1 text-xs text-ink-secondary leading-relaxed">
                   ดูรายการบิลที่เปิดอยู่และบิลที่ปิดแล้ว สรุปยอดรวม และดูใบเสร็จ
                 </p>
               </div>
-              <Button size="sm" variant="secondary" className="shrink-0 pointer-events-none">
-                ดูประวัติบิล
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-ink">
+                <span>ดูประวัติบิลทั้งหมด</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+              </div>
             </Link>
 
             <Link
               href="/admin/stores"
-              className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-subtle"
+              className="group flex flex-col justify-between rounded-xl border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
             >
               <div>
-                <p className="text-base font-semibold text-ink">
-                  2. ระบบจัดการร้านค้าและเมนูอาหาร (Admin Console)
-                </p>
-                <p className="mt-0.5 text-xs text-ink-secondary">
-                  เพิ่มร้านค้า จัดการเมนู ราคาธรรมดา/พิเศษ ท็อปปิ้ง และโหวตแบนเมนู
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-subtle text-ink mb-3 group-hover:bg-ink group-hover:text-surface transition-colors">
+                  <StoreIcon className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-ink group-hover:text-chili transition-colors">
+                  ระบบจัดการร้านค้าและเมนูอาหาร
+                </h3>
+                <p className="mt-1 text-xs text-ink-secondary leading-relaxed">
+                  เพิ่มร้านค้า จัดการเมนู กำหนดราคาธรรมดา/พิเศษ ท็อปปิ้ง และโหวตแบนเมนู
                 </p>
               </div>
-              <Button size="sm" variant="secondary" className="shrink-0 pointer-events-none">
-                <StoreIcon className="h-3.5 w-3.5" />
-                จัดการร้าน
-              </Button>
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-ink">
+                <span>เข้าสู่ระบบจัดการร้าน</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+              </div>
             </Link>
-          </Card>
+          </div>
         </section>
       </main>
     </div>
