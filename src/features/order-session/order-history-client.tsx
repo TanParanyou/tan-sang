@@ -99,7 +99,7 @@ export function OrderHistoryClient({
           </div>
           <Link
             href="/"
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-subtle"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-xs transition hover:bg-subtle"
           >
             + เปิดบิลใหม่
           </Link>
@@ -110,17 +110,17 @@ export function OrderHistoryClient({
           <div
             role="tablist"
             aria-label="ตัวกรองประวัติบิล"
-            className="inline-flex rounded-lg bg-subtle p-1"
+            className="inline-flex rounded-theme border border-hairline bg-subtle p-1"
           >
             <button
               type="button"
               role="tab"
               aria-selected={filterMode === 'ALL'}
               onClick={() => setFilterMode('ALL')}
-              className={`min-h-[38px] rounded-md px-4 text-xs font-semibold transition ${
+              className={`min-h-[36px] rounded-theme px-4 text-xs font-semibold transition border ${
                 filterMode === 'ALL'
-                  ? 'bg-surface text-ink shadow-sm'
-                  : 'text-ink-secondary hover:text-ink'
+                  ? 'bg-surface text-ink border-hairline shadow-xs'
+                  : 'border-transparent text-ink-secondary hover:text-ink'
               }`}
             >
               บิลทั้งหมด ({history.length})
@@ -130,10 +130,10 @@ export function OrderHistoryClient({
               role="tab"
               aria-selected={filterMode === 'MINE'}
               onClick={() => setFilterMode('MINE')}
-              className={`min-h-[38px] rounded-md px-4 text-xs font-semibold transition ${
+              className={`min-h-[36px] rounded-theme px-4 text-xs font-semibold transition border ${
                 filterMode === 'MINE'
-                  ? 'bg-surface text-ink shadow-sm'
-                  : 'text-ink-secondary hover:text-ink'
+                  ? 'bg-surface text-ink border-hairline shadow-xs'
+                  : 'border-transparent text-ink-secondary hover:text-ink'
               }`}
             >
               บิลที่ฉันมีส่วนร่วม
@@ -186,7 +186,7 @@ export function OrderHistoryClient({
                   </h2>
                 </div>
 
-                <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+                <div className="divide-y divide-hairline overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
                   {openSessions.map(({ session, summary }) => {
                     const isHost = session.hostUserId === profile.userId;
                     const myItems = session.items.filter(
@@ -204,7 +204,7 @@ export function OrderHistoryClient({
                       >
                         <div className="min-w-0 flex-1 space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-line-subtle px-2.5 py-0.5 text-xs font-semibold text-line">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-line-subtle px-2.5 py-0.5 text-xs font-semibold text-line">
                               <span className="h-1.5 w-1.5 rounded-full bg-line" />
                               เปิดรับออเดอร์
                             </span>
@@ -212,7 +212,7 @@ export function OrderHistoryClient({
                               {formatSessionDate(session.createdAt)}
                             </span>
                             {isHost && (
-                              <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                              <span className="rounded-theme border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
                                 คุณเป็น Host
                               </span>
                             )}
@@ -246,14 +246,14 @@ export function OrderHistoryClient({
                         <div className="flex shrink-0 items-center gap-2">
                           <Link
                             href={`/order/${session.id}`}
-                            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-chili px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-chili-hover"
+                            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-theme border border-chili bg-chili px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-chili-hover"
                           >
                             เข้าห้องสั่ง
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                           <Link
                             href={`/receipt/${session.id}`}
-                            className="inline-flex min-h-[40px] items-center gap-1 rounded-lg border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-subtle"
+                            className="inline-flex min-h-[40px] items-center gap-1 rounded-theme border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
                           >
                             <Printer className="h-3.5 w-3.5 text-ink-secondary" />
                             ใบเสร็จ
@@ -279,7 +279,7 @@ export function OrderHistoryClient({
                   </h2>
                 </div>
 
-                <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+                <div className="divide-y divide-hairline overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
                   {closedSessions.map(({ session, summary }) => {
                     const isHost = session.hostUserId === profile.userId;
                     const myItems = session.items.filter(
@@ -339,7 +339,7 @@ export function OrderHistoryClient({
                         <div className="flex shrink-0 items-center gap-2">
                           <Link
                             href={`/order/${session.id}`}
-                            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-hairline bg-canvas px-3.5 py-2 text-xs font-semibold text-ink hover:bg-subtle"
+                            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3.5 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
                           >
                             ดูรายการ
                             <ExternalLink className="h-3.5 w-3.5 text-ink-muted" />

@@ -27,7 +27,7 @@ export default async function PublicLandingPage() {
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:py-10 space-y-8">
         {/* Hero Section */}
-        <div className="rounded-2xl border border-hairline bg-surface p-6 sm:p-8 shadow-xs">
+        <div className="rounded-theme border border-hairline bg-surface p-6 sm:p-8 shadow-xs">
           <Badge variant="default" className="mb-3.5 bg-chili/10 text-chili border-chili/20">
             <Utensils className="h-3.5 w-3.5" />
             ตาลสั่ง (Tan-Sang) • LINE Group Food Ordering
@@ -69,10 +69,10 @@ export default async function PublicLandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               href="/history"
-              className="group flex flex-col justify-between rounded-xl border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
+              className="group flex flex-col justify-between rounded-theme border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
             >
               <div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-subtle text-chili mb-3 group-hover:bg-chili group-hover:text-white transition-colors">
+                <div className="flex h-9 w-9 items-center justify-center rounded-theme bg-subtle text-chili mb-3 group-hover:bg-chili group-hover:text-white transition-colors border border-hairline">
                   <History className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-bold text-ink group-hover:text-chili transition-colors">
@@ -90,10 +90,10 @@ export default async function PublicLandingPage() {
 
             <Link
               href="/admin/stores"
-              className="group flex flex-col justify-between rounded-xl border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
+              className="group flex flex-col justify-between rounded-theme border border-hairline bg-surface p-5 transition-all hover:border-ink hover:shadow-sm"
             >
               <div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-subtle text-ink mb-3 group-hover:bg-ink group-hover:text-surface transition-colors">
+                <div className="flex h-9 w-9 items-center justify-center rounded-theme bg-subtle text-ink mb-3 group-hover:bg-ink group-hover:text-surface transition-colors border border-hairline">
                   <StoreIcon className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-bold text-ink group-hover:text-chili transition-colors">

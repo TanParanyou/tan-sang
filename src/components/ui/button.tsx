@@ -14,10 +14,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-medium transition-colors select-none focus:outline-none focus:ring-2 focus:ring-ink focus:ring-offset-1 rounded-theme';
 
     const variantStyles = {
-      primary: 'bg-ink text-surface hover:bg-neutral-800 active:bg-black border-none',
-      secondary: 'bg-transparent text-ink border border-ink hover:bg-subtle active:bg-neutral-200',
-      ghost: 'bg-transparent text-ink border-none hover:bg-subtle active:bg-neutral-200',
-      destructive: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 border-none',
+      primary: 'bg-ink text-surface border border-ink hover:bg-neutral-800 active:bg-black shadow-xs',
+      secondary: 'bg-surface text-ink border border-hairline hover:bg-subtle active:bg-neutral-200 shadow-xs',
+      ghost: 'bg-transparent text-ink border border-transparent hover:border-hairline hover:bg-subtle active:bg-neutral-200',
+      destructive: 'bg-red-600 text-white border border-red-700 hover:bg-red-700 active:bg-red-800 shadow-xs',
     };
 
     // Heights aligned with mobile ergonomics: md and lg are standard touch targets (40px/44px)

@@ -88,7 +88,7 @@ export function ReceiptClient({
           <div className="flex items-center gap-3">
             <Link
               href={`/order/${session.id}`}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-hairline bg-canvas px-3 text-xs font-semibold text-ink hover:bg-subtle"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               กลับห้องสั่งอาหาร

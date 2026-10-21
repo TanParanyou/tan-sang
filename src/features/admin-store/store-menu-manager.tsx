@@ -231,7 +231,7 @@ export function StoreMenuManager({
       {/* Add New Menu Form */}
       <form
         onSubmit={handleCreateMenu}
-        className="rounded-xl border border-hairline bg-surface p-5"
+        className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
         <h2 className="text-sm font-semibold text-ink">1. เพิ่มเมนูอาหารใหม่</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -241,14 +241,14 @@ export function StoreMenuManager({
             value={menuTh}
             onChange={(e) => setMenuTh(e.target.value)}
             placeholder="ชื่อเมนู (ภาษาไทย) *"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={menuEn}
             onChange={(e) => setMenuEn(e.target.value)}
             placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="number"
@@ -256,7 +256,7 @@ export function StoreMenuManager({
             value={regPrice}
             onChange={(e) => setRegPrice(e.target.value)}
             placeholder="ราคาธรรมดา (ค่าเริ่มต้น 0)"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <div className="flex gap-2">
             <input
@@ -265,14 +265,14 @@ export function StoreMenuManager({
               value={specialPrice}
               onChange={(e) => setSpecialPrice(e.target.value)}
               placeholder="ราคาพิเศษ (ค่าเริ่มต้น 0)"
-              className="min-h-[42px] w-full rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+              className="min-h-[42px] w-full rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
             />
             <Button
               type="submit"
               disabled={isSubmitting}
               loading={isSubmitting}
               size="sm"
-              className="shrink-0 bg-chili text-white hover:bg-chili-hover"
+              className="shrink-0 bg-chili text-white hover:bg-chili-hover border-chili"
             >
               <Plus className="h-4 w-4" />
               เพิ่มเมนู
@@ -284,7 +284,7 @@ export function StoreMenuManager({
       {/* Store-Wide Add-ons Section */}
       <form
         onSubmit={handleCreateOption}
-        className="rounded-xl border border-hairline bg-surface p-5"
+        className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
         <h2 className="text-sm font-semibold text-ink">
           2. ท็อปปิ้งประจำร้าน ({catalog.storeWideOptions.length} รายการ)
@@ -293,7 +293,7 @@ export function StoreMenuManager({
           {catalog.storeWideOptions.map((opt) => (
             <span
               key={opt.id}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-canvas px-3 py-1 text-xs font-medium text-ink"
+              className="inline-flex items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 py-1 text-xs font-medium text-ink"
             >
               <span>{getLocalizedText(opt.name, 'th')}</span>
               <strong className="font-mono text-chili tabular-nums">+{opt.price}฿</strong>
@@ -301,7 +301,7 @@ export function StoreMenuManager({
                 type="button"
                 onClick={() => handleDeleteOption(opt.id)}
                 aria-label={`ลบท็อปปิ้ง ${getLocalizedText(opt.name, 'th')}`}
-                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-ink-muted hover:bg-subtle hover:text-red-600"
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-red-600"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -315,7 +315,7 @@ export function StoreMenuManager({
             value={optionTh}
             onChange={(e) => setOptionTh(e.target.value)}
             placeholder="ชื่อท็อปปิ้ง เช่น ไข่เค็ม, หมูยอทอด *"
-            className="min-h-[40px] flex-1 rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="min-h-[40px] flex-1 rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="number"
@@ -323,7 +323,7 @@ export function StoreMenuManager({
             value={optionPrice}
             onChange={(e) => setOptionPrice(e.target.value)}
             placeholder="ราคา (ค่าเริ่มต้น 0)"
-            className="min-h-[40px] w-36 rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+            className="min-h-[40px] w-36 rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <Button
             type="submit"
@@ -339,7 +339,7 @@ export function StoreMenuManager({
       </form>
 
       {/* Menu List */}
-      <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+      <div className="divide-y divide-hairline overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
         {catalog.menus.map((menu) => (
           <div
             key={menu.id}

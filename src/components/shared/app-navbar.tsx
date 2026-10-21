@@ -29,7 +29,7 @@ export function AppNavbar() {
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-85 focus:outline-none"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-chili text-white shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-theme bg-chili text-white shadow-xs border border-chili">
             <Utensils className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
@@ -56,10 +56,10 @@ export function AppNavbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors',
+                  'inline-flex min-h-[36px] items-center gap-1.5 rounded-theme px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors border',
                   isActive
-                    ? 'bg-subtle text-ink font-semibold shadow-xs'
-                    : 'text-ink-secondary hover:bg-subtle/60 hover:text-ink',
+                    ? 'bg-subtle text-ink font-semibold border-hairline shadow-xs'
+                    : 'border-transparent text-ink-secondary hover:border-hairline hover:bg-subtle/60 hover:text-ink',
                 )}
               >
                 <Icon className={cn('h-4 w-4', isActive ? 'text-chili' : 'text-ink-muted')} />

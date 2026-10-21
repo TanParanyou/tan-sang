@@ -101,7 +101,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
             {/* Subtle store info tag */}
             {!isCustom && selectedStore && (
               <div className="flex items-center gap-1.5 text-[11px] text-ink-secondary pt-0.5">
-                <span className="font-mono rounded bg-subtle px-1.5 py-0.5 font-semibold text-ink">
+                <span className="font-mono rounded-theme border border-hairline bg-subtle px-1.5 py-0.5 font-semibold text-ink">
                   {selectedStore.id}
                 </span>
                 <span>• ระบบโหลดเมนูและราคาอัตโนมัติ</span>
@@ -122,7 +122,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
         </div>
 
         {isCustom && (
-          <div className="rounded-lg border border-dashed border-hairline bg-subtle/50 p-3.5">
+          <div className="rounded-theme border border-dashed border-hairline bg-subtle/50 p-3.5">
             <Input
               label="ชื่อร้านอาหารที่ต้องการสั่ง"
               required

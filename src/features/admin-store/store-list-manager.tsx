@@ -69,7 +69,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       {/* Create Store Form */}
       <form
         onSubmit={handleCreateStore}
-        className="rounded-xl border border-hairline bg-surface p-5"
+        className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
         <h2 className="text-sm font-semibold text-ink">เพิ่มร้านอาหารใหม่</h2>
         {errorMsg && (
@@ -82,7 +82,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             value={storeId}
             onChange={(e) => setStoreId(e.target.value.toUpperCase())}
             placeholder="รหัสร้าน (เช่น STORE02) *"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 font-mono text-sm uppercase text-ink focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm uppercase text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
@@ -90,21 +90,21 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             value={nameTh}
             onChange={(e) => setNameTh(e.target.value)}
             placeholder="ชื่อร้านภาษาไทย *"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
             placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
-            className="min-h-[42px] rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <Button
             type="submit"
             disabled={isSubmitting}
             loading={isSubmitting}
             size="md"
-            className="bg-chili text-white hover:bg-chili-hover"
+            className="bg-chili text-white hover:bg-chili-hover border-chili"
           >
             <Plus className="h-4 w-4" />
             บันทึกร้านค้า
@@ -113,7 +113,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       </form>
 
       {/* Store List */}
-      <div className="divide-y divide-hairline overflow-hidden rounded-xl border border-hairline bg-surface">
+      <div className="divide-y divide-hairline overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
         {stores.map((store) => (
           <div
             key={store.id}
