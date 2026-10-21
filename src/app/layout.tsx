@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      data-theme="studio-blank"
+      data-theme="street-food"
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${ibmPlexMono.variable}`}
     >
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased selection:bg-neutral-200 selection:text-black">
