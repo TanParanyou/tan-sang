@@ -26,7 +26,7 @@ export default async function PublicLandingPage() {
         <div className="border-b border-hairline pb-6">
           <Badge variant="default" className="mb-3">
             <Utensils className="h-3 w-3" />
-            TAN-SANG (ทันสั่ง) • LINE Group Food Ordering
+            ตาลสั่ง (Tan-Sang) • LINE Group Food Ordering
           </Badge>
           <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             เปิดบิลสั่งอาหารกลุ่มในแชท LINE จบครบในลิงก์เดียว

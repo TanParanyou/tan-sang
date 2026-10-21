@@ -3,7 +3,7 @@ import { siteConfig, constructMetadata } from '@/config/site';
 
 describe('siteConfig & constructMetadata', () => {
   it('has valid site configuration defaults', () => {
-    expect(siteConfig.name).toBe('Tan-Sang (ทันสั่ง)');
+    expect(siteConfig.name).toBe('ตาลสั่ง (Tan-Sang)');
     expect(siteConfig.title).toBeDefined();
     expect(siteConfig.description).toBeDefined();
     expect(siteConfig.url).toBeDefined();

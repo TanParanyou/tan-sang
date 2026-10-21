@@ -11,14 +11,15 @@ const getAppUrl = (): string => {
 };
 
 export const siteConfig = {
-  name: 'Tan-Sang (ทันสั่ง)',
-  shortName: 'ทันสั่ง',
-  title: 'Tan-Sang (ทันสั่ง) — ระบบเปิดบิลสั่งอาหารกลุ่มผ่าน LINE',
+  name: 'ตาลสั่ง (Tan-Sang)',
+  shortName: 'ตาลสั่ง',
+  title: 'ตาลสั่ง (Tan-Sang) — ระบบเปิดบิลสั่งอาหารกลุ่มผ่าน LINE',
   description:
     'สั่งอาหารกลุ่มในแชท LINE เลือกเมนู ท็อปปิ้ง แยกบิลรายคน และคัดลอกข้อความส่งร้านในคลิกเดียว',
   url: getAppUrl(),
   ogImage: '/og.png',
   keywords: [
+    'ตาลสั่ง',
     'ทันสั่ง',
     'Tan-Sang',
     'สั่งอาหารกลุ่ม',

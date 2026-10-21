@@ -15,7 +15,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
         contents: [
           {
             type: 'text',
-            text: 'TAN-SANG • เปิดบิลสั่งอาหารกลุ่ม',
+            text: 'ตาลสั่ง • เปิดบิลสั่งอาหารกลุ่ม',
             size: 'xs',
             weight: 'bold',
             color: '#D9480F',
