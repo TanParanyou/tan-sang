@@ -105,6 +105,30 @@ export async function POST(request: NextRequest) {
       if (openMatch) {
         const customStoreArg = openMatch[2]?.trim() || '';
 
+        // Check if there is already an active (OPEN) session in this group
+        const existingSession = await sessionRepo.findOpenSessionByGroupId(lineGroupId);
+        if (existingSession) {
+          const summary = await service.getSessionSummary(existingSession.id);
+          const flexMessage = buildSessionCreatedFlexMessage({
+            sessionId: existingSession.id,
+            storeDisplayName: summary.storeDisplayName,
+            totalQuantity: summary.totalItemsCount,
+            grandTotalAmount: summary.grandTotalAmount,
+            orderUrl: `${appUrl}/order/${existingSession.id}`,
+            receiptUrl: `${appUrl}/receipt/${existingSession.id}`,
+          });
+
+          await replyToLineIfConfigured(event.replyToken, [
+            {
+              type: 'text',
+              text: `กลุ่มนี้มีบิลเปิดรับออเดอร์อยู่แล้วครับ! (ร้าน: ${summary.storeDisplayName})\nกดแตะสั่งอาหารต่อได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`,
+            },
+            flexMessage,
+          ]);
+          results.push({ command: 'RESEND_OPEN_SESSION', sessionId: existingSession.id });
+          continue;
+        }
+
         const session = await service.createSession({
           lineGroupId,
           hostUserId: actorUserId,
@@ -126,10 +150,17 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Command 2: Close & Summarize Active Session ("ปิดบิล", "สรุปบิล", "ปิดตี้")
+      // Command 2: Close & Summarize Active Session ("ปิดบิล", "สรุปบิล", "ปิดตี้", "จบ")
       if (text === 'ปิดบิล' || text === 'สรุปบิล' || text === 'ปิดตี้' || text === 'จบ') {
         const openSession = await sessionRepo.findOpenSessionByGroupId(lineGroupId);
         if (!openSession) {
+          await replyToLineIfConfigured(event.replyToken, [
+            {
+              type: 'text',
+              text: 'ยังไม่มีบิลที่เปิดอยู่เลยครับ 😅\nพิมพ์ "69" หรือ "ตาลสั่ง" เพื่อเปิดบิลใหม่ได้เลย!',
+            },
+          ]);
+          results.push({ command: 'NO_OPEN_SESSION_TO_CLOSE' });
           continue;
         }
 
@@ -153,6 +184,19 @@ export async function POST(request: NextRequest) {
 
         await replyToLineIfConfigured(event.replyToken, [flexMessage]);
         results.push({ command: 'CLOSE_SESSION', sessionId: openSession.id, flexMessage });
+        continue;
+      }
+
+      // Command 3: Help Instructions ("วิธีใช้", "help", "คำสั่ง", "?")
+      if (text === 'วิธีใช้' || text === 'คำสั่ง' || text === 'ช่วยด้วย' || text.toLowerCase() === 'help' || text === '?') {
+        await replyToLineIfConfigured(event.replyToken, [
+          {
+            type: 'text',
+            text: '🍜 วิธีสั่งอาหารกลุ่มด้วย "ตาลสั่ง":\n\n1️⃣ พิมพ์ "69" หรือ "ตาลสั่ง" เพื่อเปิดบิล\n(หรือ "69 ข้าวมันไก่" เพื่อระบุชื่อร้าน)\n2️⃣ สมาชิกแตะปุ่ม "กดสั่งอาหาร" เพื่อเลือกเมนู\n3️⃣ เมื่อสั่งครบแล้ว พิมพ์ "ปิดบิล" เพื่อให้บอทสรุปยอดและคิดเงินแยกรายคนให้อัตโนมัติครับ!',
+          },
+        ]);
+        results.push({ command: 'HELP' });
+        continue;
       }
     }
 

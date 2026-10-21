@@ -38,7 +38,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
         contents: [
           {
             type: 'text',
-            text: 'กดปุ่มด้านล่างเพื่อเลือกเมนู ขนาด ท็อปปิ้ง หรือพิมพ์เมนูพิเศษ เมื่อเลือกครบแล้วอย่าลืมกด "เลือกเสร็จแล้ว (Ready)"',
+            text: 'แตะปุ่มด้านล่างเพื่อเลือกเมนู ขนาด ท็อปปิ้ง (หรือพิมพ์เมนูตามสั่งเอง) เมื่อสั่งครบแล้วให้พิมพ์ "ปิดบิล" ในแชท เพื่อสรุปยอดรวมและแยกยอดรายคนครับ',
             size: 'sm',
             color: '#57534E',
             wrap: true,
