@@ -44,7 +44,7 @@ export function AppNavbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-20 w-full border-b border-hairline bg-surface/95 backdrop-blur-md',
+        'sticky top-0 z-20 w-full border-b border-hairline bg-surface shadow-xs',
         className,
       )}
     >
@@ -131,7 +131,7 @@ export function AppNavbar({
 
       {/* SubHeader Section (e.g. Ready Participants Strip, Sub-tabs) */}
       {subHeader && (
-        <div className="border-t border-hairline bg-surface/75 px-4 sm:px-6">
+        <div className="border-t border-hairline bg-surface px-4 sm:px-6">
           <div className={cn('mx-auto', maxWidthClassName)}>{subHeader}</div>
         </div>
       )}

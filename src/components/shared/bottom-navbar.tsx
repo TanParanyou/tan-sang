@@ -21,10 +21,15 @@ const NAV_ITEMS: NavItem[] = [
 export function BottomNavbar() {
   const pathname = usePathname();
 
+  // Hide the global bottom navbar inside active order and receipt sessions to prevent dual-dock crowding
+  if (pathname.startsWith('/order') || pathname.startsWith('/receipt')) {
+    return null;
+  }
+
   return (
     <nav
       aria-label="เมนูหลักด้านล่าง"
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/95 backdrop-blur-md print:hidden shadow-theme"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface print:hidden shadow-theme"
     >
       <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-3 pb-[env(safe-area-inset-bottom)]">
         {NAV_ITEMS.map((item) => {
