@@ -29,9 +29,9 @@ export function BottomNavbar() {
   return (
     <nav
       aria-label="เมนูหลักด้านล่าง"
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface print:hidden shadow-theme"
+      className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom,0px)] print:hidden shadow-theme"
     >
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-3 pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-3">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive =

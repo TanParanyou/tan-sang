@@ -1523,7 +1523,7 @@ export function OrderSessionClient({
           Sticky Bottom Dock (while OPEN) - Docked directly to screen bottom
           ==================================================================== */}
       {isOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/98 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-theme">
+        <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-theme">
           <div className="mx-auto flex max-w-lg flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div>

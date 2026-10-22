@@ -21,6 +21,11 @@
   --shadow-theme: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
 }
 
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);

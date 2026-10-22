@@ -339,7 +339,7 @@ export function ReceiptClient({
       </main>
 
       {/* Floating Sticky Bottom Action Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-theme backdrop-blur-md print:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-theme print:hidden">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-1.5 sm:gap-2">
           {/* ปุ่มคัดลอกส่งร้าน */}
           <Button
