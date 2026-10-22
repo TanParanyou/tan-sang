@@ -19,7 +19,7 @@ import type {
   StoreMenu,
 } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
-import { Button } from '@/components/ui';
+import { Button, ConfirmDialog } from '@/components/ui';
 
 export function StoreMenuManager({
   initialCatalog,
@@ -78,6 +78,33 @@ export function StoreMenuManager({
     setEditStoreNameEn(catalog.store.name.en ?? '');
   };
 
+  // Reusable in-app confirm & alert modal dialog
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    type?: 'confirm' | 'alert';
+    variant?: 'danger' | 'primary';
+    onConfirm?: () => Promise<void> | void;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+  });
+
+  const closeDialog = () => setDialogState((prev) => ({ ...prev, isOpen: false }));
+  const showAlert = (title: string, description: string) => {
+    setDialogState({
+      isOpen: true,
+      title,
+      description,
+      type: 'alert',
+      variant: 'primary',
+      confirmText: 'ตกลง',
+    });
+  };
+
   const handleUpdateStoreName = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editStoreNameTh.trim()) return;
@@ -112,7 +139,7 @@ export function StoreMenuManager({
         setIsEditingStore(false);
         router.refresh();
       } else {
-        alert(json.error?.message ?? 'ไม่สามารถแก้ไขชื่อร้านได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถแก้ไขชื่อร้านได้');
       }
     } finally {
       setIsSavingStore(false);
@@ -146,20 +173,14 @@ export function StoreMenuManager({
         }));
         router.refresh();
       } else {
-        alert(json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
       }
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 
-  const handleDeleteThisStore = async () => {
-    const storeTitle = getLocalizedText(catalog.store.name, 'th');
-    const confirmed = window.confirm(
-      `คุณต้องการลบร้าน "${storeTitle}" (${catalog.store.id}) ใช่หรือไม่?\n\nคำเตือน: ข้อมูลเมนูอาหารและท็อปปิ้งทั้งหมดของร้านนี้จะถูกลบถาวร`,
-    );
-    if (!confirmed) return;
-
+  const performDeleteThisStore = async () => {
     try {
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
@@ -172,15 +193,31 @@ export function StoreMenuManager({
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        alert(json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
         return;
       }
 
       router.push('/admin/stores');
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  };
+
+  const handleDeleteThisStore = () => {
+    const storeTitle = getLocalizedText(catalog.store.name, 'th');
+    setDialogState({
+      isOpen: true,
+      title: `ลบร้าน "${storeTitle}"`,
+      description: `คุณต้องการลบร้าน "${storeTitle}" (${catalog.store.id}) ใช่หรือไม่?\n\nคำเตือน: ข้อมูลเมนูอาหารและท็อปปิ้งทั้งหมดของร้านนี้จะถูกลบถาวร`,
+      type: 'confirm',
+      variant: 'danger',
+      confirmText: 'ลบร้านค้า',
+      onConfirm: async () => {
+        closeDialog();
+        await performDeleteThisStore();
+      },
+    });
   };
 
   // Menu status change
@@ -197,7 +234,7 @@ export function StoreMenuManager({
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        alert(json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะเมนูได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะเมนูได้');
         return;
       }
 
@@ -207,7 +244,7 @@ export function StoreMenuManager({
       }));
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 
@@ -326,7 +363,7 @@ export function StoreMenuManager({
 
   const removeVariantFromEdit = (idxToRemove: number) => {
     if (editMenuVariants.length <= 1) {
-      alert('เมนูต้องมีราคาอย่างน้อย 1 ขนาด');
+      showAlert('แจ้งเตือน', 'เมนูต้องมีราคาอย่างน้อย 1 ขนาด');
       return;
     }
     setEditMenuVariants((prev) => prev.filter((_, idx) => idx !== idxToRemove));
@@ -397,8 +434,7 @@ export function StoreMenuManager({
   };
 
   // Delete menu
-  const handleDeleteMenu = async (menuId: string, menuTitle: string) => {
-    if (!window.confirm(`คุณต้องการลบเมนู "${menuTitle}" ใช่หรือไม่?`)) return;
+  const performDeleteMenu = async (menuId: string) => {
     try {
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
@@ -410,7 +446,7 @@ export function StoreMenuManager({
       });
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        alert(json.error?.message ?? 'ไม่สามารถลบเมนูได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบเมนูได้');
         return;
       }
 
@@ -423,8 +459,23 @@ export function StoreMenuManager({
       }
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  };
+
+  const handleDeleteMenu = (menuId: string, menuTitle: string) => {
+    setDialogState({
+      isOpen: true,
+      title: `ลบเมนู "${menuTitle}"`,
+      description: `คุณต้องการลบเมนู "${menuTitle}" ใช่หรือไม่?`,
+      type: 'confirm',
+      variant: 'danger',
+      confirmText: 'ลบเมนู',
+      onConfirm: async () => {
+        closeDialog();
+        await performDeleteMenu(menuId);
+      },
+    });
   };
 
   // Add topping
@@ -465,7 +516,7 @@ export function StoreMenuManager({
         setOptionPrice('');
         router.refresh();
       } else {
-        alert(json.error?.message ?? 'ไม่สามารถเพิ่มท็อปปิ้งได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเพิ่มท็อปปิ้งได้');
       }
     } finally {
       setIsSubmittingOption(false);
@@ -536,10 +587,7 @@ export function StoreMenuManager({
   };
 
   // Delete topping
-  const handleDeleteOption = async (optionId: string, optionTitle?: string) => {
-    const title = optionTitle || 'ท็อปปิ้งนี้';
-    if (!window.confirm(`คุณต้องการลบท็อปปิ้ง "${title}" ใช่หรือไม่?`)) return;
-
+  const performDeleteOption = async (optionId: string) => {
     try {
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
@@ -551,7 +599,7 @@ export function StoreMenuManager({
       });
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        alert(json.error?.message ?? 'ไม่สามารถลบท็อปปิ้งได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบท็อปปิ้งได้');
         return;
       }
 
@@ -564,8 +612,24 @@ export function StoreMenuManager({
       }
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  };
+
+  const handleDeleteOption = (optionId: string, optionTitle?: string) => {
+    const title = optionTitle || 'ท็อปปิ้งนี้';
+    setDialogState({
+      isOpen: true,
+      title: `ลบท็อปปิ้ง "${title}"`,
+      description: `คุณต้องการลบท็อปปิ้ง "${title}" ใช่หรือไม่?`,
+      type: 'confirm',
+      variant: 'danger',
+      confirmText: 'ลบท็อปปิ้ง',
+      onConfirm: async () => {
+        closeDialog();
+        await performDeleteOption(optionId);
+      },
+    });
   };
 
   return (
@@ -1138,6 +1202,17 @@ export function StoreMenuManager({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={dialogState.isOpen}
+        onClose={closeDialog}
+        onConfirm={dialogState.onConfirm}
+        title={dialogState.title}
+        description={dialogState.description}
+        type={dialogState.type}
+        variant={dialogState.variant}
+        confirmText={dialogState.confirmText}
+      />
     </div>
   );
 }

@@ -169,7 +169,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     }
 
     const shareUrl = `https://line.me/R/share?text=${encodeURIComponent(
-      `🍽️ ชวนสั่งอาหารร้าน "${payload.storeDisplayName}"\nแตะที่ลิงก์เพื่อเลือกเมนูและท็อปปิ้งได้เลยครับ 👇\n${payload.orderUrl}`,
+      `ชวนสั่งอาหารร้าน "${payload.storeDisplayName}"\nแตะที่ลิงก์เพื่อเลือกเมนูและท็อปปิ้งได้เลยครับ\n${payload.orderUrl}`,
     )}`;
     if (typeof window !== 'undefined') {
       window.open(shareUrl, '_blank');

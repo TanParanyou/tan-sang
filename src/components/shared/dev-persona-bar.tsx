@@ -36,7 +36,7 @@ export function DevPersonaBar({ hostUserId }: { hostUserId?: string }) {
                   }`}
                 >
                   {p.displayName}
-                  {isHost ? ' ★' : ''}
+                  {isHost ? ' (Host)' : ''}
                 </button>
               );
             })}

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Edit2, Plus, Power, Shuffle, Trash2, X } from 'lucide-react';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
-import { Button, Checkbox } from '@/components/ui';
+import { Button, Checkbox, ConfirmDialog } from '@/components/ui';
 
 function generateRandomStoreId(existingStores: Store[]): string {
   const existingIds = new Set(existingStores.map((s) => s.id));
@@ -55,6 +55,33 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
   const [editNameEn, setEditNameEn] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [editErrorMsg, setEditErrorMsg] = useState<string | null>(null);
+
+  // Reusable in-app confirm & alert modal dialog
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    type?: 'confirm' | 'alert';
+    variant?: 'danger' | 'primary';
+    onConfirm?: () => Promise<void> | void;
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+  });
+
+  const closeDialog = () => setDialogState((prev) => ({ ...prev, isOpen: false }));
+  const showAlert = (title: string, description: string) => {
+    setDialogState({
+      isOpen: true,
+      title,
+      description,
+      type: 'alert',
+      variant: 'primary',
+      confirmText: 'ตกลง',
+    });
+  };
 
   const startEdit = (store: Store) => {
     setEditingStoreId(store.id);
@@ -180,24 +207,18 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
 
       const json = (await res.json()) as { ok: boolean; data?: Store; error?: { message: string } };
       if (!json.ok || !json.data) {
-        alert(json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
         return;
       }
       const updated = json.data;
       setStores((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 
-  const handleDeleteStore = async (store: Store) => {
-    const storeTitle = getLocalizedText(store.name, 'th');
-    const confirmed = window.confirm(
-      `คุณต้องการลบร้าน "${storeTitle}" (${store.id}) ใช่หรือไม่?\n\nคำเตือน: เมนูอาหารและตัวเลือกทั้งหมดของร้านนี้จะถูกลบถาวร`,
-    );
-    if (!confirmed) return;
-
+  const performDeleteStore = async (store: Store) => {
     try {
       const res = await fetch('/api/v1/stores', {
         method: 'POST',
@@ -210,7 +231,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        alert(json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
+        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
         return;
       }
 
@@ -220,8 +241,24 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       }
       router.refresh();
     } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  };
+
+  const handleDeleteStore = (store: Store) => {
+    const storeTitle = getLocalizedText(store.name, 'th');
+    setDialogState({
+      isOpen: true,
+      title: `ลบร้าน "${storeTitle}"`,
+      description: `คุณต้องการลบร้าน "${storeTitle}" (${store.id}) ใช่หรือไม่?\n\nคำเตือน: เมนูอาหารและตัวเลือกทั้งหมดของร้านนี้จะถูกลบถาวร`,
+      type: 'confirm',
+      variant: 'danger',
+      confirmText: 'ลบร้านค้า',
+      onConfirm: async () => {
+        closeDialog();
+        await performDeleteStore(store);
+      },
+    });
   };
 
   return (
@@ -452,6 +489,17 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={dialogState.isOpen}
+        onClose={closeDialog}
+        onConfirm={dialogState.onConfirm}
+        title={dialogState.title}
+        description={dialogState.description}
+        type={dialogState.type}
+        variant={dialogState.variant}
+        confirmText={dialogState.confirmText}
+      />
     </div>
   );
 }

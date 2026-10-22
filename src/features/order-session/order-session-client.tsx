@@ -47,6 +47,7 @@ import {
   Badge,
   Chip,
   QuantityStepper,
+  ConfirmDialog,
 } from '@/components/ui';
 
 interface SessionDetailPayload {
@@ -71,6 +72,21 @@ export function OrderSessionClient({
   const [locale, setLocale] = useState<SupportedLocale>('th');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // In-app confirm modal dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText?: string;
+    variant?: 'danger' | 'primary';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     try {
@@ -647,7 +663,6 @@ export function OrderSessionClient({
         {isOpen && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-theme border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs shadow-2xs">
             <div className="flex items-center gap-1.5 text-emerald-950">
-              <span className="text-sm">📣</span>
               <span className="font-semibold">ชวนเพื่อนเข้าตี้สั่งอาหาร:</span>
               <span className="hidden sm:inline text-[11px] text-emerald-700">(ใช้ร่วมกับกลุ่มที่มีขุนทองได้)</span>
             </div>
@@ -1075,7 +1090,19 @@ export function OrderSessionClient({
                                 <button
                                   type="button"
                                   aria-label={`ลบรายการ ${title}`}
-                                  onClick={() => deleteItemMutation.mutate(item.id)}
+                                  onClick={() => {
+                                    setConfirmDialog({
+                                      isOpen: true,
+                                      title: 'ลบรายการอาหาร',
+                                      description: `คุณต้องการลบรายการ "${title}" ใช่หรือไม่?`,
+                                      confirmText: 'ลบรายการ',
+                                      variant: 'danger',
+                                      onConfirm: () => {
+                                        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                                        deleteItemMutation.mutate(item.id);
+                                      },
+                                    });
+                                  }}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline text-ink-secondary transition hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -1446,7 +1473,7 @@ export function OrderSessionClient({
                         }}
                         className="text-[11px] font-medium text-ink-muted hover:text-ink hover:underline"
                       >
-                        ✕ ใช้ชื่อฉันเอง ({profile.displayName})
+                        ใช้ชื่อฉันเอง ({profile.displayName})
                       </button>
                     </div>
                     <Input
@@ -1541,7 +1568,19 @@ export function OrderSessionClient({
                     size="md"
                     disabled={closeSessionMutation.isPending}
                     loading={closeSessionMutation.isPending}
-                    onClick={() => closeSessionMutation.mutate()}
+                    onClick={() => {
+                      setConfirmDialog({
+                        isOpen: true,
+                        title: 'ยืนยันการปิดบิล',
+                        description: `ต้องการปิดรับออเดอร์ร้าน "${summary.storeDisplayName}" ใช่หรือไม่?\n\nเมื่อปิดแล้ว สมาชิกจะไม่สามารถสั่งหรือแก้ไขรายการอาหารเพิ่มได้ และระบบจะสรุปยอดบิลทันที`,
+                        confirmText: 'ปิดบิล',
+                        variant: 'danger',
+                        onConfirm: () => {
+                          setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                          closeSessionMutation.mutate();
+                        },
+                      });
+                    }}
                   >
                     <Lock className="h-3.5 w-3.5" />
                     ปิดบิล
@@ -1552,6 +1591,16 @@ export function OrderSessionClient({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        variant={confirmDialog.variant}
+        confirmText={confirmDialog.confirmText}
+      />
     </div>
   );
 }

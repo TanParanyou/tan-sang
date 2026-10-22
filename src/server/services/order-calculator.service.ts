@@ -173,10 +173,10 @@ export function formatMerchantOrderText(
   groupedItems: GroupedOrderItemSummary[],
 ): string {
   if (groupedItems.length === 0) {
-    return `📋 ออเดอร์ร้าน: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
+    return `ออเดอร์ร้าน: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
   }
 
-  const lines: string[] = [`📋 ออเดอร์ร้าน: ${storeDisplayName}`, '------------------------'];
+  const lines: string[] = [`ออเดอร์ร้าน: ${storeDisplayName}`, '------------------------'];
   let totalQuantity = 0;
   let grandTotalSatang = 0;
 
@@ -205,14 +205,14 @@ export function formatKhunThongSplitText(
   totalItemsCount: number,
 ): string {
   if (recipientBreakdowns.length === 0) {
-    return `💰 สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
+    return `สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
   }
 
   const lines: string[] = [
-    `💰 สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
+    `สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
     `ยอดรวมทั้งหมด: ${grandTotalAmount.toLocaleString('th-TH')} บาท (${totalItemsCount} รายการ)`,
     '------------------------',
-    '💸 ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):',
+    'ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):',
   ];
 
   recipientBreakdowns.forEach((r, index) => {
@@ -223,7 +223,7 @@ export function formatKhunThongSplitText(
   });
 
   lines.push('------------------------');
-  lines.push('💡 สามารถนำยอดรายคนนี้ไปเปิดบิลในบอทขุนทอง หรือแจ้งยอดโอนในกลุ่มได้เลยครับ');
+  lines.push('สามารถนำยอดรายคนนี้ไปเปิดบิลในบอทขุนทอง หรือแจ้งยอดโอนในกลุ่มได้เลยครับ');
 
   return lines.join('\n');
 }

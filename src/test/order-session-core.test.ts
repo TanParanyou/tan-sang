@@ -361,7 +361,7 @@ describe('Tan-Sang Core Business Logic', () => {
       3,
     );
 
-    expect(text).toContain('💰 สรุปยอดสั่งอาหาร: ข้าวมันไก่ตอน');
+    expect(text).toContain('สรุปยอดสั่งอาหาร: ข้าวมันไก่ตอน');
     expect(text).toContain('ยอดรวมทั้งหมด: 180 บาท (3 รายการ)');
     expect(text).toContain('1. ตาล: 130 บาท (ข้าวมันไก่พิเศษ x1, ชามะนาว x1)');
     expect(text).toContain('2. บอย: 50 บาท (ข้าวมันไก่ธรรมดา x1)');
