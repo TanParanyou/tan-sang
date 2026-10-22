@@ -10,6 +10,7 @@ import type {
 import { DomainError } from '@/server/errors/domain.error';
 import type { IOrderSessionRepository } from '@/server/repositories/order-session.repository';
 import {
+  formatKhunThongSplitText,
   formatMerchantOrderText,
   groupOrderItemsByRecipient,
   groupOrderItemsForMerchant,
@@ -311,5 +312,59 @@ describe('Tan-Sang Core Business Logic', () => {
     expect(history[0]?.summary.storeDisplayName).toBe('ข้าวมันไก่ตอน');
     expect(history[0]?.summary.totalItemsCount).toBe(0);
     expect(history[0]?.summary.grandTotalAmount).toBe(0);
+  });
+
+  it('formats split-bill breakdown text specifically for KhunThong', () => {
+    const text = formatKhunThongSplitText(
+      'ข้าวมันไก่ตอน',
+      [
+        {
+          recipientName: 'ตาล',
+          totalQuantity: 2,
+          totalAmount: 130,
+          items: [
+            {
+              itemId: '1',
+              displayTitle: 'ข้าวมันไก่พิเศษ',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 65,
+              lineTotal: 65,
+            },
+            {
+              itemId: '2',
+              displayTitle: 'ชามะนาว',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 65,
+              lineTotal: 65,
+            },
+          ],
+        },
+        {
+          recipientName: 'บอย',
+          totalQuantity: 1,
+          totalAmount: 50,
+          items: [
+            {
+              itemId: '3',
+              displayTitle: 'ข้าวมันไก่ธรรมดา',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 50,
+              lineTotal: 50,
+            },
+          ],
+        },
+      ],
+      180,
+      3,
+    );
+
+    expect(text).toContain('💰 สรุปยอดสั่งอาหาร: ข้าวมันไก่ตอน');
+    expect(text).toContain('ยอดรวมทั้งหมด: 180 บาท (3 รายการ)');
+    expect(text).toContain('1. ตาล: 130 บาท (ข้าวมันไก่พิเศษ x1, ชามะนาว x1)');
+    expect(text).toContain('2. บอย: 50 บาท (ข้าวมันไก่ธรรมดา x1)');
+    expect(text).toContain('ขุนทอง');
   });
 });

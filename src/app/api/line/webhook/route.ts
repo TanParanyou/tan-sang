@@ -103,8 +103,12 @@ export async function POST(request: NextRequest) {
       }
 
       const text = event.message.text?.trim() ?? '';
-      const lineGroupId = event.source.groupId ?? event.source.roomId ?? 'C_DEFAULT_GROUP';
+      const isDirectMessage = event.source.type === 'user';
       const actorUserId = event.source.userId ?? 'U_DEFAULT_HOST';
+      const lineGroupId =
+        event.source.groupId ??
+        event.source.roomId ??
+        (isDirectMessage ? `DM_${actorUserId}` : 'C_DEFAULT_GROUP');
 
       // Command 1: Open Session ("ตาลสั่ง", "69", "ทันสั่ง", or "เปิดบิล [ชื่อร้าน]")
       const openMatch = text.match(/^(ตาลสั่ง|69|ทันสั่ง|เปิดบิล)(?:\s+(.*))?$/i);
@@ -129,10 +133,14 @@ export async function POST(request: NextRequest) {
               ? 'บิล: สั่งอาหารกลุ่ม'
               : `ร้าน: ${summary.storeDisplayName}`;
 
+          const promptText = isDirectMessage
+            ? `คุณมีบิลที่เปิดรับออเดอร์อยู่แล้วครับ! (${storeLabel})\nแตะปุ่ม "แชร์เข้ากลุ่ม LINE" ด้านล่าง เพื่อส่งต่อให้เพื่อนๆ สั่งอาหารได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`
+            : `กลุ่มนี้มีบิลเปิดรับออเดอร์อยู่แล้วครับ! (${storeLabel})\nกดแตะสั่งอาหารต่อได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`;
+
           await replyToLineIfConfigured(event.replyToken, [
             {
               type: 'text',
-              text: `กลุ่มนี้มีบิลเปิดรับออเดอร์อยู่แล้วครับ! (${storeLabel})\nกดแตะสั่งอาหารต่อได้เลย หรือพิมพ์ "ปิดบิล" เพื่อสรุปยอดครับ 👇`,
+              text: promptText,
             },
             flexMessage,
           ]);
@@ -235,7 +243,15 @@ export async function POST(request: NextRequest) {
           receiptUrl: getReceiptUrl(session.id),
         });
 
-        await replyToLineIfConfigured(event.replyToken, [flexMessage]);
+        const messages: unknown[] = [flexMessage];
+        if (isDirectMessage) {
+          messages.unshift({
+            type: 'text',
+            text: `🎉 เปิดบิลร้าน "${storeDisplayName}" สำเร็จแล้วครับ!\n\n💡 หากกลุ่มของคุณมี "บอทขุนทอง" อยู่แล้ว ไม่ต้องดึงบอทเข้ากลุ่มครับ แตะปุ่ม "แชร์เข้ากลุ่ม LINE 📤" ที่การ์ดด้านล่าง เพื่อส่งต่อให้เพื่อนๆ เข้ามากดสั่งอาหารได้ทันที!`,
+          });
+        }
+
+        await replyToLineIfConfigured(event.replyToken, messages);
         results.push({ command: 'OPEN_SESSION', sessionId: session.id, flexMessage });
         continue;
       }
@@ -272,17 +288,40 @@ export async function POST(request: NextRequest) {
           summary.recipientBreakdowns,
         );
 
-        await replyToLineIfConfigured(event.replyToken, [flexMessage]);
+        const closeMessages: unknown[] = [flexMessage];
+        if (isDirectMessage) {
+          closeMessages.unshift({
+            type: 'text',
+            text: `🔒 ปิดบิลเรียบร้อยแล้วครับ!\n\n💡 แตะปุ่ม "แชร์สรุปบิลเข้ากลุ่ม LINE 📤" ด้านล่าง เพื่อส่งยอดให้เพื่อนๆ หรือกดดูใบเสร็จเพื่อคัดลอกยอดแยกรายคนไปให้บอทขุนทองช่วยหารบิลต่อได้เลยครับ ✨`,
+          });
+        }
+
+        await replyToLineIfConfigured(event.replyToken, closeMessages);
         results.push({ command: 'CLOSE_SESSION', sessionId: openSession.id, flexMessage });
         continue;
       }
 
-      // Command 3: Help Instructions ("วิธีใช้", "help", "คำสั่ง", "?")
+      // Command 3: Help & KhunThong Group Bot Guidance
+      if (
+        text.includes('ขุนทอง') ||
+        text.includes('เข้ากลุ่มไม่ได้') ||
+        text.includes('บอทเด้ง')
+      ) {
+        await replyToLineIfConfigured(event.replyToken, [
+          {
+            type: 'text',
+            text: '🤖 วิธีใช้ "ตาลสั่ง" ร่วมกับกลุ่มที่มีบอทขุนทอง:\n\nเนื่องจาก LINE จำกัดให้มี LINE Bot ในกลุ่มได้เพียง 1 ตัว คุณไม่ต้องลบขุนทอง และไม่ต้องดึงบอทตาลสั่งเข้ากลุ่มครับ!\n\n1️⃣ พิมพ์ "69 [ชื่อร้าน]" ในแชทนี้เพื่อเปิดบิล\n2️⃣ แตะปุ่ม "แชร์เข้ากลุ่ม LINE 📤" ที่การ์ด เพื่อส่งให้เพื่อนๆ ในกลุ่มกดสั่งอาหาร\n3️⃣ เพื่อนๆ แตะลิงก์เข้าเลือกเมนูและท็อปปิ้งได้ทุกคน\n4️⃣ เมื่อสั่งครบแล้ว พิมพ์ "ปิดบิล" ในแชทนี้ แล้วส่งยอดแยกรายคนให้บอทขุนทองช่วยหารต่อได้เลยครับ ✨',
+          },
+        ]);
+        results.push({ command: 'KHUNTHONG_HELP' });
+        continue;
+      }
+
       if (text === 'วิธีใช้' || text === 'คำสั่ง' || text === 'ช่วยด้วย' || text.toLowerCase() === 'help' || text === '?') {
         await replyToLineIfConfigured(event.replyToken, [
           {
             type: 'text',
-            text: '🍜 วิธีสั่งอาหารกลุ่มด้วย "ตาลสั่ง":\n\n1️⃣ พิมพ์ "69" หรือ "ตาลสั่ง" เพื่อเปิดบิล\n(หรือ "69 ข้าวมันไก่" เพื่อระบุชื่อร้าน)\n2️⃣ สมาชิกแตะปุ่ม "กดสั่งอาหาร" เพื่อเลือกเมนู\n3️⃣ เมื่อสั่งครบแล้ว พิมพ์ "ปิดบิล" เพื่อให้บอทสรุปยอดและคิดเงินแยกรายคนให้อัตโนมัติครับ!',
+            text: '🍜 วิธีสั่งอาหารกลุ่มด้วย "ตาลสั่ง":\n\n1️⃣ พิมพ์ "69" หรือ "ตาลสั่ง [ชื่อร้าน]" เพื่อเปิดบิล\n2️⃣ สมาชิกแตะปุ่ม "กดสั่งอาหาร" เพื่อเลือกเมนู (หรือแตะ "แชร์เข้ากลุ่ม LINE" เพื่อส่งให้เพื่อน)\n3️⃣ เมื่อสั่งครบแล้ว พิมพ์ "ปิดบิล" เพื่อสรุปยอดและคิดเงินแยกรายคน\n4️⃣ นำยอดแยกรายคนส่งต่อให้บอทขุนทองช่วยทวงเงินได้ทันทีครับ!',
           },
         ]);
         results.push({ command: 'HELP' });

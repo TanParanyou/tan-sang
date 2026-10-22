@@ -196,6 +196,39 @@ export function formatMerchantOrderText(
 }
 
 /**
+ * Generates formatted text specifically for splitting bills with friends or passing to KhunThong.
+ */
+export function formatKhunThongSplitText(
+  storeDisplayName: string,
+  recipientBreakdowns: RecipientOrderBreakdown[],
+  grandTotalAmount: number,
+  totalItemsCount: number,
+): string {
+  if (recipientBreakdowns.length === 0) {
+    return `💰 สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
+  }
+
+  const lines: string[] = [
+    `💰 สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
+    `ยอดรวมทั้งหมด: ${grandTotalAmount.toLocaleString('th-TH')} บาท (${totalItemsCount} รายการ)`,
+    '------------------------',
+    '💸 ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):',
+  ];
+
+  recipientBreakdowns.forEach((r, index) => {
+    const itemDetails = r.items
+      .map((it) => `${it.displayTitle} x${it.quantity}`)
+      .join(', ');
+    lines.push(`${index + 1}. ${r.recipientName}: ${r.totalAmount.toLocaleString('th-TH')} บาท (${itemDetails})`);
+  });
+
+  lines.push('------------------------');
+  lines.push('💡 สามารถนำยอดรายคนนี้ไปเปิดบิลในบอทขุนทอง หรือแจ้งยอดโอนในกลุ่มได้เลยครับ');
+
+  return lines.join('\n');
+}
+
+/**
  * Builds the complete OrderSessionSummary view model for both Grouped & Individual views.
  */
 export function buildOrderSessionSummary(
@@ -218,5 +251,11 @@ export function buildOrderSessionSummary(
     groupedItems,
     recipientBreakdowns,
     merchantCopyText: formatMerchantOrderText(storeDisplayName, groupedItems),
+    khunThongCopyText: formatKhunThongSplitText(
+      storeDisplayName,
+      recipientBreakdowns,
+      grandTotalAmount,
+      totalItemsCount,
+    ),
   };
 }

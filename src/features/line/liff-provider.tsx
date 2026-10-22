@@ -4,7 +4,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { LiffUserProfile } from '@/features/line/line.schema';
 import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
-import { buildBillSummaryFlexMessage } from '@/server/services/line-flex.service';
+import {
+  buildBillSummaryFlexMessage,
+  buildSessionCreatedFlexMessage,
+} from '@/server/services/line-flex.service';
 
 const DEFAULT_PROFILE: LiffUserProfile = {
   userId: 'U_MEMBER_ME',
@@ -36,6 +39,9 @@ interface LiffContextValue {
   shareBillToLine: (
     payload: LineFlexReceiptSharePayload,
     recipientBreakdowns: RecipientOrderBreakdown[],
+  ) => Promise<{ shared: boolean; message: string }>;
+  shareSessionInviteToLine: (
+    payload: LineFlexReceiptSharePayload,
   ) => Promise<{ shared: boolean; message: string }>;
 }
 
@@ -135,6 +141,50 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const shareSessionInviteToLine = async (
+    payload: LineFlexReceiptSharePayload,
+  ): Promise<{ shared: boolean; message: string }> => {
+    const flexMsg = buildSessionCreatedFlexMessage(payload);
+
+    try {
+      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      if (liffId && liffId !== '1234567890-AbcdEfgh') {
+        const { default: liff } = await import('@line/liff');
+        if (liff.isApiAvailable('shareTargetPicker')) {
+          const res = await liff.shareTargetPicker([flexMsg as never]);
+          if (res) {
+            return {
+              shared: true,
+              message: 'ส่งการ์ดชวนสั่งอาหารเข้ากลุ่ม LINE เรียบร้อยแล้ว',
+            };
+          }
+          return {
+            shared: false,
+            message: 'ยกเลิกการเลือกห้องแชท LINE',
+          };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    const shareUrl = `https://line.me/R/share?text=${encodeURIComponent(
+      `🍽️ ชวนสั่งอาหารร้าน "${payload.storeDisplayName}"\nแตะที่ลิงก์เพื่อเลือกเมนูและท็อปปิ้งได้เลยครับ 👇\n${payload.orderUrl}`,
+    )}`;
+    if (typeof window !== 'undefined') {
+      window.open(shareUrl, '_blank');
+      return {
+        shared: true,
+        message: 'เปิดหน้าต่างแชร์เข้าห้องแชท LINE แล้ว',
+      };
+    }
+
+    return {
+      shared: false,
+      message: 'ไม่สามารถแชร์ได้',
+    };
+  };
+
   return (
     <LiffContext.Provider
       value={{
@@ -145,6 +195,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         setDevPersona,
         updateProfileName,
         shareBillToLine,
+        shareSessionInviteToLine,
       }}
     >
       {children}

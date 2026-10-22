@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Coins,
   Copy,
   LayoutGrid,
   List,
@@ -61,7 +62,7 @@ export function OrderSessionClient({
   sessionId: string;
   initialData: SessionDetailPayload;
 }) {
-  const { profile, shareBillToLine } = useLiff();
+  const { profile, shareBillToLine, shareSessionInviteToLine } = useLiff();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
@@ -451,6 +452,49 @@ export function OrderSessionClient({
     }
   };
 
+  const handleCopyKhunThong = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(summary.khunThongCopyText);
+      showToast('คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทอง/กลุ่มแล้ว!');
+    }
+  };
+
+  const handleCopyOrderLink = async () => {
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+    const url = liffId
+      ? `https://liff.line.me/${liffId}/order/${session.id}`
+      : `${origin}/order/${session.id}`;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      showToast('คัดลอกลิงก์ห้องสั่งอาหารแล้ว นำไปแปะในกลุ่มแชทได้เลย!');
+    }
+  };
+
+  const handleShareInviteToLine = async () => {
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+    const orderUrl = liffId
+      ? `https://liff.line.me/${liffId}/order/${session.id}`
+      : `${origin}/order/${session.id}`;
+    const receiptUrl = liffId
+      ? `https://liff.line.me/${liffId}/receipt/${session.id}`
+      : `${origin}/receipt/${session.id}`;
+
+    const res = await shareSessionInviteToLine({
+      sessionId: session.id,
+      storeDisplayName: summary.storeDisplayName,
+      totalQuantity: summary.totalItemsCount,
+      grandTotalAmount: summary.grandTotalAmount,
+      orderUrl,
+      receiptUrl,
+    });
+    showToast(res.message);
+  };
+
   const handleShareToLine = async () => {
     const origin =
       typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
@@ -600,6 +644,39 @@ export function OrderSessionClient({
             )}
           </div>
         </div>
+        {isOpen && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-theme border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs shadow-2xs">
+            <div className="flex items-center gap-1.5 text-emerald-950">
+              <span className="text-sm">📣</span>
+              <span className="font-semibold">ชวนเพื่อนเข้าตี้สั่งอาหาร:</span>
+              <span className="hidden sm:inline text-[11px] text-emerald-700">(ใช้ร่วมกับกลุ่มที่มีขุนทองได้)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleCopyOrderLink}
+                className="h-7 border-emerald-300 bg-white text-[11px] text-emerald-800 hover:bg-emerald-100"
+                title="คัดลอกลิงก์สั่งอาหาร"
+              >
+                <Copy className="h-3 w-3" />
+                <span>คัดลอกลิงก์</span>
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleShareInviteToLine}
+                className="h-7 bg-emerald-600 text-[11px] text-white hover:bg-emerald-700"
+                title="แชร์การ์ดสั่งอาหารเข้ากลุ่ม LINE (ใช้ร่วมกับกลุ่มที่มีขุนทองได้)"
+              >
+                <Share2 className="h-3 w-3" />
+                <span>แชร์เข้ากลุ่ม LINE</span>
+              </Button>
+            </div>
+          </div>
+        )}
         {isOpen ? (
           <>
             {/* Segmented Tab Switcher (Catalog vs Group Tray) */}
@@ -1020,7 +1097,7 @@ export function OrderSessionClient({
              ================================================================== */
           <section className="space-y-4" aria-label="สรุปยอดหลังปิดบิล">
             {/* Primary Export Actions */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <Button
                 type="button"
                 variant="primary"
@@ -1029,7 +1106,18 @@ export function OrderSessionClient({
                 className="w-full"
               >
                 <Copy className="h-4 w-4" />
-                คัดลอกข้อความส่งร้านค้า
+                คัดลอกส่งร้านค้า
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                onClick={handleCopyKhunThong}
+                className="w-full border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100"
+                title="คัดลอกยอดแยกรายคนเพื่อนำไปให้ขุนทองช่วยหารบิล"
+              >
+                <Coins className="h-4 w-4 text-amber-600" />
+                คัดลอกส่งขุนทอง
               </Button>
               <Button
                 type="button"
@@ -1142,22 +1230,46 @@ export function OrderSessionClient({
               </Card>
             )}
 
-            {/* Merchant Text Preview Box */}
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-                  ข้อความพร้อมส่งร้านค้า
-                </span>
-                <Link
-                  href={`/receipt/${session.id}`}
-                  className="text-xs font-semibold text-ink underline underline-offset-2 hover:text-neutral-700"
-                >
-                  เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4) →
-                </Link>
+            {/* Merchant & KhunThong Text Preview Box */}
+            <Card className="p-4 space-y-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+                    ข้อความพร้อมส่งร้านค้า
+                  </span>
+                  <Link
+                    href={`/receipt/${session.id}`}
+                    className="text-xs font-semibold text-ink underline underline-offset-2 hover:text-neutral-700"
+                  >
+                    เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4) →
+                  </Link>
+                </div>
+                <pre className="mt-2 whitespace-pre-wrap rounded-theme border border-hairline bg-canvas p-3 font-mono text-xs leading-relaxed text-ink">
+                  {summary.merchantCopyText}
+                </pre>
               </div>
-              <pre className="mt-2 whitespace-pre-wrap rounded-theme border border-hairline bg-canvas p-3 font-mono text-xs leading-relaxed text-ink">
-                {summary.merchantCopyText}
-              </pre>
+
+              <div className="border-t border-hairline pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900">
+                    <Coins className="h-3.5 w-3.5 text-amber-600" />
+                    ข้อความสำหรับส่งให้ขุนทอง / เรียกเก็บเงิน
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleCopyKhunThong}
+                    className="h-6 px-2 text-[10px] border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    คัดลอกยอด
+                  </Button>
+                </div>
+                <pre className="whitespace-pre-wrap rounded-theme border border-amber-200 bg-amber-50/50 p-3 font-mono text-xs leading-relaxed text-amber-950">
+                  {summary.khunThongCopyText}
+                </pre>
+              </div>
             </Card>
           </section>
         )}

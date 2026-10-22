@@ -62,8 +62,20 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
             color: '#D9480F',
             action: {
               type: 'uri',
-              label: 'กดสั่งอาหารเลย',
+              label: 'กดสั่งอาหารเลย 🍽️',
               uri: payload.orderUrl,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            color: '#141413',
+            action: {
+              type: 'uri',
+              label: 'แชร์เข้ากลุ่ม LINE 📤',
+              uri: `https://line.me/R/share?text=${encodeURIComponent(
+                `🍽️ ชวนสั่งอาหารร้าน "${payload.storeDisplayName}"\nแตะที่ลิงก์เพื่อเลือกเมนูและท็อปปิ้งได้เลยครับ 👇\n${payload.orderUrl}`,
+              )}`,
             },
           },
         ],
@@ -176,8 +188,19 @@ export function buildBillSummaryFlexMessage(
             color: '#141413',
             action: {
               type: 'uri',
-              label: 'ดูใบเสร็จฉบับเต็ม / สั่งพิมพ์',
+              label: 'ดูใบเสร็จฉบับเต็ม / สั่งพิมพ์ 🧾',
               uri: payload.receiptUrl,
+            },
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            action: {
+              type: 'uri',
+              label: 'แชร์สรุปบิลเข้ากลุ่ม LINE 📤',
+              uri: `https://line.me/R/share?text=${encodeURIComponent(
+                `💰 สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} ฿)\nดูใบเสร็จแยกรายคนสำหรับโอนเงินหรือให้ขุนทองหารยอดได้ที่:\n${payload.receiptUrl}`,
+              )}`,
             },
           },
         ],

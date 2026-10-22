@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Copy,
   Check,
+  Coins,
   History,
   Printer,
   Share2,
@@ -40,6 +41,7 @@ export function ReceiptClient({
   const [viewMode, setViewMode] = useState<ReceiptViewMode>('GROUPED');
   const [toast, setToast] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isKhunThongCopied, setIsKhunThongCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
   const notify = (msg: string) => {
@@ -54,6 +56,19 @@ export function ReceiptClient({
         setIsCopied(true);
         notify('คัดลอกข้อความส่งร้านค้าแล้ว!');
         setTimeout(() => setIsCopied(false), 2000);
+      } catch {
+        notify('ไม่สามารถคัดลอกข้อความได้');
+      }
+    }
+  };
+
+  const handleCopyKhunThong = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(summary.khunThongCopyText);
+        setIsKhunThongCopied(true);
+        notify('คัดลอกยอดแยกรายคนส่งให้ขุนทองแล้ว!');
+        setTimeout(() => setIsKhunThongCopied(false), 2000);
       } catch {
         notify('ไม่สามารถคัดลอกข้อความได้');
       }
@@ -286,18 +301,53 @@ export function ReceiptClient({
             </p>
           </div>
         </article>
+
+        {/* KhunThong / Split Bill Helper Card */}
+        <div className="mx-auto mt-4 max-w-2xl rounded-theme border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-950 shadow-2xs print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-bold text-amber-900">
+              <Coins className="h-4 w-4 text-amber-600" />
+              <span>ส่งต่อยอดเงินให้บอท "ขุนทอง" ช่วยหารหรือทวงเงิน:</span>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleCopyKhunThong}
+              className={cn(
+                'h-7 bg-white border-amber-300 text-amber-900 hover:bg-amber-100 text-[11px] font-medium transition',
+                isKhunThongCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
+              )}
+            >
+              {isKhunThongCopied ? (
+                <>
+                  <Check className="h-3 w-3 text-emerald-600 mr-1" />
+                  <span>คัดลอกยอดแล้ว!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3 mr-1" />
+                  <span>คัดลอกยอดแยกรายคน</span>
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+            ระบบจัดรูปแบบข้อความแยกยอดรายคนไว้ให้แล้ว สามารถกดคัดลอกแล้วนำไปแปะในกลุ่มแชทที่มีขุนทองเพื่อเปิดบิลหารเงินต่อได้ทันที
+          </p>
+        </div>
       </main>
 
       {/* Floating Sticky Bottom Action Dock */}
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-theme backdrop-blur-md print:hidden">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 sm:gap-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-1.5 sm:gap-2">
           {/* ปุ่มคัดลอกส่งร้าน */}
           <Button
             type="button"
             variant="secondary"
             onClick={handleCopy}
             className={cn(
-              'flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-sm font-medium transition-all',
+              'flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium transition-all',
               isCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
             )}
             title="คัดลอกสรุปรายการอาหารสำหรับส่งร้านค้า"
@@ -311,7 +361,32 @@ export function ReceiptClient({
               <>
                 <Copy className="h-4 w-4 shrink-0 text-ink-muted" />
                 <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
-                <span className="sm:hidden">คัดลอก</span>
+                <span className="sm:hidden">ส่งร้าน</span>
+              </>
+            )}
+          </Button>
+
+          {/* ปุ่มคัดลอกส่งขุนทอง */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleCopyKhunThong}
+            className={cn(
+              'flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium transition-all border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100',
+              isKhunThongCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
+            )}
+            title="คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทองช่วยหารบิล"
+          >
+            {isKhunThongCopied ? (
+              <>
+                <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>คัดลอกแล้ว!</span>
+              </>
+            ) : (
+              <>
+                <Coins className="h-4 w-4 shrink-0 text-amber-600" />
+                <span className="hidden sm:inline">คัดลอกส่งขุนทอง</span>
+                <span className="sm:hidden">ส่งขุนทอง</span>
               </>
             )}
           </Button>
@@ -322,7 +397,7 @@ export function ReceiptClient({
             variant="secondary"
             onClick={handleShareLine}
             loading={isSharing}
-            className="flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-sm font-medium hover:border-emerald-300 hover:text-emerald-700"
+            className="flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium hover:border-emerald-300 hover:text-emerald-700"
             title="แชร์สรุปบิลเข้าห้องแชท LINE"
           >
             <Share2 className="h-4 w-4 shrink-0 text-line" />
@@ -335,11 +410,11 @@ export function ReceiptClient({
             type="button"
             variant="primary"
             onClick={() => window.print()}
-            className="flex-[1.2] min-h-[42px] px-3 text-xs sm:px-4 sm:text-sm font-medium shadow-sm transition-all"
+            className="flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-xs font-medium shadow-sm transition-all"
             title="พิมพ์ใบเสร็จหรือบันทึกเป็น PDF"
           >
             <Printer className="h-4 w-4 shrink-0" />
-            <span>พิมพ์ใบเสร็จ</span>
+            <span>พิมพ์บิล</span>
           </Button>
         </div>
       </div>

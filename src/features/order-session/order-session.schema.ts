@@ -161,6 +161,7 @@ export interface OrderSessionSummary {
   groupedItems: GroupedOrderItemSummary[];
   recipientBreakdowns: RecipientOrderBreakdown[];
   merchantCopyText: string;
+  khunThongCopyText: string;
 }
 
 export interface SessionHistoryItem {

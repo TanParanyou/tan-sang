@@ -22,4 +22,5 @@ export interface ReceiptViewModel {
   groupedItems: GroupedOrderItemSummary[];
   recipientBreakdowns: RecipientOrderBreakdown[];
   merchantCopyText: string;
+  khunThongCopyText?: string;
 }
