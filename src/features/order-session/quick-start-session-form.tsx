@@ -115,7 +115,6 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
               label="LINE Group ID"
               value={lineGroupId}
               onChange={(e) => setLineGroupId(e.target.value)}
-              helperText="จำลองแชทกลุ่ม LINE สำหรับจัดกลุ่มออเดอร์"
               required
             />
           </div>
@@ -129,15 +128,11 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
               value={customStoreName}
               onChange={(e) => setCustomStoreName(e.target.value)}
               placeholder="เช่น ข้าวมันไก่ตอนประตูน้ำ, ก๋วยเตี๋ยวเรืออยุธยา"
-              helperText="สมาชิกในห้องจะสามารถพิมพ์ชื่อเมนูอาหารและราคาได้อย่างอิสระ"
             />
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-hairline">
-          <p className="text-xs text-ink-muted">
-            กดเปิดบิลเพื่อสร้างห้องและเริ่มให้เพื่อนๆ ในกลุ่มสั่งอาหารได้ทันที
-          </p>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2 border-t border-hairline">
           <Button
             type="submit"
             disabled={isCreating}

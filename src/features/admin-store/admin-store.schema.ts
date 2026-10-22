@@ -14,6 +14,18 @@ export const UpsertStoreInputSchema = z.object({
 });
 export type UpsertStoreInput = z.infer<typeof UpsertStoreInputSchema>;
 
+export const UpdateStoreInputSchema = z.object({
+  id: z.string().trim().min(2).max(32),
+  name: LocalizedNameSchema.optional(),
+  isActive: z.boolean().optional(),
+});
+export type UpdateStoreInput = z.infer<typeof UpdateStoreInputSchema>;
+
+export const DeleteStoreInputSchema = z.object({
+  storeId: z.string().trim().min(1).max(32),
+});
+export type DeleteStoreInput = z.infer<typeof DeleteStoreInputSchema>;
+
 export const UpsertMenuInputSchema = z.object({
   storeId: z.string().trim().min(1).max(32),
   name: LocalizedNameSchema,
@@ -30,6 +42,23 @@ export const UpsertMenuInputSchema = z.object({
 });
 export type UpsertMenuInput = z.infer<typeof UpsertMenuInputSchema>;
 
+export const UpdateMenuInputSchema = z.object({
+  menuId: z.string().uuid(),
+  name: LocalizedNameSchema,
+  status: MenuStatusSchema.optional(),
+  variants: z
+    .array(
+      z.object({
+        id: z.string().uuid().optional(),
+        name: LocalizedNameSchema,
+        price: z.number().nonnegative('ราคาต้องไม่ติดลบ'),
+        isDefault: z.boolean().default(false),
+      }),
+    )
+    .min(1, 'ต้องมีอย่างน้อย 1 ราคา/ขนาด'),
+});
+export type UpdateMenuInput = z.infer<typeof UpdateMenuInputSchema>;
+
 export const CreateMenuOptionInputSchema = z.object({
   storeId: z.string().trim().min(1).max(32),
   menuId: z.string().uuid().nullable().optional(),
@@ -38,6 +67,14 @@ export const CreateMenuOptionInputSchema = z.object({
   isAvailable: z.boolean().default(true),
 });
 export type CreateMenuOptionInput = z.infer<typeof CreateMenuOptionInputSchema>;
+
+export const UpdateMenuOptionInputSchema = z.object({
+  optionId: z.string().uuid(),
+  name: LocalizedNameSchema,
+  price: z.number().nonnegative('ราคาท็อปปิ้งต้องไม่ติดลบ'),
+  isAvailable: z.boolean().optional(),
+});
+export type UpdateMenuOptionInput = z.infer<typeof UpdateMenuOptionInputSchema>;
 
 export const VoteBanMenuInputSchema = z.object({
   menuId: z.string().uuid(),

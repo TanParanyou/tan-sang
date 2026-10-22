@@ -2,6 +2,10 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import {
   CreateMenuOptionInputSchema,
+  DeleteStoreInputSchema,
+  UpdateMenuInputSchema,
+  UpdateMenuOptionInputSchema,
+  UpdateStoreInputSchema,
   UpsertMenuInputSchema,
   UpsertStoreInputSchema,
   VoteBanMenuInputSchema,
@@ -16,12 +20,28 @@ const AdminStoreMutationSchema = z.discriminatedUnion('action', [
     payload: UpsertStoreInputSchema,
   }),
   z.object({
+    action: z.literal('UPDATE_STORE'),
+    payload: UpdateStoreInputSchema,
+  }),
+  z.object({
+    action: z.literal('DELETE_STORE'),
+    payload: DeleteStoreInputSchema,
+  }),
+  z.object({
     action: z.literal('CREATE_MENU'),
     payload: UpsertMenuInputSchema,
   }),
   z.object({
+    action: z.literal('UPDATE_MENU'),
+    payload: UpdateMenuInputSchema,
+  }),
+  z.object({
     action: z.literal('CREATE_OPTION'),
     payload: CreateMenuOptionInputSchema,
+  }),
+  z.object({
+    action: z.literal('UPDATE_OPTION'),
+    payload: UpdateMenuOptionInputSchema,
   }),
   z.object({
     action: z.literal('UPDATE_MENU_STATUS'),
@@ -76,14 +96,34 @@ export async function POST(request: NextRequest) {
       return apiSuccess(store, 201);
     }
 
+    if (command.action === 'UPDATE_STORE') {
+      const store = await storeRepo.updateStore(command.payload);
+      return apiSuccess(store);
+    }
+
+    if (command.action === 'DELETE_STORE') {
+      await storeRepo.deleteStore(command.payload.storeId);
+      return apiSuccess({ deleted: true });
+    }
+
     if (command.action === 'CREATE_MENU') {
       const menu = await storeRepo.createMenu(command.payload);
       return apiSuccess(menu, 201);
     }
 
+    if (command.action === 'UPDATE_MENU') {
+      const menu = await storeRepo.updateMenu(command.payload);
+      return apiSuccess(menu);
+    }
+
     if (command.action === 'CREATE_OPTION') {
       const option = await storeRepo.createMenuOption(command.payload);
       return apiSuccess(option, 201);
+    }
+
+    if (command.action === 'UPDATE_OPTION') {
+      const option = await storeRepo.updateMenuOption(command.payload);
+      return apiSuccess(option);
     }
 
     if (command.action === 'VOTE_BAN_MENU') {

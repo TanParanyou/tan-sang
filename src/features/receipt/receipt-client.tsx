@@ -2,7 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Home, History, Printer, Share2 } from 'lucide-react';
+import {
+  Copy,
+  Check,
+  History,
+  Printer,
+  Share2,
+  Receipt,
+  FileText,
+  Layers,
+  Users,
+} from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
@@ -15,7 +25,8 @@ import type {
   ReceiptViewMode,
 } from '@/features/receipt/receipt.schema';
 import { formatOrderItemTitle } from '@/server/services/order-calculator.service';
-import { Button, Chip } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils/cn';
 
 export function ReceiptClient({
   session,
@@ -28,6 +39,8 @@ export function ReceiptClient({
   const [printFormat, setPrintFormat] = useState<ReceiptPrintFormat>('THERMAL_80MM');
   const [viewMode, setViewMode] = useState<ReceiptViewMode>('GROUPED');
   const [toast, setToast] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -36,26 +49,37 @@ export function ReceiptClient({
 
   const handleCopy = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(summary.merchantCopyText);
-      notify('คัดลอกข้อความส่งร้านค้าแล้ว!');
+      try {
+        await navigator.clipboard.writeText(summary.merchantCopyText);
+        setIsCopied(true);
+        notify('คัดลอกข้อความส่งร้านค้าแล้ว!');
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch {
+        notify('ไม่สามารถคัดลอกข้อความได้');
+      }
     }
   };
 
   const handleShareLine = async () => {
-    const origin =
-      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-    const res = await shareBillToLine(
-      {
-        sessionId: session.id,
-        storeDisplayName: summary.storeDisplayName,
-        totalQuantity: summary.totalItemsCount,
-        grandTotalAmount: summary.grandTotalAmount,
-        orderUrl: `${origin}/order/${session.id}`,
-        receiptUrl: `${origin}/receipt/${session.id}`,
-      },
-      summary.recipientBreakdowns,
-    );
-    notify(res.message);
+    try {
+      setIsSharing(true);
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const res = await shareBillToLine(
+        {
+          sessionId: session.id,
+          storeDisplayName: summary.storeDisplayName,
+          totalQuantity: summary.totalItemsCount,
+          grandTotalAmount: summary.grandTotalAmount,
+          orderUrl: `${origin}/order/${session.id}`,
+          receiptUrl: `${origin}/receipt/${session.id}`,
+        },
+        summary.recipientBreakdowns,
+      );
+      notify(res.message);
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const formattedDate = new Date(session.closedAt ?? session.createdAt).toLocaleString(
@@ -67,7 +91,7 @@ export function ReceiptClient({
   );
 
   return (
-    <div className="min-h-screen bg-canvas pb-24 print:bg-white print:pb-0">
+    <div className="min-h-screen bg-canvas pb-32 print:bg-white print:pb-0">
       <div className="print:hidden">
         <DevPersonaBar hostUserId={session.hostUserId} />
         <AppNavbar
@@ -77,38 +101,14 @@ export function ReceiptClient({
           subtitle={summary.storeDisplayName}
           maxWidthClassName="max-w-2xl"
           actions={
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
-              >
-                <Copy className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleShareLine}
-                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
-              >
-                <Share2 className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">Share LINE</span>
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => window.print()}
-                className="min-h-[36px] px-2.5 text-xs sm:px-3 shadow-2xs"
-              >
-                <Printer className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">พิมพ์</span>
-              </Button>
-            </div>
+            <Link
+              href="/history"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-medium text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili"
+              title="ดูประวัติบิลทั้งหมด"
+            >
+              <History className="h-3.5 w-3.5 text-ink-muted" />
+              <span className="hidden sm:inline">ประวัติบิล</span>
+            </Link>
           }
         />
       </div>
@@ -116,52 +116,82 @@ export function ReceiptClient({
       {toast && (
         <div
           role="status"
-          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-theme border border-hairline bg-ink px-4 py-2 text-xs font-medium text-surface shadow-theme print:hidden"
+          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full border border-hairline bg-ink/90 px-4 py-2 text-xs font-medium text-surface shadow-lg backdrop-blur print:hidden"
         >
           {toast}
         </div>
       )}
 
-      {/* Non-Print Format & Mode Toolbar */}
-      <div className="border-b border-hairline bg-surface px-4 py-2.5 print:hidden">
-        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2">
-          <Link
-            href="/history"
-            className="inline-flex min-h-[32px] items-center gap-1 text-xs text-ink-secondary hover:text-ink transition-colors"
-          >
-            <History className="h-3.5 w-3.5" />
-            <span>ประวัติบิล</span>
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex gap-1">
-              <Chip
-                selected={printFormat === 'THERMAL_80MM'}
+      {/* Non-Print Format & View Mode Control Toolbar */}
+      <div className="border-b border-hairline/80 bg-surface px-4 py-2.5 print:hidden">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2.5">
+          {/* Format selection */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+              ขนาดกระดาษ
+            </span>
+            <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
+              <button
+                type="button"
                 onClick={() => setPrintFormat('THERMAL_80MM')}
+                className={cn(
+                  'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                  printFormat === 'THERMAL_80MM'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-secondary hover:text-ink',
+                )}
               >
-                สลิป 80mm
-              </Chip>
-              <Chip
-                selected={printFormat === 'A4'}
+                <Receipt className="h-3.5 w-3.5" />
+                <span>สลิป 80mm</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setPrintFormat('A4')}
+                className={cn(
+                  'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                  printFormat === 'A4'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-secondary hover:text-ink',
+                )}
               >
-                กระดาษ A4
-              </Chip>
+                <FileText className="h-3.5 w-3.5" />
+                <span>กระดาษ A4</span>
+              </button>
             </div>
+          </div>
 
-            <div className="inline-flex gap-1">
-              <Chip
-                selected={viewMode === 'GROUPED'}
+          {/* View mode selection */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+              การแสดงผล
+            </span>
+            <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
+              <button
+                type="button"
                 onClick={() => setViewMode('GROUPED')}
+                className={cn(
+                  'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                  viewMode === 'GROUPED'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-secondary hover:text-ink',
+                )}
               >
-                รวมเมนู + แยกคน
-              </Chip>
-              <Chip
-                selected={viewMode === 'INDIVIDUAL'}
+                <Layers className="h-3.5 w-3.5" />
+                <span>รวมเมนู + แยกคน</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewMode('INDIVIDUAL')}
+                className={cn(
+                  'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                  viewMode === 'INDIVIDUAL'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-secondary hover:text-ink',
+                )}
               >
-                เฉพาะแยกรายชื่อ
-              </Chip>
+                <Users className="h-3.5 w-3.5" />
+                <span>เฉพาะแยกรายคน</span>
+              </button>
             </div>
           </div>
         </div>
@@ -255,6 +285,62 @@ export function ReceiptClient({
           </div>
         </article>
       </main>
+
+      {/* Floating Sticky Bottom Action Dock */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-hairline bg-surface/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-theme backdrop-blur-md print:hidden">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 sm:gap-3">
+          {/* ปุ่มคัดลอกส่งร้าน */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleCopy}
+            className={cn(
+              'flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-sm font-medium transition-all',
+              isCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
+            )}
+            title="คัดลอกสรุปรายการอาหารสำหรับส่งร้านค้า"
+          >
+            {isCopied ? (
+              <>
+                <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>คัดลอกแล้ว!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 shrink-0 text-ink-muted" />
+                <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
+                <span className="sm:hidden">คัดลอก</span>
+              </>
+            )}
+          </Button>
+
+          {/* ปุ่มแชร์เข้า LINE */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleShareLine}
+            loading={isSharing}
+            className="flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-sm font-medium hover:border-emerald-300 hover:text-emerald-700"
+            title="แชร์สรุปบิลเข้าห้องแชท LINE"
+          >
+            <Share2 className="h-4 w-4 shrink-0 text-line" />
+            <span className="hidden sm:inline">แชร์เข้า LINE</span>
+            <span className="sm:hidden">แชร์ LINE</span>
+          </Button>
+
+          {/* ปุ่มหลักพิมพ์ใบเสร็จ */}
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => window.print()}
+            className="flex-[1.2] min-h-[42px] px-3 text-xs sm:px-4 sm:text-sm font-medium shadow-sm transition-all"
+            title="พิมพ์ใบเสร็จหรือบันทึกเป็น PDF"
+          >
+            <Printer className="h-4 w-4 shrink-0" />
+            <span>พิมพ์ใบเสร็จ</span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

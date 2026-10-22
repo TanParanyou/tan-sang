@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  LayoutGrid,
+  List,
   Lock,
   Pencil,
   Plus,
@@ -64,9 +66,30 @@ export function OrderSessionClient({
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
   const [closedViewMode, setClosedViewMode] = useState<'GROUPED' | 'INDIVIDUAL'>('GROUPED');
+  const [catalogViewMode, setCatalogViewMode] = useState<'LIST' | 'GRID'>('LIST');
   const [locale, setLocale] = useState<SupportedLocale>('th');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('tan_sang_catalog_view_mode');
+      if (saved === 'GRID' || saved === 'LIST') {
+        setCatalogViewMode(saved);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleCatalogViewModeChange = (mode: 'LIST' | 'GRID') => {
+    setCatalogViewMode(mode);
+    try {
+      localStorage.setItem('tan_sang_catalog_view_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
 
   // Drawer state for selecting menu item, custom item, or editing existing item
   const [selectedMenu, setSelectedMenu] = useState<StoreMenu | null>(null);
@@ -156,7 +179,12 @@ export function OrderSessionClient({
     return catalog.menus.filter((m) => {
       const th = m.name.th.toLowerCase();
       const en = (m.name.en ?? '').toLowerCase();
-      return th.includes(q) || en.includes(q);
+      if (th.includes(q) || en.includes(q)) return true;
+      return m.variants.some((v) => {
+        const vth = v.name.th.toLowerCase();
+        const ven = (v.name.en ?? '').toLowerCase();
+        return vth.includes(q) || ven.includes(q);
+      });
     });
   }, [catalog, searchQuery]);
 
@@ -607,12 +635,22 @@ export function OrderSessionClient({
                   <div className="relative flex-1">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
                     <input
-                      type="search"
+                      type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="ค้นหาเมนู เช่น กะเพรา, ข้าวผัด..."
-                      className="min-h-[44px] h-[44px] w-full rounded-theme border border-hairline bg-surface pl-9 pr-3 text-[16px] text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                      className="min-h-[44px] h-[44px] w-full rounded-theme border border-hairline bg-surface pl-9 pr-9 text-[15px] text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink transition"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="ล้างคำค้นหา"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-muted transition hover:bg-subtle hover:text-ink"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   <Button
                     type="button"
@@ -622,32 +660,84 @@ export function OrderSessionClient({
                     className="shrink-0"
                   >
                     <Plus className="h-4 w-4" />
-                    พิมพ์เมนูเอง
+                    <span className="hidden sm:inline">พิมพ์เมนูเอง</span>
+                    <span className="sm:hidden">พิมพ์เอง</span>
                   </Button>
                 </div>
 
-                {/* Impeccable Flat Divider List (No nested cards-in-cards) */}
+                {/* Sub-bar: Count & List/Grid Switcher */}
+                {catalog && catalog.menus.length > 0 && (
+                  <div className="flex items-center justify-between px-0.5 text-xs text-ink-secondary">
+                    <span className="truncate pr-2">
+                      {searchQuery ? (
+                        <>
+                          พบ <span className="font-semibold text-ink">{filteredMenus.length}</span> เมนู
+                        </>
+                      ) : (
+                        <>
+                          เมนูทั้งหมด <span className="font-semibold text-ink">{filteredMenus.length}</span> รายการ
+                        </>
+                      )}
+                    </span>
+
+                    {/* View Switcher */}
+                    <div
+                      role="group"
+                      aria-label="รูปแบบมุมมองเมนู"
+                      className="inline-flex shrink-0 items-center rounded-theme border border-hairline bg-subtle p-0.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleCatalogViewModeChange('LIST')}
+                        aria-label="มุมมองรายการ"
+                        aria-pressed={catalogViewMode === 'LIST'}
+                        title="มุมมองรายการ (List)"
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-theme transition ${
+                          catalogViewMode === 'LIST'
+                            ? 'bg-surface text-ink shadow-2xs font-bold'
+                            : 'text-ink-muted hover:text-ink'
+                        }`}
+                      >
+                        <List className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCatalogViewModeChange('GRID')}
+                        aria-label="มุมมองตาราง"
+                        aria-pressed={catalogViewMode === 'GRID'}
+                        title="มุมมองตาราง (Grid)"
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-theme transition ${
+                          catalogViewMode === 'GRID'
+                            ? 'bg-surface text-ink shadow-2xs font-bold'
+                            : 'text-ink-muted hover:text-ink'
+                        }`}
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Menus List or Grid */}
                 {filteredMenus.length > 0 ? (
-                  <Card className="divide-y divide-hairline overflow-hidden">
-                    {filteredMenus.map((menu) => {
-                      const isAvailable = menu.status === 'ACTIVE';
-                      const defaultVariant =
-                        menu.variants.find((v) => v.isDefault) ?? menu.variants[0];
-                      const maxVariant = menu.variants[menu.variants.length - 1];
-                      const priceLabel =
-                        defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
-                          ? `${defaultVariant.price}–${maxVariant.price} ฿`
-                          : `${defaultVariant?.price ?? 0} ฿`;
+                  catalogViewMode === 'GRID' ? (
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                      {filteredMenus.map((menu) => {
+                        const isAvailable = menu.status === 'ACTIVE';
+                        const defaultVariant =
+                          menu.variants.find((v) => v.isDefault) ?? menu.variants[0];
+                        const maxVariant = menu.variants[menu.variants.length - 1];
+                        const priceLabel =
+                          defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
+                            ? `${defaultVariant.price}–${maxVariant.price} ฿`
+                            : `${defaultVariant?.price ?? 0} ฿`;
 
-                      const subtitle =
-                        locale === 'th' ? menu.name.en : menu.name.th;
+                        const subtitle =
+                          locale === 'th' ? menu.name.en : menu.name.th;
 
-                      return (
-                        <div
-                          key={menu.id}
-                          className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-subtle"
-                        >
+                        return (
                           <div
+                            key={menu.id}
                             role="button"
                             tabIndex={isAvailable ? 0 : -1}
                             onClick={() => isAvailable && openMenuDrawer(menu)}
@@ -657,56 +747,144 @@ export function OrderSessionClient({
                                 openMenuDrawer(menu);
                               }
                             }}
-                            className={`min-w-0 flex-1 ${
-                              isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-55'
+                            className={`group relative flex flex-col justify-between rounded-theme border border-hairline bg-surface p-3.5 shadow-2xs transition-all ${
+                              isAvailable
+                                ? 'cursor-pointer hover:border-ink hover:shadow-theme active:scale-[0.98]'
+                                : 'cursor-not-allowed opacity-55'
                             }`}
                           >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[15px] font-medium text-ink">
+                            <div>
+                              <div className="mb-2 flex items-start justify-between gap-1.5 min-h-[20px]">
+                                <div className="flex flex-wrap gap-1">
+                                  {menu.status === 'OUT_OF_STOCK' && (
+                                    <Badge variant="muted" className="text-[10px] py-0.5 px-1.5">
+                                      หมดชั่วคราว
+                                    </Badge>
+                                  )}
+                                  {menu.status === 'BANNED' && (
+                                    <Badge variant="warning" className="text-[10px] py-0.5 px-1.5">
+                                      งดสั่ง
+                                    </Badge>
+                                  )}
+                                  {menu.variants.length > 1 && (
+                                    <span className="inline-flex items-center rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+                                      {menu.variants.length} ขนาด
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <h3 className="text-[15px] font-medium leading-snug text-ink line-clamp-2">
                                 {getLocalizedText(menu.name, locale)}
-                              </span>
-                              {menu.status === 'OUT_OF_STOCK' && (
-                                <Badge variant="muted" className="text-[10px] py-0.5">
-                                  หมดชั่วคราว
-                                </Badge>
-                              )}
-                              {menu.status === 'BANNED' && (
-                                <Badge variant="warning" className="text-[10px] py-0.5">
-                                  งดสั่ง (Banned)
-                                </Badge>
+                              </h3>
+                              {subtitle && (
+                                <p className="mt-0.5 text-xs text-ink-muted line-clamp-1">{subtitle}</p>
                               )}
                             </div>
-                            {subtitle && (
-                              <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
-                            )}
-                          </div>
 
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span
+                            <div className="mt-3.5 flex items-center justify-between border-t border-hairline/60 pt-2.5">
+                              <span className="font-mono text-sm font-semibold text-ink tabular-nums">
+                                {priceLabel}
+                              </span>
+                              {isAvailable && (
+                                <span
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-theme border border-ink bg-ink text-surface shadow-2xs transition group-hover:bg-neutral-800"
+                                  aria-hidden="true"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <Card className="divide-y divide-hairline overflow-hidden">
+                      {filteredMenus.map((menu) => {
+                        const isAvailable = menu.status === 'ACTIVE';
+                        const defaultVariant =
+                          menu.variants.find((v) => v.isDefault) ?? menu.variants[0];
+                        const maxVariant = menu.variants[menu.variants.length - 1];
+                        const priceLabel =
+                          defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
+                            ? `${defaultVariant.price}–${maxVariant.price} ฿`
+                            : `${defaultVariant?.price ?? 0} ฿`;
+
+                        const subtitle =
+                          locale === 'th' ? menu.name.en : menu.name.th;
+
+                        return (
+                          <div
+                            key={menu.id}
+                            className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-subtle"
+                          >
+                            <div
                               role="button"
                               tabIndex={isAvailable ? 0 : -1}
                               onClick={() => isAvailable && openMenuDrawer(menu)}
-                              className={`font-mono text-sm font-semibold text-ink tabular-nums ${
-                                isAvailable ? 'cursor-pointer' : 'opacity-55'
+                              onKeyDown={(e) => {
+                                if ((e.key === 'Enter' || e.key === ' ') && isAvailable) {
+                                  e.preventDefault();
+                                  openMenuDrawer(menu);
+                                }
+                              }}
+                              className={`min-w-0 flex-1 ${
+                                isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-55'
                               }`}
                             >
-                              {priceLabel}
-                            </span>
-                            {isAvailable && (
-                              <button
-                                type="button"
-                                aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
-                                onClick={() => openMenuDrawer(menu)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:bg-neutral-800"
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[15px] font-medium text-ink">
+                                  {getLocalizedText(menu.name, locale)}
+                                </span>
+                                {menu.status === 'OUT_OF_STOCK' && (
+                                  <Badge variant="muted" className="text-[10px] py-0.5">
+                                    หมดชั่วคราว
+                                  </Badge>
+                                )}
+                                {menu.status === 'BANNED' && (
+                                  <Badge variant="warning" className="text-[10px] py-0.5">
+                                    งดสั่ง (Banned)
+                                  </Badge>
+                                )}
+                                {menu.variants.length > 1 && (
+                                  <span className="inline-flex items-center rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+                                    {menu.variants.length} ขนาด
+                                  </span>
+                                )}
+                              </div>
+                              {subtitle && (
+                                <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
+                              )}
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-2">
+                              <span
+                                role="button"
+                                tabIndex={isAvailable ? 0 : -1}
+                                onClick={() => isAvailable && openMenuDrawer(menu)}
+                                className={`font-mono text-sm font-semibold text-ink tabular-nums ${
+                                  isAvailable ? 'cursor-pointer' : 'opacity-55'
+                                }`}
                               >
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            )}
+                                {priceLabel}
+                              </span>
+                              {isAvailable && (
+                                <button
+                                  type="button"
+                                  aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
+                                  onClick={() => openMenuDrawer(menu)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:bg-neutral-800"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </Card>
+                        );
+                      })}
+                    </Card>
+                  )
                 ) : (
                   <Card className="p-8 text-center">
                     <UtensilsCrossed className="mx-auto h-8 w-8 text-ink-muted" />
@@ -715,19 +893,30 @@ export function OrderSessionClient({
                     </h3>
                     <p className="mt-1 text-sm text-ink-secondary">
                       {searchQuery
-                        ? 'สามารถแตะปุ่มด้านล่างเพื่อพิมพ์เมนูนี้เองได้เลยครับ'
+                        ? 'สามารถแตะปุ่มด้านล่างเพื่อพิมพ์เมนูนี้เอง หรือล้างคำค้นหา'
                         : 'แตะปุ่มด้านล่างเพื่อพิมพ์ชื่อเมนู ขนาด ท็อปปิ้ง และราคาได้ทันที'}
                     </p>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="md"
-                      onClick={openCustomItemDrawer}
-                      className="mt-4"
-                    >
-                      <Plus className="h-4 w-4" />
-                      พิมพ์สั่งอาหารเลย
-                    </Button>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {searchQuery && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="md"
+                          onClick={() => setSearchQuery('')}
+                        >
+                          ล้างคำค้นหา
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="md"
+                        onClick={openCustomItemDrawer}
+                      >
+                        <Plus className="h-4 w-4" />
+                        พิมพ์สั่งอาหารเลย
+                      </Button>
+                    </div>
                   </Card>
                 )}
               </section>
@@ -1029,7 +1218,6 @@ export function OrderSessionClient({
                       value={customUnitPrice}
                       onChange={(e) => setCustomUnitPrice(e.target.value)}
                       placeholder="0"
-                      helperText="เว้นว่าง = 0฿"
                     />
                   </div>
                 </div>
@@ -1155,7 +1343,6 @@ export function OrderSessionClient({
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       required
-                      helperText="ชื่อนี้จะถูกนำไปสรุปแยกยอดในใบเสร็จรายคน"
                     />
                   </div>
                 )}

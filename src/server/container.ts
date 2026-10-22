@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type {
   CreateMenuOptionInput,
+  UpdateMenuInput,
+  UpdateMenuOptionInput,
+  UpdateStoreInput,
   UpsertMenuInput,
   UpsertStoreInput,
 } from '@/features/admin-store/admin-store.schema';
@@ -210,6 +213,24 @@ class FallbackStoreRepository implements IStoreRepository {
     return store;
   }
 
+  async updateStore(input: UpdateStoreInput): Promise<Store> {
+    const catalog = this.catalogs.get(input.id);
+    if (!catalog) {
+      throw new Error(`Store ${input.id} not found`);
+    }
+    const updatedStore: Store = {
+      ...catalog.store,
+      ...(input.name ? { name: input.name } : {}),
+      ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+    };
+    catalog.store = updatedStore;
+    return updatedStore;
+  }
+
+  async deleteStore(storeId: string): Promise<void> {
+    this.catalogs.delete(storeId);
+  }
+
   async createMenu(input: UpsertMenuInput): Promise<StoreMenu> {
     const catalog = this.catalogs.get(input.storeId);
     if (!catalog) {
@@ -236,6 +257,27 @@ class FallbackStoreRepository implements IStoreRepository {
     return newMenu;
   }
 
+  async updateMenu(input: UpdateMenuInput): Promise<StoreMenu> {
+    for (const catalog of this.catalogs.values()) {
+      const menu = catalog.menus.find((m) => m.id === input.menuId);
+      if (menu) {
+        menu.name = input.name;
+        if (input.status) {
+          menu.status = input.status;
+        }
+        menu.variants = input.variants.map((v) => ({
+          id: v.id ?? randomUUID(),
+          menuId: input.menuId,
+          name: v.name,
+          price: v.price,
+          isDefault: v.isDefault,
+        }));
+        return menu;
+      }
+    }
+    throw new Error(`Menu ${input.menuId} not found`);
+  }
+
   async createMenuOption(input: CreateMenuOptionInput): Promise<MenuOption> {
     const catalog = this.catalogs.get(input.storeId);
     if (!catalog) {
@@ -259,6 +301,32 @@ class FallbackStoreRepository implements IStoreRepository {
       }
     }
     return newOption;
+  }
+
+  async updateMenuOption(input: UpdateMenuOptionInput): Promise<MenuOption> {
+    for (const catalog of this.catalogs.values()) {
+      const wideOpt = catalog.storeWideOptions.find((o) => o.id === input.optionId);
+      if (wideOpt) {
+        wideOpt.name = input.name;
+        wideOpt.price = input.price;
+        if (input.isAvailable !== undefined) {
+          wideOpt.isAvailable = input.isAvailable;
+        }
+        return wideOpt;
+      }
+      for (const menu of catalog.menus) {
+        const menuOpt = menu.options.find((o) => o.id === input.optionId);
+        if (menuOpt) {
+          menuOpt.name = input.name;
+          menuOpt.price = input.price;
+          if (input.isAvailable !== undefined) {
+            menuOpt.isAvailable = input.isAvailable;
+          }
+          return menuOpt;
+        }
+      }
+    }
+    throw new Error(`Option ${input.optionId} not found`);
   }
 
   async updateMenuStatus(menuId: string, status: MenuStatus): Promise<void> {

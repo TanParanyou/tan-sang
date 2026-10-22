@@ -12,7 +12,6 @@ import {
   Plus,
   Printer,
   Sparkles,
-  Utensils,
 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
@@ -137,14 +136,6 @@ export function OrderHistoryClient({
               บิลที่ฉันมีส่วนร่วม
             </button>
           </div>
-
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-chili underline-offset-2 hover:underline"
-          >
-            <Utensils className="h-3.5 w-3.5" />
-            + เปิดบิลใหม่
-          </Link>
         </div>
 
         {/* Empty State */}

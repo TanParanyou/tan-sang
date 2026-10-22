@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
+import type { LocalizedName } from '@/lib/utils/i18n.schema';
 import type {
   MenuOption,
   MenuPriceVariant,
@@ -10,6 +11,9 @@ import type {
 } from '@/features/store-catalog/store-catalog.schema';
 import type {
   CreateMenuOptionInput,
+  UpdateMenuInput,
+  UpdateMenuOptionInput,
+  UpdateStoreInput,
   UpsertMenuInput,
   UpsertStoreInput,
 } from '@/features/admin-store/admin-store.schema';
@@ -19,8 +23,12 @@ export interface IStoreRepository {
   findAllStores(): Promise<Store[]>;
   findStoreCatalogById(storeId: string): Promise<StoreCatalogAggregate | null>;
   upsertStore(input: UpsertStoreInput): Promise<Store>;
+  updateStore(input: UpdateStoreInput): Promise<Store>;
+  deleteStore(storeId: string): Promise<void>;
   createMenu(input: UpsertMenuInput): Promise<StoreMenu>;
+  updateMenu(input: UpdateMenuInput): Promise<StoreMenu>;
   createMenuOption(input: CreateMenuOptionInput): Promise<MenuOption>;
+  updateMenuOption(input: UpdateMenuOptionInput): Promise<MenuOption>;
   updateMenuStatus(menuId: string, status: MenuStatus): Promise<void>;
   incrementMenuVoteBan(menuId: string, autoBanThreshold?: number): Promise<StoreMenu | null>;
   deleteMenu(menuId: string): Promise<void>;
@@ -181,6 +189,51 @@ export class SupabaseStoreRepository implements IStoreRepository {
     };
   }
 
+  async updateStore(input: UpdateStoreInput): Promise<Store> {
+    const updatePayload: { name?: LocalizedName; is_active?: boolean } = {};
+    if (input.name !== undefined) {
+      updatePayload.name = input.name;
+    }
+    if (input.isActive !== undefined) {
+      updatePayload.is_active = input.isActive;
+    }
+
+    const { data, error } = await this.db
+      .from('stores')
+      .update(updatePayload)
+      .eq('id', input.id)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update store: ${error?.message ?? 'Unknown error'}`);
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      isActive: data.is_active,
+      createdAt: new Date(data.created_at).toISOString(),
+    };
+  }
+
+  async deleteStore(storeId: string): Promise<void> {
+    // Preserve store name on any existing order_sessions referencing this store before deletion
+    const { data: storeRow } = await this.db.from('stores').select('*').eq('id', storeId).maybeSingle();
+    if (storeRow) {
+      const storeName = storeRow.name?.th ?? storeRow.name?.en ?? storeId;
+      await this.db
+        .from('order_sessions')
+        .update({ custom_store_name: storeName, store_id: null })
+        .eq('store_id', storeId);
+    }
+
+    const { error } = await this.db.from('stores').delete().eq('id', storeId);
+    if (error) {
+      throw new Error(`Failed to delete store ${storeId}: ${error.message}`);
+    }
+  }
+
   async createMenu(input: UpsertMenuInput): Promise<StoreMenu> {
     const { data: menuRow, error: menuErr } = await this.db
       .from('store_menus')
@@ -230,6 +283,74 @@ export class SupabaseStoreRepository implements IStoreRepository {
     };
   }
 
+  async updateMenu(input: UpdateMenuInput): Promise<StoreMenu> {
+    const updatePayload: { name: LocalizedName; status?: MenuStatus } = {
+      name: input.name,
+    };
+    if (input.status) {
+      updatePayload.status = input.status;
+    }
+
+    const { data: menuRow, error: menuErr } = await this.db
+      .from('store_menus')
+      .update(updatePayload)
+      .eq('id', input.menuId)
+      .select('*')
+      .single();
+
+    if (menuErr || !menuRow) {
+      throw new Error(`Failed to update menu: ${menuErr?.message ?? 'Unknown error'}`);
+    }
+
+    // Replace price variants
+    await this.db.from('menu_price_variants').delete().eq('menu_id', input.menuId);
+
+    const { data: variantRows, error: varErr } = await this.db
+      .from('menu_price_variants')
+      .insert(
+        input.variants.map((v) => ({
+          menu_id: input.menuId,
+          name: v.name,
+          price: v.price,
+          is_default: v.isDefault,
+        })),
+      )
+      .select('*');
+
+    if (varErr) {
+      throw new Error(`Failed to update menu variants: ${varErr.message}`);
+    }
+
+    const { data: optionRows } = await this.db
+      .from('menu_options')
+      .select('*')
+      .eq('menu_id', input.menuId);
+
+    return {
+      id: menuRow.id,
+      storeId: menuRow.store_id,
+      name: menuRow.name,
+      status: menuRow.status,
+      voteBanCount: menuRow.vote_ban_count,
+      createdAt: new Date(menuRow.created_at).toISOString(),
+      variants: (variantRows ?? []).map((v) => ({
+        id: v.id,
+        menuId: v.menu_id,
+        name: v.name,
+        price: Number(v.price),
+        isDefault: v.is_default,
+      })),
+      options: (optionRows ?? []).map((o) => ({
+        id: o.id,
+        storeId: o.store_id,
+        menuId: o.menu_id,
+        name: o.name,
+        price: Number(o.price),
+        isAvailable: o.is_available,
+      })),
+    };
+  }
+
   async createMenuOption(input: CreateMenuOptionInput): Promise<MenuOption> {
     const { data, error } = await this.db
       .from('menu_options')
@@ -245,6 +366,36 @@ export class SupabaseStoreRepository implements IStoreRepository {
 
     if (error || !data) {
       throw new Error(`Failed to create menu option: ${error?.message ?? 'Unknown error'}`);
+    }
+
+    return {
+      id: data.id,
+      storeId: data.store_id,
+      menuId: data.menu_id,
+      name: data.name,
+      price: Number(data.price),
+      isAvailable: data.is_available,
+    };
+  }
+
+  async updateMenuOption(input: UpdateMenuOptionInput): Promise<MenuOption> {
+    const updatePayload: { name?: LocalizedName; price?: number; is_available?: boolean } = {
+      name: input.name,
+      price: input.price,
+    };
+    if (input.isAvailable !== undefined) {
+      updatePayload.is_available = input.isAvailable;
+    }
+
+    const { data, error } = await this.db
+      .from('menu_options')
+      .update(updatePayload)
+      .eq('id', input.optionId)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update menu option: ${error?.message ?? 'Unknown error'}`);
     }
 
     return {
