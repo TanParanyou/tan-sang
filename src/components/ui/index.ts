@@ -3,3 +3,4 @@ export * from './input';
 export * from './card';
 export * from './badge';
 export * from './quantity-stepper';
+export * from './checkbox';

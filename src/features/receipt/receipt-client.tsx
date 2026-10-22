@@ -177,7 +177,7 @@ export function ReceiptClient({
                 )}
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>รวมเมนู + แยกคน</span>
+                <span>รวมเมนู</span>
               </button>
               <button
                 type="button"
@@ -190,7 +190,7 @@ export function ReceiptClient({
                 )}
               >
                 <Users className="h-3.5 w-3.5" />
-                <span>เฉพาะแยกรายคน</span>
+                <span>แยกรายคน</span>
               </button>
             </div>
           </div>
@@ -220,9 +220,9 @@ export function ReceiptClient({
 
           {/* Section 1: Merchant Grouped Summary */}
           {viewMode === 'GROUPED' && (
-            <div className="border-b border-dashed border-ink py-3">
+            <div className="py-3">
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-                1. สรุปรายการอาหารส่งร้าน ({summary.totalItemsCount} จาน)
+                สรุปรายการอาหารส่งร้าน ({summary.totalItemsCount} จาน)
               </h2>
               <div className="mt-2 space-y-2">
                 {summary.groupedItems.map((g, idx) => (
@@ -245,33 +245,35 @@ export function ReceiptClient({
           )}
 
           {/* Section 2: Individual Recipient Breakdown */}
-          <div className="py-3">
-            <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-              2. ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
-            </h2>
+          {viewMode === 'INDIVIDUAL' && (
+            <div className="py-3">
+              <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
+              </h2>
 
-            <div className="mt-2 space-y-3">
-              {summary.recipientBreakdowns.map((rec) => (
-                <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
-                  <div className="flex items-center justify-between font-bold text-ink">
-                    <span>{rec.recipientName}</span>
-                    <span className="font-mono tabular-nums">{rec.totalAmount} ฿</span>
+              <div className="mt-2 space-y-3">
+                {summary.recipientBreakdowns.map((rec) => (
+                  <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
+                    <div className="flex items-center justify-between font-bold text-ink">
+                      <span>{rec.recipientName}</span>
+                      <span className="font-mono tabular-nums">{rec.totalAmount} ฿</span>
+                    </div>
+
+                    <ul className="mt-1 space-y-0.5 text-[11px] text-ink-secondary">
+                      {rec.items.map((it) => (
+                        <li key={it.itemId} className="flex justify-between">
+                          <span className="truncate pr-2">
+                            • {it.displayTitle} (x{it.quantity})
+                          </span>
+                          <span className="shrink-0 font-mono tabular-nums">{it.lineTotal} ฿</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <ul className="mt-1 space-y-0.5 text-[11px] text-ink-secondary">
-                    {rec.items.map((it) => (
-                      <li key={it.itemId} className="flex justify-between">
-                        <span className="truncate pr-2">
-                          • {it.displayTitle} (x{it.quantity})
-                        </span>
-                        <span className="shrink-0 font-mono tabular-nums">{it.lineTotal} ฿</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Grand Total Summary */}
           <div className="border-t-2 border-ink pt-3 font-mono">

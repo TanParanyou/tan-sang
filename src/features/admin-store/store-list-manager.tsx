@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Edit2, Plus, Power, Shuffle, Trash2, X } from 'lucide-react';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
-import { Button } from '@/components/ui';
+import { Button, Checkbox } from '@/components/ui';
 
 function generateRandomStoreId(existingStores: Store[]): string {
   const existingIds = new Set(existingStores.map((s) => s.id));
@@ -240,7 +240,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
           <p className="mt-2 text-xs font-medium text-red-600">{errorMsg}</p>
         )}
 
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-5">
+        <div className="mt-3 grid grid-cols-1 items-center gap-3 sm:grid-cols-5">
           {/* Store ID with Randomize button */}
           <div className="relative flex items-center">
             <input
@@ -249,14 +249,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
               value={storeId}
               onChange={(e) => setStoreId(e.target.value.toUpperCase())}
               placeholder="รหัสร้าน *"
-              className="min-h-[42px] w-full rounded-theme border border-hairline bg-canvas pl-3 pr-10 font-mono text-sm uppercase text-ink focus:border-chili focus:outline-none"
+              className="h-[44px] min-h-[44px] w-full rounded-theme border border-hairline bg-canvas pl-3.5 pr-10 font-mono text-sm uppercase text-ink focus:border-chili focus:outline-none"
             />
             <button
               type="button"
               onClick={() => setStoreId(generateRandomStoreId(stores))}
               title="สุ่มรหัสร้านใหม่"
               aria-label="สุ่มรหัสร้านใหม่"
-              className="absolute right-2 inline-flex h-7 w-7 items-center justify-center rounded text-ink-muted transition-colors hover:bg-subtle hover:text-chili"
+              className="absolute right-2 inline-flex h-8 w-8 items-center justify-center rounded text-ink-muted transition-colors hover:bg-subtle hover:text-chili"
             >
               <Shuffle className="h-4 w-4" />
             </button>
@@ -268,32 +268,28 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             value={nameTh}
             onChange={(e) => setNameTh(e.target.value)}
             placeholder="ชื่อร้านภาษาไทย *"
-            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
             placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
-            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
-          <div className="flex items-center gap-2">
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="h-4 w-4 rounded border-hairline text-chili focus:ring-chili"
-              />
-              เปิดใช้งานทันที
-            </label>
+          <div className="flex h-[44px] min-h-[44px] items-center px-1">
+            <Checkbox
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              label="เปิดใช้งานทันที"
+            />
           </div>
           <Button
             type="submit"
             disabled={isSubmitting}
             loading={isSubmitting}
             size="md"
-            className="bg-chili text-white hover:bg-chili-hover border-chili"
+            className="h-[44px] min-h-[44px] bg-chili text-white hover:bg-chili-hover border-chili"
           >
             <Plus className="h-4 w-4" />
             บันทึกร้านค้า
@@ -339,14 +335,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           value={editNameTh}
                           onChange={(e) => setEditNameTh(e.target.value)}
                           placeholder="ชื่อร้านภาษาไทย *"
-                          className="min-h-[38px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+                          className="h-[40px] min-h-[40px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
                         />
                         <input
                           type="text"
                           value={editNameEn}
                           onChange={(e) => setEditNameEn(e.target.value)}
                           placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
-                          className="min-h-[38px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+                          className="h-[40px] min-h-[40px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
                         />
                         <div className="flex items-center gap-2">
                           <Button
@@ -354,7 +350,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                             size="sm"
                             loading={isUpdating}
                             disabled={isUpdating}
-                            className="bg-chili text-white hover:bg-chili-hover border-chili"
+                            className="h-[40px] min-h-[40px] bg-chili text-white hover:bg-chili-hover border-chili px-4"
                           >
                             <Check className="h-3.5 w-3.5" />
                             บันทึก
@@ -365,6 +361,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                             variant="secondary"
                             onClick={cancelEdit}
                             disabled={isUpdating}
+                            className="h-[40px] min-h-[40px] px-4"
                           >
                             <X className="h-3.5 w-3.5" />
                             ยกเลิก

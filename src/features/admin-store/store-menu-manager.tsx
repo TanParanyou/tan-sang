@@ -710,21 +710,21 @@ export function StoreMenuManager({
         {createMenuError && (
           <p className="mt-2 text-xs font-medium text-red-600">{createMenuError}</p>
         )}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 items-center gap-3 sm:grid-cols-4">
           <input
             type="text"
             required
             value={menuTh}
             onChange={(e) => setMenuTh(e.target.value)}
             placeholder="ชื่อเมนู (ภาษาไทย) *"
-            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={menuEn}
             onChange={(e) => setMenuEn(e.target.value)}
             placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
-            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="number"
@@ -732,23 +732,23 @@ export function StoreMenuManager({
             value={regPrice}
             onChange={(e) => setRegPrice(e.target.value)}
             placeholder="ราคาธรรมดา *"
-            className="min-h-[42px] rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <input
               type="number"
               min={0}
               value={specialPrice}
               onChange={(e) => setSpecialPrice(e.target.value)}
               placeholder="ราคาพิเศษ (เว้นว่างได้)"
-              className="min-h-[42px] w-full rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+              className="h-[44px] min-h-[44px] w-full rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
             />
             <Button
               type="submit"
               disabled={isSubmitting}
               loading={isSubmitting}
-              size="sm"
-              className="shrink-0 bg-chili text-white hover:bg-chili-hover border-chili"
+              size="md"
+              className="h-[44px] min-h-[44px] shrink-0 bg-chili text-white hover:bg-chili-hover border-chili px-4"
             >
               <Plus className="h-4 w-4" />
               เพิ่มเมนู
@@ -877,14 +877,14 @@ export function StoreMenuManager({
         )}
 
         {/* Add topping form */}
-        <form onSubmit={handleCreateOption} className="mt-4 flex flex-wrap gap-2">
+        <form onSubmit={handleCreateOption} className="mt-4 flex flex-wrap items-center gap-2">
           <input
             type="text"
             required
             value={optionTh}
             onChange={(e) => setOptionTh(e.target.value)}
             placeholder="ชื่อท็อปปิ้งใหม่ เช่น ไข่เค็ม, หมูยอทอด *"
-            className="min-h-[40px] flex-1 rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] flex-1 rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="number"
@@ -892,16 +892,17 @@ export function StoreMenuManager({
             value={optionPrice}
             onChange={(e) => setOptionPrice(e.target.value)}
             placeholder="ราคา (ค่าเริ่มต้น 0)"
-            className="min-h-[40px] w-36 rounded-theme border border-hairline bg-canvas px-3 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
+            className="h-[44px] min-h-[44px] w-36 rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <Button
             type="submit"
             disabled={isSubmittingOption}
             loading={isSubmittingOption}
-            size="sm"
+            size="md"
             variant="secondary"
+            className="h-[44px] min-h-[44px] px-4"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             เพิ่มท็อปปิ้ง
           </Button>
         </form>
