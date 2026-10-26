@@ -5,7 +5,7 @@ import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { QuickStartSessionForm } from '@/features/order-session/quick-start-session-form';
 import { getRepositories } from '@/server/container';
-import { constructMetadata } from '@/config/site';
+import { constructMetadata, siteConfig } from '@/config/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +19,38 @@ export default async function PublicLandingPage() {
   const { storeRepo } = getRepositories();
   const stores = await storeRepo.findActiveStores();
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'ตาลสั่ง (Tan-Sang)',
+    alternateName: ['ตาลสั่ง', 'ทันสั่ง', 'Tan-Sang'],
+    applicationCategory: 'FoodApplication',
+    operatingSystem: 'All',
+    browserRequirements: 'Requires JavaScript. Requires HTML5.',
+    url: siteConfig.url,
+    description: siteConfig.description,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'THB',
+    },
+    featureList: [
+      'เปิดบิลสั่งอาหารกลุ่มใน LINE',
+      'เลือกเมนูและท็อปปิ้งพร้อมระบุชื่อคนสั่ง',
+      'ระบบรวมรายการซ้ำคัดลอกส่งร้านค้าในคลิกเดียว',
+      'คิดเงินและแยกยอดตามรายคนสำหรับส่งต่อให้ขุนทองช่วยหารบิล',
+      'พิมพ์ใบเสร็จขนาด 80mm และ A4',
+    ],
+    inLanguage: 'th-TH',
+  };
+
   return (
     <div className="min-h-screen bg-canvas pb-24">
+      {/* Schema.org Structured Data for Rich Search Results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <DevPersonaBar />
       <AppNavbar
         actions={

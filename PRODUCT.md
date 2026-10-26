@@ -1,9 +1,9 @@
-# PRODUCT.md — Tan-Sang (ทันสั่ง)
+# PRODUCT.md — Tan-Sang (ตาลสั่ง)
 
 > Durable Product Truth following the [Impeccable](https://impeccable.style/docs/) specification. Keeps product intent, audience, operating context, and domain terminology separate from visual styling.
 
 ## 1. Product Purpose & Core Problem
-**Tan-Sang (ทันสั่ง)** is a group food ordering web application built for **LINE Group Chats** via **LINE Front-end Framework (LIFF)** and **LINE Messaging API**.
+**Tan-Sang (ตาลสั่ง)** is a group food ordering web application built for **LINE Group Chats** via **LINE Front-end Framework (LIFF)** and **LINE Messaging API**.
 
 When colleagues or friends order lunch together in a LINE group, someone (the **Host**) inevitably suffers from scrolling through dozens of chat messages to tally identical dishes, special notes ("เผ็ดน้อย", "ไม่ใส่ผัก"), add-ons ("+ไข่ดาว"), and individual split bills.
 

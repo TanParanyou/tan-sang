@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { LiffUserProfile } from '@/features/line/line.schema';
 import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
@@ -49,7 +50,11 @@ interface LiffContextValue {
 
 const LiffContext = createContext<LiffContextValue | null>(null);
 
+// Singleton promise to ensure liff.init() is called exactly once
+let liffInitPromise: Promise<unknown> | null = null;
+
 export function LiffProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [profile, setProfile] = useState<LiffUserProfile>(DEFAULT_PROFILE);
   const [isInLineClient, setIsInLineClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -83,17 +88,6 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Handle LIFF redirect state (?liff.state=/order/...)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const liffState = urlParams.get('liff.state');
-      if (liffState && liffState.startsWith('/') && window.location.pathname !== liffState) {
-        window.location.replace(liffState);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
     if (!liffId || liffId === '1234567890-AbcdEfgh') {
@@ -102,9 +96,17 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     }
 
     let mounted = true;
-    import('@line/liff')
-      .then(async ({ default: liff }) => {
+
+    if (!liffInitPromise) {
+      liffInitPromise = import('@line/liff').then(async ({ default: liff }) => {
         await liff.init({ liffId });
+        return liff;
+      });
+    }
+
+    liffInitPromise
+      .then(async (liffInstance) => {
+        const liff = liffInstance as typeof import('@line/liff').default;
         if (!mounted) return;
 
         const inClient = liff.isInClient();
@@ -126,9 +128,16 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to get LIFF profile:', profileErr);
           }
         }
-        // NOTE: In LINE In-App Browser, DO NOT call liff.login() automatically
-        // because it triggers an OAuth redirect loop that hangs/crashes in-app webviews.
-        // Users can smoothly browse and order as default guest profile or enter their name.
+
+        // Handle deep-link routing via Next.js router strictly AFTER liff.init() has processed tokens safely
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const liffState = urlParams.get('liff.state');
+          if (liffState && liffState.startsWith('/') && window.location.pathname !== liffState) {
+            router.replace(liffState);
+          }
+        }
+
         if (mounted) {
           setIsReady(true);
         }
@@ -143,7 +152,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [router]);
 
   const updateProfileName = (name: string) => {
     const trimmed = name.trim();
