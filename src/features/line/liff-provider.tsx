@@ -33,6 +33,7 @@ interface LiffContextValue {
   profile: LiffUserProfile;
   isInLineClient: boolean;
   isReady: boolean;
+  isCustomName: boolean;
   personas: LiffUserProfile[];
   setDevPersona: (userId: string) => void;
   updateProfileName: (name: string) => void;
@@ -51,6 +52,34 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<LiffUserProfile>(DEFAULT_PROFILE);
   const [isInLineClient, setIsInLineClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isCustomName, setIsCustomName] = useState(false);
+
+  // Restore or initialize guest user from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('tan_sang_guest_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved) as { userId?: string; displayName?: string };
+        if (parsed.userId && parsed.displayName) {
+          setProfile((prev) => ({
+            ...prev,
+            userId: parsed.userId!,
+            displayName: parsed.displayName!,
+          }));
+          setIsCustomName(true);
+          return;
+        }
+      }
+      // Generate a persistent unique guest ID for this browser
+      const guestId = `guest_${Math.random().toString(36).slice(2, 10)}`;
+      setProfile((prev) => ({
+        ...prev,
+        userId: guestId,
+      }));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Handle LIFF redirect state (?liff.state=/order/...)
   useEffect(() => {
@@ -88,6 +117,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
                 displayName: userProfile.displayName || 'ฉัน (ผู้สั่งอาหาร)',
                 pictureUrl: userProfile.pictureUrl,
               });
+              setIsCustomName(true);
             }
           } catch (profileErr) {
             console.error('Failed to get LIFF profile:', profileErr);
@@ -113,17 +143,31 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateProfileName = (name: string) => {
-    if (!name.trim()) return;
-    setProfile((prev) => ({
-      ...prev,
-      displayName: name.trim(),
-    }));
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setProfile((prev) => {
+      const updated = {
+        ...prev,
+        displayName: trimmed,
+      };
+      try {
+        localStorage.setItem(
+          'tan_sang_guest_profile',
+          JSON.stringify({ userId: updated.userId, displayName: trimmed }),
+        );
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+    setIsCustomName(true);
   };
 
   const setDevPersona = (userId: string) => {
     const found = DEV_PERSONAS.find((p) => p.userId === userId);
     if (found) {
       setProfile(found);
+      setIsCustomName(true);
     }
   };
 
@@ -214,6 +258,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         profile,
         isInLineClient,
         isReady,
+        isCustomName,
         personas: DEV_PERSONAS,
         setDevPersona,
         updateProfileName,

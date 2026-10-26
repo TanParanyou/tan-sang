@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
+import { NamePromptModal } from '@/components/shared/name-prompt-modal';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
   OrderItem,
@@ -63,7 +64,7 @@ export function OrderSessionClient({
   sessionId: string;
   initialData: SessionDetailPayload;
 }) {
-  const { profile, shareBillToLine, shareSessionInviteToLine } = useLiff();
+  const { profile, updateProfileName, isCustomName, shareBillToLine, shareSessionInviteToLine } = useLiff();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
@@ -72,6 +73,7 @@ export function OrderSessionClient({
   const [locale, setLocale] = useState<SupportedLocale>('th');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isNameModalOpen, setIsNameModalOpen] = useState(false);
 
   // In-app confirm modal dialog
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -98,6 +100,16 @@ export function OrderSessionClient({
       // ignore
     }
   }, []);
+
+  // Prompt user for their name if entering an open session without a customized name
+  useEffect(() => {
+    if (initialData.session.status === 'OPEN' && !isCustomName) {
+      const timer = setTimeout(() => {
+        setIsNameModalOpen(true);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isCustomName, initialData.session.status]);
 
   const handleCatalogViewModeChange = (mode: 'LIST' | 'GRID') => {
     setCatalogViewMode(mode);
@@ -622,6 +634,16 @@ export function OrderSessionClient({
                 EN
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsNameModalOpen(true)}
+              className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-1 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
+              title="แตะเพื่อเปลี่ยนชื่อผู้สั่ง"
+            >
+              <span className="max-w-[75px] truncate font-semibold">{profile.displayName}</span>
+              <Pencil className="h-3 w-3 text-ink-muted shrink-0" />
+            </button>
 
             <Link
               href={`/receipt/${session.id}`}
@@ -1528,9 +1550,18 @@ export function OrderSessionClient({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-ink-secondary">
-                    ของ <strong className="text-ink">{profile.displayName}</strong> ({myItems.length}{' '}
-                    รายการ)
+                  <p className="text-xs text-ink-secondary flex items-center gap-1">
+                    <span>ของ</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsNameModalOpen(true)}
+                      className="inline-flex items-center gap-1 font-bold text-ink underline decoration-dotted decoration-ink/40 hover:text-chili transition cursor-pointer"
+                      title="แตะเพื่อเปลี่ยนชื่อของคุณ"
+                    >
+                      <span className="max-w-[120px] truncate">{profile.displayName}</span>
+                      <Pencil className="h-2.5 w-2.5 text-ink-muted shrink-0" />
+                    </button>
+                    <span>({myItems.length} รายการ)</span>
                   </p>
                   {isCurrentUserReady ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
@@ -1600,6 +1631,17 @@ export function OrderSessionClient({
         description={confirmDialog.description}
         variant={confirmDialog.variant}
         confirmText={confirmDialog.confirmText}
+      />
+
+      <NamePromptModal
+        isOpen={isNameModalOpen}
+        onClose={() => setIsNameModalOpen(false)}
+        onSave={(newName) => {
+          updateProfileName(newName);
+          showToast(`บันทึกชื่อ "${newName}" เรียบร้อย`);
+        }}
+        currentName={profile.displayName}
+        canClose={true}
       />
     </div>
   );

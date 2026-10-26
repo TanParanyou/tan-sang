@@ -2,15 +2,17 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, Sparkles, Store as StoreIcon } from 'lucide-react';
+import { PlusCircle, Sparkles, Store as StoreIcon, Pencil } from 'lucide-react';
 import { useLiff } from '@/features/line/liff-provider';
+import { NamePromptModal } from '@/components/shared/name-prompt-modal';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
 import { Button, Input, Select, Card, Badge } from '@/components/ui';
 
 export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
   const router = useRouter();
-  const { profile } = useLiff();
+  const { profile, updateProfileName } = useLiff();
+  const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string>(stores[0]?.id ?? 'CUSTOM');
   const [customStoreName, setCustomStoreName] = useState<string>('');
   const [lineGroupId, setLineGroupId] = useState<string>(
@@ -70,9 +72,15 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
               เปิดบิลสั่งอาหารห้องใหม่ <span className="text-xs font-normal text-ink-muted">(Host Quick Start)</span>
             </h2>
           </div>
-          <span className="font-mono text-xs rounded-full bg-subtle px-2.5 py-1 text-ink-secondary border border-hairline">
-            Host: <strong className="text-ink">{profile.displayName}</strong>
-          </span>
+          <button
+            type="button"
+            onClick={() => setIsNameModalOpen(true)}
+            className="inline-flex items-center gap-1.5 font-mono text-xs rounded-full bg-subtle px-2.5 py-1 text-ink-secondary border border-hairline hover:bg-neutral-200/60 hover:text-ink transition cursor-pointer"
+            title="แตะเพื่อเปลี่ยนชื่อ Host"
+          >
+            <span>Host: <strong className="text-ink">{profile.displayName}</strong></span>
+            <Pencil className="h-3 w-3 text-ink-muted shrink-0" />
+          </button>
         </div>
 
         {errorMessage && (
@@ -145,6 +153,14 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
           </Button>
         </div>
       </form>
+
+      <NamePromptModal
+        isOpen={isNameModalOpen}
+        onClose={() => setIsNameModalOpen(false)}
+        onSave={(name) => updateProfileName(name)}
+        currentName={profile.displayName}
+        canClose={true}
+      />
     </Card>
   );
 }
