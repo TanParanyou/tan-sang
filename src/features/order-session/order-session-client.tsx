@@ -64,7 +64,15 @@ export function OrderSessionClient({
   sessionId: string;
   initialData: SessionDetailPayload;
 }) {
-  const { profile, updateProfileName, isCustomName, shareBillToLine, shareSessionInviteToLine } = useLiff();
+  const {
+    profile,
+    updateProfileName,
+    isLineUser,
+    isCustomName,
+    isReady,
+    shareBillToLine,
+    shareSessionInviteToLine,
+  } = useLiff();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
@@ -101,15 +109,17 @@ export function OrderSessionClient({
     }
   }, []);
 
-  // Prompt user for their name if entering an open session without a customized name
+  // Prompt user for their name ONLY if LIFF is ready, user does not have LINE, and has not set a custom name
   useEffect(() => {
+    if (!isReady) return; // Wait until LIFF finishes initialization
+    if (isLineUser || Boolean(profile.pictureUrl)) return; // Already has LINE account! Do not prompt
     if (initialData.session.status === 'OPEN' && !isCustomName) {
       const timer = setTimeout(() => {
         setIsNameModalOpen(true);
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [isCustomName, initialData.session.status]);
+  }, [isReady, isLineUser, profile.pictureUrl, isCustomName, initialData.session.status]);
 
   const handleCatalogViewModeChange = (mode: 'LIST' | 'GRID') => {
     setCatalogViewMode(mode);

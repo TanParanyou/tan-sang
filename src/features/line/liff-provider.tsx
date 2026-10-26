@@ -33,6 +33,7 @@ interface LiffContextValue {
   profile: LiffUserProfile;
   isInLineClient: boolean;
   isReady: boolean;
+  isLineUser: boolean;
   isCustomName: boolean;
   personas: LiffUserProfile[];
   setDevPersona: (userId: string) => void;
@@ -52,6 +53,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<LiffUserProfile>(DEFAULT_PROFILE);
   const [isInLineClient, setIsInLineClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isLineUser, setIsLineUser] = useState(false);
   const [isCustomName, setIsCustomName] = useState(false);
 
   // Restore or initialize guest user from localStorage
@@ -117,6 +119,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
                 displayName: userProfile.displayName || 'ฉัน (ผู้สั่งอาหาร)',
                 pictureUrl: userProfile.pictureUrl,
               });
+              setIsLineUser(true);
               setIsCustomName(true);
             }
           } catch (profileErr) {
@@ -258,6 +261,7 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         profile,
         isInLineClient,
         isReady,
+        isLineUser,
         isCustomName,
         personas: DEV_PERSONAS,
         setDevPersona,
