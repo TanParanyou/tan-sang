@@ -52,6 +52,17 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
   const [isInLineClient, setIsInLineClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // Handle LIFF redirect state (?liff.state=/order/...)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const liffState = urlParams.get('liff.state');
+      if (liffState && liffState.startsWith('/') && window.location.pathname !== liffState) {
+        window.location.replace(liffState);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
     if (!liffId || liffId === '1234567890-AbcdEfgh') {
@@ -65,20 +76,32 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
         await liff.init({ liffId });
         if (!mounted) return;
 
+        const inClient = liff.isInClient();
+        setIsInLineClient(inClient);
+
         if (liff.isLoggedIn()) {
-          const userProfile = await liff.getProfile();
-          setProfile({
-            userId: userProfile.userId,
-            displayName: userProfile.displayName,
-            pictureUrl: userProfile.pictureUrl,
-          });
-          setIsInLineClient(liff.isInClient());
-        } else if (liff.isInClient()) {
-          liff.login();
+          try {
+            const userProfile = await liff.getProfile();
+            if (mounted && userProfile) {
+              setProfile({
+                userId: userProfile.userId,
+                displayName: userProfile.displayName || 'ฉัน (ผู้สั่งอาหาร)',
+                pictureUrl: userProfile.pictureUrl,
+              });
+            }
+          } catch (profileErr) {
+            console.error('Failed to get LIFF profile:', profileErr);
+          }
         }
-        setIsReady(true);
+        // NOTE: In LINE In-App Browser, DO NOT call liff.login() automatically
+        // because it triggers an OAuth redirect loop that hangs/crashes in-app webviews.
+        // Users can smoothly browse and order as default guest profile or enter their name.
+        if (mounted) {
+          setIsReady(true);
+        }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('LIFF initialization error:', err);
         if (mounted) {
           setIsReady(true);
         }
