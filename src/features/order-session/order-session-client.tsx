@@ -11,6 +11,7 @@ import {
   Coins,
   Copy,
   Dices,
+  Globe,
   LayoutGrid,
   List,
   Lock,
@@ -509,7 +510,18 @@ export function OrderSessionClient({
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      showToast('คัดลอกลิงก์ห้องสั่งอาหารแล้ว นำไปแปะในกลุ่มแชทได้เลย!');
+      showToast('คัดลอกลิงก์ห้องสั่งอาหาร (LIFF) แล้ว นำไปแปะในกลุ่มแชทได้เลย!');
+    }
+  };
+
+  const handleCopyDirectLink = async () => {
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const url = `${origin}/order/${session.id}`;
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      showToast('คัดลอกลิงก์ตรง (ไม่ผ่าน LIFF) แล้ว เปิดในเบราว์เซอร์ได้เลย!');
     }
   };
 
@@ -700,17 +712,28 @@ export function OrderSessionClient({
               <span className="font-semibold">ชวนเพื่อนเข้าตี้สั่งอาหาร:</span>
               <span className="hidden sm:inline text-[11px] text-emerald-700">(ใช้ร่วมกับกลุ่มที่มีขุนทองได้)</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 onClick={handleCopyOrderLink}
                 className="h-7 border-emerald-300 bg-white text-[11px] text-emerald-800 hover:bg-emerald-100"
-                title="คัดลอกลิงก์สั่งอาหาร"
+                title="คัดลอกลิงก์สั่งอาหารสำหรับเปิดใน LINE (LIFF)"
               >
                 <Copy className="h-3 w-3" />
-                <span>คัดลอกลิงก์</span>
+                <span>ลิงก์ LIFF</span>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleCopyDirectLink}
+                className="h-7 border-emerald-300 bg-white text-[11px] text-emerald-800 hover:bg-emerald-100"
+                title="คัดลอกลิงก์ตรงสำหรับเปิดในเว็บเบราว์เซอร์ทั่วไป (ไม่ผ่าน LIFF)"
+              >
+                <Globe className="h-3 w-3" />
+                <span>ลิงก์ตรง (ไม่ผ่าน LIFF)</span>
               </Button>
               <Button
                 type="button"
