@@ -10,6 +10,7 @@ import {
   Clock,
   Coins,
   Copy,
+  Dices,
   LayoutGrid,
   List,
   Lock,
@@ -36,6 +37,7 @@ import type {
   StoreCatalogAggregate,
   StoreMenu,
 } from '@/features/store-catalog/store-catalog.schema';
+import { getRandomDish } from '@/features/food-randomizer/random-dishes';
 import { getLocalizedText, type SupportedLocale } from '@/lib/utils/i18n.schema';
 import {
   calculateOrderItemTotals,
@@ -1373,13 +1375,33 @@ export function OrderSessionClient({
               {isCustomDrawerOpen && (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <Input
-                      label="ชื่อเมนูอาหาร"
-                      required
-                      value={customMenuName}
-                      onChange={(e) => setCustomMenuName(e.target.value)}
-                      placeholder="เช่น ข้าวผัดแหนม"
-                    />
+                    <div className="w-full flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-xs font-semibold text-ink">
+                        <span>
+                          ชื่อเมนูอาหาร <span className="text-red-500 font-bold">*</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dish = getRandomDish(customMenuName);
+                            setCustomMenuName(dish.nameTh);
+                            showToast(`🎲 สุ่มได้: ${dish.nameTh}`);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-chili hover:text-chili-hover transition active:scale-95"
+                          title="สุ่มชื่อเมนูอาหาร"
+                        >
+                          <Dices className="h-3.5 w-3.5" />
+                          <span>สุ่มเมนู</span>
+                        </button>
+                      </div>
+                      <input
+                        required
+                        value={customMenuName}
+                        onChange={(e) => setCustomMenuName(e.target.value)}
+                        placeholder="เช่น ข้าวผัดแหนม"
+                        className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline hover:border-ink-secondary rounded-theme transition-colors placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink"
+                      />
+                    </div>
                   </div>
                   <div>
                     <Input

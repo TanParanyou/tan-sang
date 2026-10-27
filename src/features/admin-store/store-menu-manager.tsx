@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Check,
+  Dices,
   Edit2,
   Plus,
   Power,
   Trash2,
   X,
 } from 'lucide-react';
+import { getRandomDish } from '@/features/food-randomizer/random-dishes';
 import type {
   MenuOption,
   MenuStatus,
@@ -770,7 +772,22 @@ export function StoreMenuManager({
         onSubmit={handleCreateMenu}
         className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
-        <h2 className="text-sm font-semibold text-ink">1. เพิ่มเมนูอาหารใหม่</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink">1. เพิ่มเมนูอาหารใหม่</h2>
+          <button
+            type="button"
+            onClick={() => {
+              const dish = getRandomDish(menuTh);
+              setMenuTh(dish.nameTh);
+              setMenuEn(dish.nameEn ?? '');
+            }}
+            className="inline-flex items-center gap-1.5 rounded-theme border border-hairline bg-subtle px-2.5 py-1 text-xs font-semibold text-ink hover:border-chili hover:text-chili transition active:scale-95"
+            title="สุ่มชื่อเมนูอาหาร"
+          >
+            <Dices className="h-3.5 w-3.5 text-chili" />
+            <span>สุ่มไอเดียเมนู</span>
+          </button>
+        </div>
         {createMenuError && (
           <p className="mt-2 text-xs font-medium text-red-600">{createMenuError}</p>
         )}
