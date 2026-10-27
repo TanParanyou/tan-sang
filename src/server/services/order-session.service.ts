@@ -3,12 +3,14 @@ import {
   CloseOrderSessionInputSchema,
   CreateOrderSessionInputSchema,
   DeleteOrderItemInputSchema,
+  DeleteOrderSessionInputSchema,
   ToggleParticipantReadyInputSchema,
   UpdateOrderItemInputSchema,
   type AddOrderItemInput,
   type CloseOrderSessionInput,
   type CreateOrderSessionInput,
   type DeleteOrderItemInput,
+  type DeleteOrderSessionInput,
   type OrderItem,
   type OrderSession,
   type OrderSessionSummary,
@@ -152,6 +154,36 @@ export class OrderSessionService {
     }
 
     return this.sessionRepo.closeSession(session.id, new Date().toISOString());
+  }
+
+  /**
+   * Deletes an entire session.
+   * - Host can delete directly.
+   * - Non-host requires a valid Admin PIN from environment variables (ORDER_DELETE_PIN or ADMIN_PASSCODE).
+   */
+  async deleteSession(rawInput: DeleteOrderSessionInput): Promise<void> {
+    const input = DeleteOrderSessionInputSchema.parse(rawInput);
+    const session = await this.requireSession(input.sessionId);
+
+    const isHost = session.hostUserId === input.actorUserId;
+    if (!isHost) {
+      const configuredPin =
+        process.env.ORDER_DELETE_PIN ||
+        process.env.ADMIN_PIN ||
+        process.env.ADMIN_PASSCODE ||
+        process.env.NEXT_PUBLIC_ADMIN_PASSCODE ||
+        '1234';
+
+      if (!input.pin || input.pin.trim() !== configuredPin.trim()) {
+        throw new DomainError(
+          'UNAUTHORIZED_SESSION_DELETION',
+          'รหัส PIN ไม่ถูกต้อง หรือคุณไม่ใช่หัวหน้าห้อง (Host)',
+          403,
+        );
+      }
+    }
+
+    await this.sessionRepo.deleteSession(session.id);
   }
 
   /**

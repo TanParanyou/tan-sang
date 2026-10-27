@@ -16,6 +16,11 @@ const PatchSessionPayloadSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
+const DeleteSessionPayloadSchema = z.object({
+  actorUserId: z.string().trim().min(1).max(64),
+  pin: z.string().trim().optional(),
+});
+
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ sessionId: string }> },
@@ -56,6 +61,28 @@ export async function PATCH(
 
     const updatedDetail = await service.getSessionDetail(sessionId);
     return apiSuccess(updatedDetail);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ sessionId: string }> },
+) {
+  try {
+    const { sessionId } = await context.params;
+    const body: unknown = await request.json().catch(() => ({}));
+    const payload = DeleteSessionPayloadSchema.parse(body);
+    const service = getOrderSessionService();
+
+    await service.deleteSession({
+      sessionId,
+      actorUserId: payload.actorUserId,
+      pin: payload.pin,
+    });
+
+    return apiSuccess({ success: true, deletedSessionId: sessionId });
   } catch (error) {
     return handleApiError(error);
   }

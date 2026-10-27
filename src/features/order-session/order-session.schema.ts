@@ -119,6 +119,13 @@ export const CloseOrderSessionInputSchema = z.object({
 });
 export type CloseOrderSessionInput = z.infer<typeof CloseOrderSessionInputSchema>;
 
+export const DeleteOrderSessionInputSchema = z.object({
+  sessionId: z.string().uuid(),
+  actorUserId: z.string().trim().min(1).max(64),
+  pin: z.string().trim().optional(),
+});
+export type DeleteOrderSessionInput = z.infer<typeof DeleteOrderSessionInputSchema>;
+
 // ============================================================================
 // Summarization & Breakdown Output Contracts (Business Rule 2)
 // ============================================================================

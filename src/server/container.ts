@@ -492,6 +492,10 @@ class FallbackOrderSessionRepository implements IOrderSessionRepository {
     }
   }
 
+  async deleteSession(sessionId: string): Promise<void> {
+    this.sessions.delete(sessionId);
+  }
+
   async updateReadyUsers(
     sessionId: string,
     readyUsers: ReadyParticipant[],

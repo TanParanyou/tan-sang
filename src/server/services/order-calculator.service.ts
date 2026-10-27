@@ -5,6 +5,7 @@ import type {
   OrderSessionSummary,
   RecipientOrderBreakdown,
 } from '@/features/order-session/order-session.schema';
+import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 
 /**
  * Converts a baht amount to integer satang to prevent IEEE-754 floating point drift.
@@ -190,7 +191,12 @@ export function formatMerchantOrderText(
 
   const grandTotal = fromSatang(grandTotalSatang);
   lines.push('------------------------');
-  lines.push(`รวมทั้งหมด: ${totalQuantity} รายการ (${grandTotal.toLocaleString('th-TH')} บาท)`);
+  const grandTotalFormatted = formatGrandTotal(grandTotal, 'บาท');
+  if (grandTotalFormatted) {
+    lines.push(`รวมทั้งหมด: ${totalQuantity} รายการ (${grandTotalFormatted})`);
+  } else {
+    lines.push(`รวมทั้งหมด: ${totalQuantity} รายการ`);
+  }
 
   return lines.join('\n');
 }
@@ -208,9 +214,14 @@ export function formatKhunThongSplitText(
     return `สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
   }
 
+  const grandTotalFormatted = formatGrandTotal(grandTotalAmount, 'บาท');
+  const isGrandTotalZero = grandTotalAmount === 0;
+
   const lines: string[] = [
     `สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
-    `ยอดรวมทั้งหมด: ${grandTotalAmount.toLocaleString('th-TH')} บาท (${totalItemsCount} รายการ)`,
+    grandTotalFormatted
+      ? `ยอดรวมทั้งหมด: ${grandTotalFormatted} (${totalItemsCount} รายการ)`
+      : `ยอดรวมทั้งหมด: ${totalItemsCount} รายการ (รอร้านคิดเงิน)`,
     '------------------------',
     'ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):',
   ];
@@ -219,7 +230,11 @@ export function formatKhunThongSplitText(
     const itemDetails = r.items
       .map((it) => `${it.displayTitle} x${it.quantity}`)
       .join(', ');
-    lines.push(`${index + 1}. ${r.recipientName}: ${r.totalAmount.toLocaleString('th-TH')} บาท (${itemDetails})`);
+    const amountStr = formatPrice(r.totalAmount, {
+      isGrandTotalZero,
+      unit: 'บาท',
+    });
+    lines.push(`${index + 1}. ${r.recipientName}: ${amountStr} (${itemDetails})`);
   });
 
   lines.push('------------------------');

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Ban,
@@ -27,6 +28,7 @@ import {
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { NamePromptModal } from '@/components/shared/name-prompt-modal';
+import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
   OrderItem,
@@ -44,6 +46,7 @@ import {
   calculateOrderItemTotals,
   formatOrderItemTitle,
 } from '@/server/services/order-calculator.service';
+import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import {
   Button,
   Input,
@@ -77,6 +80,7 @@ export function OrderSessionClient({
     shareSessionInviteToLine,
   } = useLiff();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
   const [closedViewMode, setClosedViewMode] = useState<'GROUPED' | 'INDIVIDUAL'>('GROUPED');
@@ -623,7 +627,10 @@ export function OrderSessionClient({
             )}
             <span className="text-ink-muted">•</span>
             <span className="font-mono text-[11px] text-ink-muted tabular-nums">
-              {summary.totalItemsCount} จาน • {summary.grandTotalAmount.toLocaleString('th-TH')} ฿
+              {summary.totalItemsCount} จาน
+              {formatGrandTotal(summary.grandTotalAmount)
+                ? ` • ${formatGrandTotal(summary.grandTotalAmount)}`
+                : ''}
             </span>
           </div>
         }
@@ -678,6 +685,18 @@ export function OrderSessionClient({
               <Printer className="h-3.5 w-3.5 text-ink-secondary" />
               <span className="hidden sm:inline">ใบเสร็จ</span>
             </Link>
+
+            <DeleteSessionButton
+              sessionId={session.id}
+              hostUserId={session.hostUserId}
+              currentUserId={profile.userId}
+              storeDisplayName={summary.storeDisplayName}
+              variant="icon"
+              onSuccess={() => {
+                router.push('/history');
+              }}
+              onError={(err) => showToast(err)}
+            />
           </div>
         }
         maxWidthClassName="max-w-lg"
@@ -1273,9 +1292,11 @@ export function OrderSessionClient({
                         <span className="inline-block border border-hairline rounded-theme bg-subtle px-2 py-0.5 text-xs font-bold text-ink">
                           x {group.totalQuantity}
                         </span>
-                        <p className="mt-1 text-xs text-ink-secondary">
-                          {group.totalPrice.toLocaleString('th-TH')} ฿
-                        </p>
+                        {group.totalPrice > 0 && (
+                          <p className="mt-1 text-xs text-ink-secondary">
+                            {group.totalPrice.toLocaleString('th-TH')} ฿
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
@@ -1290,7 +1311,9 @@ export function OrderSessionClient({
                         {person.recipientName}
                       </span>
                       <span className="font-mono text-sm font-bold text-ink tabular-nums">
-                        {person.totalAmount.toLocaleString('th-TH')} ฿
+                        {formatPrice(person.totalAmount, {
+                          isGrandTotalZero: summary.grandTotalAmount === 0,
+                        })}
                       </span>
                     </div>
                     <ul className="mt-1.5 space-y-1">
@@ -1304,7 +1327,10 @@ export function OrderSessionClient({
                             {item.note ? ` [${item.note}]` : ''} × {item.quantity}
                           </span>
                           <span className="font-mono tabular-nums">
-                            {item.lineTotal.toLocaleString('th-TH')} ฿
+                            {formatPrice(item.lineTotal, {
+                              isGrandTotalZero: summary.grandTotalAmount === 0,
+                              unpricedFallback: '-',
+                            })}
                           </span>
                         </li>
                       ))}

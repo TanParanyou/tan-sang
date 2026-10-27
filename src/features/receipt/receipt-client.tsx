@@ -26,6 +26,7 @@ import type {
   ReceiptViewMode,
 } from '@/features/receipt/receipt.schema';
 import { formatOrderItemTitle } from '@/server/services/order-calculator.service';
+import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
@@ -271,7 +272,11 @@ export function ReceiptClient({
                   <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
                     <div className="flex items-center justify-between font-bold text-ink">
                       <span>{rec.recipientName}</span>
-                      <span className="font-mono tabular-nums">{rec.totalAmount} ฿</span>
+                      <span className="font-mono tabular-nums">
+                        {formatPrice(rec.totalAmount, {
+                          isGrandTotalZero: summary.grandTotalAmount === 0,
+                        })}
+                      </span>
                     </div>
 
                     <ul className="mt-1 space-y-0.5 text-[11px] text-ink-secondary">
@@ -280,7 +285,12 @@ export function ReceiptClient({
                           <span className="truncate pr-2">
                             • {it.displayTitle} (x{it.quantity})
                           </span>
-                          <span className="shrink-0 font-mono tabular-nums">{it.lineTotal} ฿</span>
+                          <span className="shrink-0 font-mono tabular-nums">
+                            {formatPrice(it.lineTotal, {
+                              isGrandTotalZero: summary.grandTotalAmount === 0,
+                              unpricedFallback: '-',
+                            })}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -294,7 +304,13 @@ export function ReceiptClient({
           <div className="border-t-2 border-ink pt-3 font-mono">
             <div className="flex items-center justify-between text-base font-bold text-ink">
               <span>ยอดรวมทั้งหมด ({summary.totalItemsCount} จาน)</span>
-              <span className="text-lg tabular-nums">{summary.grandTotalAmount} ฿</span>
+              {formatGrandTotal(summary.grandTotalAmount) ? (
+                <span className="text-lg tabular-nums">
+                  {formatGrandTotal(summary.grandTotalAmount)}
+                </span>
+              ) : (
+                <span className="text-sm font-normal text-ink-secondary">รอร้านคิดเงิน</span>
+              )}
             </div>
             <p className="mt-2 text-center text-[10px] text-ink-muted">
               *** ขอบคุณที่ใช้บริการทันสั่ง (Tan-Sang) ***

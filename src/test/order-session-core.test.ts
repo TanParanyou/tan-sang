@@ -112,6 +112,10 @@ class InMemoryOrderSessionRepository implements IOrderSessionRepository {
     }
   }
 
+  async deleteSession(sessionId: string): Promise<void> {
+    this.sessions.delete(sessionId);
+  }
+
   async updateReadyUsers(
     sessionId: string,
     readyUsers: ReadyParticipant[],
@@ -193,6 +197,32 @@ describe('Tan-Sang Core Business Logic', () => {
     const copyText = formatMerchantOrderText('ครัวตาล', grouped);
     expect(copyText).toContain('1. ข้าวผัดหมู (ธรรมดา) + ไข่ดาว x 3');
     expect(copyText).toContain('รวมทั้งหมด: 3 รายการ (180 บาท)');
+  });
+
+  it('omits 0 baht amount in merchant order text when grand total is 0', () => {
+    const zeroPriceItems: OrderItem[] = [
+      {
+        id: 'zero-1',
+        sessionId: 'session-zero',
+        orderedByUserId: 'U001',
+        recipientName: 'ต้น',
+        menuId: null,
+        menuName: 'กะเพราไก่ไข่ดาว (สั่งปากเปล่า)',
+        variantName: null,
+        unitPrice: 0,
+        quantity: 2,
+        note: null,
+        createdAt: '2026-10-20T10:00:00.000Z',
+        options: [],
+      },
+    ];
+
+    const grouped = groupOrderItemsForMerchant(zeroPriceItems);
+    const copyText = formatMerchantOrderText('ป้าหน้าปากซอย', grouped);
+
+    expect(copyText).toContain('1. กะเพราไก่ไข่ดาว (สั่งปากเปล่า) x 2');
+    expect(copyText).toContain('รวมทั้งหมด: 2 รายการ');
+    expect(copyText).not.toContain('0 บาท');
   });
 
   it('calculates Individual Breakdown per recipient accurately', () => {
@@ -314,6 +344,128 @@ describe('Tan-Sang Core Business Logic', () => {
     expect(history[0]?.summary.grandTotalAmount).toBe(0);
   });
 
+  describe('deleteSession authorization & business rules', () => {
+    it('allows Host to delete session directly without PIN', async () => {
+      const repo = new InMemoryOrderSessionRepository();
+      const service = new OrderSessionService(repo);
+
+      const session = await service.createSession({
+        lineGroupId: 'C_GROUP_DEL_1',
+        hostUserId: 'U_HOST',
+        customStoreName: 'ร้านต้มเลือดหมู',
+      });
+
+      await service.deleteSession({
+        sessionId: session.id,
+        actorUserId: 'U_HOST',
+      });
+
+      const found = await repo.findSessionById(session.id);
+      expect(found).toBeNull();
+    });
+
+    it('rejects deletion by non-host when PIN is missing or incorrect', async () => {
+      const repo = new InMemoryOrderSessionRepository();
+      const service = new OrderSessionService(repo);
+
+      const session = await service.createSession({
+        lineGroupId: 'C_GROUP_DEL_2',
+        hostUserId: 'U_HOST',
+        customStoreName: 'ร้านส้มตำ',
+      });
+
+      // Missing PIN
+      await expect(
+        service.deleteSession({
+          sessionId: session.id,
+          actorUserId: 'U_OTHER',
+        }),
+      ).rejects.toMatchObject({
+        code: 'UNAUTHORIZED_SESSION_DELETION',
+        statusCode: 403,
+      } satisfies Partial<DomainError>);
+
+      // Incorrect PIN
+      await expect(
+        service.deleteSession({
+          sessionId: session.id,
+          actorUserId: 'U_OTHER',
+          pin: '9999',
+        }),
+      ).rejects.toMatchObject({
+        code: 'UNAUTHORIZED_SESSION_DELETION',
+        statusCode: 403,
+      } satisfies Partial<DomainError>);
+
+      // Verify session was not deleted
+      const found = await repo.findSessionById(session.id);
+      expect(found).not.toBeNull();
+    });
+
+    it('allows non-host to delete session when valid Admin PIN is provided', async () => {
+      const repo = new InMemoryOrderSessionRepository();
+      const service = new OrderSessionService(repo);
+
+      process.env.ORDER_DELETE_PIN = '5678';
+
+      const session = await service.createSession({
+        lineGroupId: 'C_GROUP_DEL_3',
+        hostUserId: 'U_HOST',
+        customStoreName: 'ร้านก๋วยเตี๋ยวเรือ',
+      });
+
+      await service.deleteSession({
+        sessionId: session.id,
+        actorUserId: 'U_OTHER',
+        pin: '5678',
+      });
+
+      const found = await repo.findSessionById(session.id);
+      expect(found).toBeNull();
+
+      delete process.env.ORDER_DELETE_PIN;
+    });
+
+    it('allows deleting a CLOSED session by Host or authorized user with PIN', async () => {
+      const repo = new InMemoryOrderSessionRepository();
+      const service = new OrderSessionService(repo);
+
+      const session = await service.createSession({
+        lineGroupId: 'C_GROUP_DEL_4',
+        hostUserId: 'U_HOST',
+        customStoreName: 'ร้านกาแฟโบราณ',
+      });
+
+      await service.closeSession({
+        sessionId: session.id,
+        actorUserId: 'U_HOST',
+      });
+
+      await service.deleteSession({
+        sessionId: session.id,
+        actorUserId: 'U_HOST',
+      });
+
+      const found = await repo.findSessionById(session.id);
+      expect(found).toBeNull();
+    });
+
+    it('throws 404 DomainError if session does not exist', async () => {
+      const repo = new InMemoryOrderSessionRepository();
+      const service = new OrderSessionService(repo);
+
+      await expect(
+        service.deleteSession({
+          sessionId: '00000000-0000-4000-8000-000000000000',
+          actorUserId: 'U_HOST',
+        }),
+      ).rejects.toMatchObject({
+        code: 'RESOURCE_NOT_FOUND',
+        statusCode: 404,
+      } satisfies Partial<DomainError>);
+    });
+  });
+
   it('formats split-bill breakdown text specifically for KhunThong', () => {
     const text = formatKhunThongSplitText(
       'ข้าวมันไก่ตอน',
@@ -366,5 +518,75 @@ describe('Tan-Sang Core Business Logic', () => {
     expect(text).toContain('1. ตาล: 130 บาท (ข้าวมันไก่พิเศษ x1, ชามะนาว x1)');
     expect(text).toContain('2. บอย: 50 บาท (ข้าวมันไก่ธรรมดา x1)');
     expect(text).toContain('ขุนทอง');
+  });
+
+  it('formats split-bill breakdown text when grand total or individual total is 0 baht', () => {
+    const textZeroGrandTotal = formatKhunThongSplitText(
+      'ร้านป้าตามสั่ง',
+      [
+        {
+          recipientName: 'ตาล',
+          totalQuantity: 1,
+          totalAmount: 0,
+          items: [
+            {
+              itemId: '1',
+              displayTitle: 'กะเพราหมูกรอบ',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 0,
+              lineTotal: 0,
+            },
+          ],
+        },
+      ],
+      0,
+      1,
+    );
+
+    expect(textZeroGrandTotal).toContain('ยอดรวมทั้งหมด: 1 รายการ (รอร้านคิดเงิน)');
+    expect(textZeroGrandTotal).toContain('1. ตาล: รอคิดเงิน (กะเพราหมูกรอบ x1)');
+    expect(textZeroGrandTotal).not.toContain('0 บาท');
+
+    const textFreeItem = formatKhunThongSplitText(
+      'ข้าวมันไก่ตอน',
+      [
+        {
+          recipientName: 'ตาล',
+          totalQuantity: 1,
+          totalAmount: 50,
+          items: [
+            {
+              itemId: '1',
+              displayTitle: 'ข้าวมันไก่',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 50,
+              lineTotal: 50,
+            },
+          ],
+        },
+        {
+          recipientName: 'บอย',
+          totalQuantity: 1,
+          totalAmount: 0,
+          items: [
+            {
+              itemId: '2',
+              displayTitle: 'น้ำซุปฟรี',
+              note: null,
+              quantity: 1,
+              unitPriceWithOptions: 0,
+              lineTotal: 0,
+            },
+          ],
+        },
+      ],
+      50,
+      2,
+    );
+
+    expect(textFreeItem).toContain('1. ตาล: 50 บาท (ข้าวมันไก่ x1)');
+    expect(textFreeItem).toContain('2. บอย: ฟรี (น้ำซุปฟรี x1)');
   });
 });

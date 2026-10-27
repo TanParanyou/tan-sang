@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
   Clock,
@@ -18,6 +18,7 @@ import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
 import type { SessionHistoryItem } from '@/features/order-session/order-session.schema';
 import { calculateOrderItemTotals } from '@/server/services/order-calculator.service';
+import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
 
 function formatSessionDate(iso: string): string {
   try {
@@ -40,7 +41,16 @@ export function OrderHistoryClient({
   initialHistory: SessionHistoryItem[];
 }) {
   const { profile } = useLiff();
+  const queryClient = useQueryClient();
   const [filterMode, setFilterMode] = useState<'ALL' | 'MINE'>('ALL');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 2800);
+  };
 
   const { data: history = initialHistory } = useQuery<SessionHistoryItem[]>({
     queryKey: ['session-history'],
@@ -80,6 +90,18 @@ export function OrderHistoryClient({
   return (
     <div className="min-h-screen bg-canvas pb-24">
       <DevPersonaBar />
+
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-hairline rounded-theme bg-ink px-4 py-2 text-xs font-medium text-surface shadow-theme"
+        >
+          {toastMessage}
+        </div>
+      )}
+
       <AppNavbar
         backHref="/"
         backLabel="หน้าแรก"
@@ -247,6 +269,19 @@ export function OrderHistoryClient({
                             <Printer className="h-3.5 w-3.5 text-ink-secondary" />
                             ใบเสร็จ
                           </Link>
+                          <DeleteSessionButton
+                            sessionId={session.id}
+                            hostUserId={session.hostUserId}
+                            currentUserId={profile.userId}
+                            storeDisplayName={summary.storeDisplayName}
+                            variant="icon"
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition"
+                            onSuccess={async () => {
+                              await queryClient.invalidateQueries({ queryKey: ['session-history'] });
+                              showToast('ลบบิลเรียบร้อยแล้ว');
+                            }}
+                            onError={(err) => showToast(err)}
+                          />
                         </div>
                       </div>
                     );
@@ -340,6 +375,19 @@ export function OrderHistoryClient({
                             <Printer className="h-3.5 w-3.5 text-chili" />
                             ใบเสร็จ
                           </Link>
+                          <DeleteSessionButton
+                            sessionId={session.id}
+                            hostUserId={session.hostUserId}
+                            currentUserId={profile.userId}
+                            storeDisplayName={summary.storeDisplayName}
+                            variant="icon"
+                            className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition"
+                            onSuccess={async () => {
+                              await queryClient.invalidateQueries({ queryKey: ['session-history'] });
+                              showToast('ลบบิลเรียบร้อยแล้ว');
+                            }}
+                            onError={(err) => showToast(err)}
+                          />
                         </div>
                       </div>
                     );

@@ -17,6 +17,7 @@ export interface IOrderSessionRepository {
   addOrderItem(input: AddOrderItemInput): Promise<OrderItem>;
   updateOrderItem(input: UpdateOrderItemInput): Promise<OrderItem>;
   deleteOrderItem(itemId: string): Promise<void>;
+  deleteSession(sessionId: string): Promise<void>;
   updateReadyUsers(sessionId: string, readyUsers: ReadyParticipant[]): Promise<OrderSession>;
   closeSession(sessionId: string, closedAtIso: string): Promise<OrderSession>;
 }
@@ -205,6 +206,13 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
     const { error } = await this.db.from('order_items').delete().eq('id', itemId);
     if (error) {
       throw new Error(`Failed to delete order item ${itemId}: ${error.message}`);
+    }
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const { error } = await this.db.from('order_sessions').delete().eq('id', sessionId);
+    if (error) {
+      throw new Error(`Failed to delete order session ${sessionId}: ${error.message}`);
     }
   }
 

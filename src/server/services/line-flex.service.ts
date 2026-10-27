@@ -1,5 +1,6 @@
 import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
+import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 
 export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayload) {
   const title =
@@ -88,6 +89,8 @@ export function buildBillSummaryFlexMessage(
   payload: LineFlexReceiptSharePayload,
   recipientBreakdowns: RecipientOrderBreakdown[],
 ) {
+  const isGrandTotalZero = payload.grandTotalAmount === 0;
+
   const recipientRows = recipientBreakdowns.slice(0, 12).map((r) => ({
     type: 'box',
     layout: 'horizontal',
@@ -103,7 +106,7 @@ export function buildBillSummaryFlexMessage(
       },
       {
         type: 'text',
-        text: `${r.totalAmount.toLocaleString('th-TH')} ฿`,
+        text: formatPrice(r.totalAmount, { isGrandTotalZero }),
         size: 'sm',
         weight: 'bold',
         color: '#141413',
@@ -113,9 +116,17 @@ export function buildBillSummaryFlexMessage(
     ],
   }));
 
+  const altText = isGrandTotalZero
+    ? `สรุปรายการสั่งอาหารร้าน ${payload.storeDisplayName} (${payload.totalQuantity} รายการ)`
+    : `สรุปยอดบิล ${payload.storeDisplayName} รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท`;
+
+  const shareText = isGrandTotalZero
+    ? `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน)\nดูสรุปรายการอาหารสำหรับเช็คของได้ที่:\n${payload.receiptUrl}`
+    : `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท)\nดูใบเสร็จแยกรายคนสำหรับโอนเงินหรือให้ขุนทองหารยอดได้ที่:\n${payload.receiptUrl}`;
+
   return {
     type: 'flex' as const,
-    altText: `สรุปยอดบิล ${payload.storeDisplayName} รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท`,
+    altText,
     contents: {
       type: 'bubble',
       header: {
@@ -166,7 +177,7 @@ export function buildBillSummaryFlexMessage(
               },
               {
                 type: 'text',
-                text: `${payload.grandTotalAmount.toLocaleString('th-TH')} ฿`,
+                text: formatGrandTotal(payload.grandTotalAmount) ?? 'รอร้านคิดเงิน',
                 size: 'md',
                 weight: 'bold',
                 color: '#D9480F',
@@ -198,9 +209,7 @@ export function buildBillSummaryFlexMessage(
             action: {
               type: 'uri',
               label: 'แชร์สรุปบิลเข้ากลุ่ม LINE',
-              uri: `https://line.me/R/share?text=${encodeURIComponent(
-                `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท)\nดูใบเสร็จแยกรายคนสำหรับโอนเงินหรือให้ขุนทองหารยอดได้ที่:\n${payload.receiptUrl}`,
-              )}`,
+              uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`,
             },
           },
         ],
