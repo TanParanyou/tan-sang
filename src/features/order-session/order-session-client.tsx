@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   List,
   Lock,
+  MoreVertical,
   Pencil,
   Plus,
   Printer,
@@ -25,6 +26,7 @@ import {
   UtensilsCrossed,
   X,
 } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { NamePromptModal } from '@/components/shared/name-prompt-modal';
@@ -47,6 +49,7 @@ import {
   formatOrderItemTitle,
 } from '@/server/services/order-calculator.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
+import { formatThaiDateTime } from '@/lib/utils/date';
 import {
   Button,
   Input,
@@ -55,6 +58,7 @@ import {
   Chip,
   QuantityStepper,
   ConfirmDialog,
+  DropdownMenu,
 } from '@/components/ui';
 
 interface SessionDetailPayload {
@@ -84,6 +88,9 @@ export function OrderSessionClient({
 
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'TRAY'>('CATALOG');
   const [closedViewMode, setClosedViewMode] = useState<'GROUPED' | 'INDIVIDUAL'>('GROUPED');
+  const [closedCopyTab, setClosedCopyTab] = useState<'MERCHANT' | 'KHUNTHONG'>('MERCHANT');
+  const [copiedMerchant, setCopiedMerchant] = useState(false);
+  const [copiedKhunThong, setCopiedKhunThong] = useState(false);
   const [catalogViewMode, setCatalogViewMode] = useState<'LIST' | 'GRID'>('LIST');
   const [locale, setLocale] = useState<SupportedLocale>('th');
   const [searchQuery, setSearchQuery] = useState('');
@@ -493,6 +500,8 @@ export function OrderSessionClient({
   const handleCopyForMerchant = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(summary.merchantCopyText);
+      setCopiedMerchant(true);
+      setTimeout(() => setCopiedMerchant(false), 2000);
       showToast('คัดลอกข้อความสำหรับส่งให้ร้านค้าแล้ว!');
     }
   };
@@ -500,6 +509,8 @@ export function OrderSessionClient({
   const handleCopyKhunThong = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(summary.khunThongCopyText);
+      setCopiedKhunThong(true);
+      setTimeout(() => setCopiedKhunThong(false), 2000);
       showToast('คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทอง/กลุ่มแล้ว!');
     }
   };
@@ -635,67 +646,65 @@ export function OrderSessionClient({
           </div>
         }
         actions={
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Compact TH / EN Switcher */}
-            <div
-              role="group"
-              aria-label="เปลี่ยนภาษา / Switch Language"
-              className="inline-flex rounded-theme border border-hairline bg-canvas p-0.5 text-xs font-semibold"
-            >
-              <button
-                type="button"
-                onClick={() => setLocale('th')}
-                className={`rounded-theme px-1.5 py-0.5 text-[11px] transition ${
-                  locale === 'th'
-                    ? 'bg-ink text-surface font-bold'
-                    : 'text-ink-secondary hover:text-ink'
-                }`}
-              >
-                TH
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale('en')}
-                className={`rounded-theme px-1.5 py-0.5 text-[11px] transition ${
-                  locale === 'en'
-                    ? 'bg-ink text-surface font-bold'
-                    : 'text-ink-secondary hover:text-ink'
-                }`}
-              >
-                EN
-              </button>
-            </div>
-
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setIsNameModalOpen(true)}
-              className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-1 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
+              className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
               title="แตะเพื่อเปลี่ยนชื่อผู้สั่ง"
             >
-              <span className="max-w-[75px] truncate font-semibold">{profile.displayName}</span>
+              <span className="max-w-[80px] sm:max-w-[110px] truncate font-semibold">{profile.displayName}</span>
               <Pencil className="h-3 w-3 text-ink-muted shrink-0" />
             </button>
 
-            <Link
-              href={`/receipt/${session.id}`}
-              aria-label="ดูใบเสร็จ"
-              title="ดูใบเสร็จ"
-              className="inline-flex min-h-[34px] min-w-[34px] sm:min-h-[36px] sm:px-2.5 items-center justify-center gap-1 rounded-theme border border-hairline bg-surface text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
-            >
-              <Printer className="h-3.5 w-3.5 text-ink-secondary" />
-              <span className="hidden sm:inline">ใบเสร็จ</span>
-            </Link>
-
-            <DeleteSessionButton
-              sessionId={session.id}
-              hostUserId={session.hostUserId}
-              currentUserId={profile.userId}
-              storeDisplayName={summary.storeDisplayName}
-              variant="icon"
-              onSuccess={() => {
-                router.push('/history');
-              }}
-              onError={(err) => showToast(err)}
+            <DropdownMenu
+              align="right"
+              ariaLabel="เมนูตัวเลือกเพิ่มเติม"
+              trigger={
+                <button
+                  type="button"
+                  aria-label="เมนูตัวเลือกเพิ่มเติม"
+                  title="เมนูตัวเลือกเพิ่มเติม"
+                  className="inline-flex min-h-[34px] min-w-[34px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink cursor-pointer"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              }
+              items={[
+                {
+                  label: 'พิมพ์ใบเสร็จ (80mm / A4)',
+                  icon: <Printer className="h-4 w-4" />,
+                  href: `/receipt/${session.id}`,
+                },
+                {
+                  label: locale === 'th' ? 'เปลี่ยนภาษาเป็น English' : 'เปลี่ยนภาษาเป็น ภาษาไทย',
+                  icon: <Globe className="h-4 w-4" />,
+                  description: `ภาษาปัจจุบัน: ${locale.toUpperCase()}`,
+                  onClick: () => setLocale(locale === 'th' ? 'en' : 'th'),
+                },
+                {
+                  label: 'คัดลอกลิงก์ตรง (เปิดในเว็บ)',
+                  icon: <Copy className="h-4 w-4" />,
+                  onClick: handleCopyDirectLink,
+                },
+                { type: 'separator' },
+                {
+                  custom: (
+                    <DeleteSessionButton
+                      sessionId={session.id}
+                      hostUserId={session.hostUserId}
+                      currentUserId={profile.userId}
+                      storeDisplayName={summary.storeDisplayName}
+                      variant="menu-item"
+                      buttonText="ลบห้องสั่งอาหาร"
+                      onSuccess={() => {
+                        router.push('/history');
+                      }}
+                      onError={(err) => showToast(err)}
+                    />
+                  ),
+                },
+              ]}
             />
           </div>
         }
@@ -726,45 +735,51 @@ export function OrderSessionClient({
           </div>
         </div>
         {isOpen && (
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-theme border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs shadow-2xs">
-            <div className="flex items-center gap-1.5 text-emerald-950">
-              <span className="font-semibold">ชวนเพื่อนเข้าตี้สั่งอาหาร:</span>
-              <span className="hidden sm:inline text-[11px] text-emerald-700">(ใช้ร่วมกับกลุ่มที่มีขุนทองได้)</span>
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-theme border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs shadow-2xs">
+            <div className="flex items-center gap-1.5 text-emerald-950 min-w-0">
+              <span className="font-semibold truncate">ชวนเพื่อนเข้าตี้:</span>
+              <span className="hidden sm:inline text-[11px] text-emerald-700 shrink-0">
+                (ใช้ร่วมกับขุนทองได้)
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleCopyOrderLink}
-                className="h-7 border-emerald-300 bg-white text-[11px] text-emerald-800 hover:bg-emerald-100"
-                title="คัดลอกลิงก์สั่งอาหารสำหรับเปิดใน LINE (LIFF)"
-              >
-                <Copy className="h-3 w-3" />
-                <span>ลิงก์ LIFF</span>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleCopyDirectLink}
-                className="h-7 border-emerald-300 bg-white text-[11px] text-emerald-800 hover:bg-emerald-100"
-                title="คัดลอกลิงก์ตรงสำหรับเปิดในเว็บเบราว์เซอร์ทั่วไป (ไม่ผ่าน LIFF)"
-              >
-                <Globe className="h-3 w-3" />
-                <span>ลิงก์ตรง (ไม่ผ่าน LIFF)</span>
-              </Button>
+            <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 type="button"
                 variant="primary"
                 size="sm"
                 onClick={handleShareInviteToLine}
-                className="h-7 bg-emerald-600 text-[11px] text-white hover:bg-emerald-700"
+                className="h-7 bg-emerald-600 text-[11px] text-white hover:bg-emerald-700 px-2.5"
                 title="แชร์การ์ดสั่งอาหารเข้ากลุ่ม LINE (ใช้ร่วมกับกลุ่มที่มีขุนทองได้)"
               >
-                <Share2 className="h-3 w-3" />
-                <span>แชร์เข้ากลุ่ม LINE</span>
+                <Share2 className="h-3 w-3 mr-1" />
+                <span>แชร์เข้า LINE</span>
               </Button>
+              <DropdownMenu
+                align="right"
+                ariaLabel="ตัวเลือกลิงก์สั่งอาหาร"
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex h-7 items-center gap-1 rounded-theme border border-emerald-300 bg-white px-2 text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 shadow-2xs transition cursor-pointer"
+                    title="คัดลอกลิงก์ห้องสั่งอาหาร"
+                  >
+                    <Copy className="h-3 w-3" />
+                    <span>ลิงก์</span>
+                  </button>
+                }
+                items={[
+                  {
+                    label: 'คัดลอกลิงก์ LIFF (เปิดใน LINE)',
+                    icon: <Copy className="h-4 w-4" />,
+                    onClick: handleCopyOrderLink,
+                  },
+                  {
+                    label: 'คัดลอกลิงก์ตรง (เปิดในเว็บทั่วไป)',
+                    icon: <Globe className="h-4 w-4" />,
+                    onClick: handleCopyDirectLink,
+                  },
+                ]}
+              />
             </div>
           </div>
         )}
@@ -1199,39 +1214,61 @@ export function OrderSessionClient({
              CLOSED STATE: Merchant Export & Split Bill Breakdown
              ================================================================== */
           <section className="space-y-4" aria-label="สรุปยอดหลังปิดบิล">
-            {/* Primary Export Actions */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {/* Primary Action Bar: LINE Share + Quick Export Menu */}
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="primary"
                 size="md"
-                onClick={handleCopyForMerchant}
-                className="w-full"
-              >
-                <Copy className="h-4 w-4" />
-                คัดลอกส่งร้านค้า
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
-                onClick={handleCopyKhunThong}
-                className="w-full border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100"
-                title="คัดลอกยอดแยกรายคนเพื่อนำไปให้ขุนทองช่วยหารบิล"
-              >
-                <Coins className="h-4 w-4 text-amber-600" />
-                คัดลอกส่งขุนทอง
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
                 onClick={handleShareToLine}
-                className="w-full"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700"
               >
-                <Share2 className="h-4 w-4" />
-                แชร์สรุปบิลเข้าแชท LINE
+                <Share2 className="h-4 w-4 mr-1.5" />
+                แชร์สรุปบิลเข้ากลุ่ม LINE
               </Button>
+
+              <DropdownMenu
+                align="right"
+                ariaLabel="ตัวเลือกคัดลอกข้อความด่วน"
+                trigger={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    className="shrink-0 gap-1.5 px-3"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span>คัดลอกด่วน</span>
+                  </Button>
+                }
+                items={[
+                  {
+                    label: 'คัดลอกข้อความส่งร้านค้า',
+                    icon: <UtensilsCrossed className="h-4 w-4" />,
+                    onClick: handleCopyForMerchant,
+                  },
+                  {
+                    label: 'คัดลอกยอดส่งขุนทอง / เรียกเก็บเงิน',
+                    icon: <Coins className="h-4 w-4 text-amber-600" />,
+                    onClick: handleCopyKhunThong,
+                  },
+                  { type: 'separator' },
+                  {
+                    label: 'เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4)',
+                    icon: <Printer className="h-4 w-4" />,
+                    href: `/receipt/${session.id}`,
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Session Date-Time & Status Bar */}
+            <div className="flex items-center justify-between text-xs text-ink-secondary px-1">
+              <span className="flex items-center gap-1.5 font-mono">
+                <Clock className="h-3.5 w-3.5 text-ink-muted" />
+                <span>วัน-เวลา: {formatThaiDateTime(session.closedAt ?? session.createdAt)}</span>
+              </span>
+              <span className="font-mono text-[11px] text-ink-muted">#{session.id.slice(0, 8).toUpperCase()}</span>
             </div>
 
             {/* Toggle: Grouped View vs Individual Breakdown */}
@@ -1340,45 +1377,108 @@ export function OrderSessionClient({
               </Card>
             )}
 
-            {/* Merchant & KhunThong Text Preview Box */}
-            <Card className="p-4 space-y-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
-                    ข้อความพร้อมส่งร้านค้า
-                  </span>
-                  <Link
-                    href={`/receipt/${session.id}`}
-                    className="text-xs font-semibold text-ink underline underline-offset-2 hover:text-neutral-700"
+            {/* Quick Copy Hub (Merchant & KhunThong with Tabs) */}
+            <Card className="p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-2.5">
+                <span className="text-xs font-semibold text-ink">ข้อความพร้อมส่งต่อ</span>
+
+                {/* Tab Switcher: Merchant vs KhunThong */}
+                <div className="inline-flex rounded-theme border border-hairline bg-subtle p-0.5 text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setClosedCopyTab('MERCHANT')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-theme transition cursor-pointer',
+                      closedCopyTab === 'MERCHANT'
+                        ? 'bg-surface font-semibold text-ink shadow-2xs'
+                        : 'text-ink-secondary hover:text-ink'
+                    )}
                   >
-                    เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4) →
-                  </Link>
+                    <UtensilsCrossed className="h-3 w-3" />
+                    <span>ส่งร้านค้า</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClosedCopyTab('KHUNTHONG')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-theme transition cursor-pointer',
+                      closedCopyTab === 'KHUNTHONG'
+                        ? 'bg-surface font-semibold text-amber-900 shadow-2xs'
+                        : 'text-ink-secondary hover:text-ink'
+                    )}
+                  >
+                    <Coins className="h-3 w-3 text-amber-600" />
+                    <span>ขุนทอง / เรียกเก็บ</span>
+                  </button>
                 </div>
-                <pre className="mt-2 whitespace-pre-wrap rounded-theme border border-hairline bg-canvas p-3 font-mono text-xs leading-relaxed text-ink">
-                  {summary.merchantCopyText}
+              </div>
+
+              {/* Compact Preview Box with max-height and custom scrollbar */}
+              <div className="relative">
+                <pre
+                  className={cn(
+                    'max-h-32 overflow-y-auto whitespace-pre-wrap rounded-theme border p-3 font-mono text-[11px] leading-relaxed transition-colors',
+                    closedCopyTab === 'MERCHANT'
+                      ? 'border-hairline bg-canvas text-ink'
+                      : 'border-amber-200 bg-amber-50/50 text-amber-950'
+                  )}
+                >
+                  {closedCopyTab === 'MERCHANT'
+                    ? summary.merchantCopyText
+                    : summary.khunThongCopyText}
                 </pre>
               </div>
 
-              <div className="border-t border-hairline pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900">
-                    <Coins className="h-3.5 w-3.5 text-amber-600" />
-                    ข้อความสำหรับส่งให้ขุนทอง / เรียกเก็บเงิน
-                  </span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCopyKhunThong}
-                    className="h-6 px-2 text-[10px] border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    คัดลอกยอด
-                  </Button>
-                </div>
-                <pre className="whitespace-pre-wrap rounded-theme border border-amber-200 bg-amber-50/50 p-3 font-mono text-xs leading-relaxed text-amber-950">
-                  {summary.khunThongCopyText}
-                </pre>
+              {/* Action row */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={
+                    closedCopyTab === 'MERCHANT'
+                      ? handleCopyForMerchant
+                      : handleCopyKhunThong
+                  }
+                  className={cn(
+                    'flex-1 text-xs font-semibold',
+                    closedCopyTab === 'KHUNTHONG' &&
+                      'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                  )}
+                >
+                  {closedCopyTab === 'MERCHANT' ? (
+                    copiedMerchant ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-600 mr-1.5" />
+                        <span>คัดลอกข้อความร้านแล้ว!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 mr-1.5" />
+                        <span>คัดลอกข้อความส่งร้าน</span>
+                      </>
+                    )
+                  ) : copiedKhunThong ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600 mr-1.5" />
+                      <span>คัดลอกยอดขุนทองแล้ว!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 mr-1.5" />
+                      <span>คัดลอกยอดส่งขุนทอง</span>
+                    </>
+                  )}
+                </Button>
+
+                <Link
+                  href={`/receipt/${session.id}`}
+                  className="inline-flex min-h-[32px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-ink-secondary hover:text-ink hover:bg-subtle transition shadow-2xs shrink-0"
+                  title="เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4)"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">พิมพ์ใบเสร็จ</span>
+                </Link>
               </div>
             </Card>
           </section>

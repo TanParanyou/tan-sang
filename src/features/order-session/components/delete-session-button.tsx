@@ -10,7 +10,7 @@ export interface DeleteSessionButtonProps {
   hostUserId: string;
   currentUserId: string;
   storeDisplayName: string;
-  variant?: 'icon' | 'button';
+  variant?: 'icon' | 'button' | 'menu-item';
   size?: 'sm' | 'md';
   className?: string;
   buttonText?: string;
@@ -111,6 +111,21 @@ export function DeleteSessionButton({
           }
         >
           <Trash2 className="h-4 w-4" />
+        </button>
+      ) : variant === 'menu-item' ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          role="menuitem"
+          className={
+            className ||
+            'group flex w-full items-center gap-2.5 rounded-theme px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 active:bg-red-100 text-left select-none'
+          }
+        >
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-red-500 group-hover:text-red-700">
+            <Trash2 className="h-4 w-4" />
+          </span>
+          <span className="truncate">{buttonText || 'ลบบิลสั่งอาหาร'}</span>
         </button>
       ) : (
         <Button

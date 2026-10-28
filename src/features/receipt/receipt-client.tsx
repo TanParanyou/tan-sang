@@ -27,6 +27,7 @@ import type {
 } from '@/features/receipt/receipt.schema';
 import { formatOrderItemTitle } from '@/server/services/order-calculator.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
+import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
@@ -98,13 +99,7 @@ export function ReceiptClient({
     }
   };
 
-  const formattedDate = new Date(session.closedAt ?? session.createdAt).toLocaleString(
-    'th-TH',
-    {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    },
-  );
+  const formattedDate = formatThaiDateTime(session.closedAt ?? session.createdAt);
 
   return (
     <div className="min-h-screen bg-canvas pb-32 print:bg-white print:pb-0">
@@ -228,8 +223,15 @@ export function ReceiptClient({
               TAN-SANG GROUP ORDER
             </p>
             <h1 className="mt-1 text-lg font-bold text-ink">{summary.storeDisplayName}</h1>
-            <p className="mt-1 font-mono text-[11px] text-ink-secondary">{formattedDate}</p>
-            <p className="font-mono text-[10px] text-ink-muted">
+            <div className="mt-1 space-y-0.5 font-mono text-[11px] text-ink-secondary">
+              <p>วัน-เวลา: {formattedDate}</p>
+              {session.closedAt && (
+                <p className="text-[10px] text-ink-muted">
+                  (เปิดรับ: {formatThaiTime(session.createdAt)} • ปิดรับ: {formatThaiTime(session.closedAt)})
+                </p>
+              )}
+            </div>
+            <p className="mt-1 font-mono text-[10px] text-ink-muted">
               SESSION: #{session.id.slice(0, 8).toUpperCase()} ({session.status})
             </p>
           </div>

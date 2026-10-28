@@ -19,21 +19,7 @@ import { useLiff } from '@/features/line/liff-provider';
 import type { SessionHistoryItem } from '@/features/order-session/order-session.schema';
 import { calculateOrderItemTotals } from '@/server/services/order-calculator.service';
 import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
-
-function formatSessionDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('th-TH', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
-}
+import { formatThaiDateTime } from '@/lib/utils/date';
 
 export function OrderHistoryClient({
   initialHistory,
@@ -220,7 +206,7 @@ export function OrderHistoryClient({
                               เปิดรับออเดอร์
                             </span>
                             <span className="font-mono text-xs text-ink-muted">
-                              {formatSessionDate(session.createdAt)}
+                              {formatThaiDateTime(session.createdAt)}
                             </span>
                             {isHost && (
                               <span className="rounded-theme border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
@@ -326,7 +312,7 @@ export function OrderHistoryClient({
                               ปิดบิลแล้ว
                             </span>
                             <span className="font-mono text-xs text-ink-muted">
-                              {formatSessionDate(session.createdAt)}
+                              {formatThaiDateTime(session.createdAt)}
                             </span>
                             {isHost && (
                               <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">

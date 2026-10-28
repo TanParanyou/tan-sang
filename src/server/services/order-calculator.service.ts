@@ -6,6 +6,7 @@ import type {
   RecipientOrderBreakdown,
 } from '@/features/order-session/order-session.schema';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
+import { formatThaiDateTime } from '@/lib/utils/date';
 
 /**
  * Converts a baht amount to integer satang to prevent IEEE-754 floating point drift.
@@ -172,12 +173,17 @@ export function groupOrderItemsByRecipient(items: OrderItem[]): RecipientOrderBr
 export function formatMerchantOrderText(
   storeDisplayName: string,
   groupedItems: GroupedOrderItemSummary[],
+  orderedAt?: string | null,
 ): string {
   if (groupedItems.length === 0) {
     return `ออเดอร์ร้าน: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
   }
 
-  const lines: string[] = [`ออเดอร์ร้าน: ${storeDisplayName}`, '------------------------'];
+  const lines: string[] = [`ออเดอร์ร้าน: ${storeDisplayName}`];
+  if (orderedAt) {
+    lines.push(`วัน-เวลา: ${formatThaiDateTime(orderedAt)}`);
+  }
+  lines.push('------------------------');
   let totalQuantity = 0;
   let grandTotalSatang = 0;
 
@@ -209,6 +215,7 @@ export function formatKhunThongSplitText(
   recipientBreakdowns: RecipientOrderBreakdown[],
   grandTotalAmount: number,
   totalItemsCount: number,
+  orderedAt?: string | null,
 ): string {
   if (recipientBreakdowns.length === 0) {
     return `สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
@@ -219,6 +226,7 @@ export function formatKhunThongSplitText(
 
   const lines: string[] = [
     `สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
+    ...(orderedAt ? [`วัน-เวลา: ${formatThaiDateTime(orderedAt)}`] : []),
     grandTotalFormatted
       ? `ยอดรวมทั้งหมด: ${grandTotalFormatted} (${totalItemsCount} รายการ)`
       : `ยอดรวมทั้งหมด: ${totalItemsCount} รายการ (รอร้านคิดเงิน)`,
@@ -256,6 +264,7 @@ export function buildOrderSessionSummary(
   const totalItemsCount = groupedItems.reduce((sum, g) => sum + g.totalQuantity, 0);
   const grandTotalSatang = groupedItems.reduce((sum, g) => sum + toSatang(g.totalPrice), 0);
   const grandTotalAmount = fromSatang(grandTotalSatang);
+  const sessionDate = session.closedAt ?? session.createdAt;
 
   return {
     sessionId: session.id,
@@ -265,12 +274,13 @@ export function buildOrderSessionSummary(
     grandTotalAmount,
     groupedItems,
     recipientBreakdowns,
-    merchantCopyText: formatMerchantOrderText(storeDisplayName, groupedItems),
+    merchantCopyText: formatMerchantOrderText(storeDisplayName, groupedItems, sessionDate),
     khunThongCopyText: formatKhunThongSplitText(
       storeDisplayName,
       recipientBreakdowns,
       grandTotalAmount,
       totalItemsCount,
+      sessionDate,
     ),
   };
 }

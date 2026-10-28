@@ -197,6 +197,10 @@ describe('Tan-Sang Core Business Logic', () => {
     const copyText = formatMerchantOrderText('ครัวตาล', grouped);
     expect(copyText).toContain('1. ข้าวผัดหมู (ธรรมดา) + ไข่ดาว x 3');
     expect(copyText).toContain('รวมทั้งหมด: 3 รายการ (180 บาท)');
+
+    const copyTextWithDate = formatMerchantOrderText('ครัวตาล', grouped, '2026-10-28T11:36:00.000Z');
+    expect(copyTextWithDate).toContain('วัน-เวลา:');
+    expect(copyTextWithDate).toContain('28 ต.ค. 2569');
   });
 
   it('omits 0 baht amount in merchant order text when grand total is 0', () => {
