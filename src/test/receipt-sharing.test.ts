@@ -4,6 +4,7 @@ import {
   buildReceiptShareText,
 } from '@/server/services/line-flex.service';
 import { generateMetadata } from '@/app/(liff)/receipt/[sessionId]/page';
+import { generateMetadata as generateSlipMetadata } from '@/app/(liff)/receipt/[sessionId]/slip/page';
 import { getOrderSessionService } from '@/server/container';
 
 describe('Receipt Sharing & LINE Message Compliance', () => {
@@ -80,5 +81,23 @@ describe('Receipt Sharing & LINE Message Compliance', () => {
     expect(meta.description).toContain('ข้าวมันไก่ตอน');
     expect(meta.openGraph?.title).toContain('ข้าวมันไก่ตอน');
     expect(meta.openGraph?.url).toContain(`/receipt/${session.id}`);
+
+    const slipMeta = await generateSlipMetadata({
+      params: Promise.resolve({ sessionId: session.id }),
+    });
+
+    expect(slipMeta.title).toContain('ข้าวมันไก่ตอน');
+    expect(slipMeta.description).toContain('ข้าวมันไก่ตอน');
+    expect(slipMeta.openGraph?.title).toContain('ข้าวมันไก่ตอน');
+    expect(slipMeta.openGraph?.url).toContain(`/receipt/${session.id}/slip`);
+  });
+
+  it('shared receipt URL points to dedicated /receipt/[sessionId]/slip route', () => {
+    const slipUrl = `http://localhost:3000/receipt/${samplePayload.sessionId}/slip`;
+    const text = buildReceiptShareText({
+      ...samplePayload,
+      receiptUrl: slipUrl,
+    });
+    expect(text).toContain(`/receipt/${samplePayload.sessionId}/slip`);
   });
 });

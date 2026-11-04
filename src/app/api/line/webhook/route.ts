@@ -93,7 +93,9 @@ export async function POST(request: NextRequest) {
     const getOrderUrl = (id: string) =>
       liffId ? `https://liff.line.me/${liffId}/order/${id}` : `${appUrl}/order/${id}`;
     const getReceiptUrl = (id: string) =>
-      liffId ? `https://liff.line.me/${liffId}/receipt/${id}` : `${appUrl}/receipt/${id}`;
+      liffId
+        ? `https://liff.line.me/${liffId}/receipt/${id}/slip`
+        : `${appUrl}/receipt/${id}/slip`;
 
     const results = [];
 

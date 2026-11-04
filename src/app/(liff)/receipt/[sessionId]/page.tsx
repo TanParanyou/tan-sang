@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ReceiptClient } from '@/features/receipt/receipt-client';
 import { getOrderSessionService } from '@/server/container';
 import { DomainError } from '@/server/errors/domain.error';
@@ -24,7 +24,7 @@ export async function generateMetadata({
     const grandTotal = formatGrandTotal(summary.grandTotalAmount, 'บาท');
     const priceText = grandTotal ? `ยอดรวม ${grandTotal}` : 'รอร้านคิดเงิน';
 
-    const title = `ใบเสร็จ ${storeName} #${shortId}`;
+    const title = `จัดการบิล: ${storeName} #${shortId}`;
     const description = `สรุปบิล ${storeName} (${totalCount} จาน • ${priceText}) ดูสรุปยอดแยกรายคนและพิมพ์ใบเสร็จ`;
 
     return constructMetadata({
@@ -35,7 +35,7 @@ export async function generateMetadata({
     });
   } catch {
     return constructMetadata({
-      title: `สรุปบิล & ใบเสร็จ #${shortId}`,
+      title: `จัดการบิล & ใบเสร็จ #${shortId}`,
       description: 'ดูสรุปยอดคำสั่งซื้อ ยอดแยกรายคน และพิมพ์ใบเสร็จ',
       canonicalUrl: `/receipt/${sessionId}`,
       noIndex: true,
@@ -45,10 +45,23 @@ export async function generateMetadata({
 
 export default async function ReceiptPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sessionId: string }>;
+  searchParams?: Promise<{ shared?: string; view?: string }>;
 }) {
   const { sessionId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+
+  // If visitor is requesting shared slip view, redirect cleanly to dedicated /receipt/[sessionId]/slip page
+  if (
+    resolvedSearchParams.shared === '1' ||
+    resolvedSearchParams.view === 'shared' ||
+    resolvedSearchParams.view === 'slip'
+  ) {
+    redirect(`/receipt/${sessionId}/slip`);
+  }
+
   const service = getOrderSessionService();
 
   try {
