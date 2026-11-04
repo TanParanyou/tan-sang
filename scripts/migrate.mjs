@@ -53,7 +53,12 @@ async function runMigrations() {
     client = await tryConnect(directConnStr, 'Direct Host db.lwlryzfcvxwjwshvorfu.supabase.co:5432');
   }
 
-  // Also try IPv4 pooler if direct fails
+  // Also try IPv4 poolers if direct fails
+  if (!client && password) {
+    const poolerApSouth1 = `postgresql://postgres.lwlryzfcvxwjwshvorfu:${encodeURIComponent(password)}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true`;
+    client = await tryConnect(poolerApSouth1, 'AP South 1 Pooler');
+  }
+
   if (!client && password) {
     const poolerUsEast1 = `postgresql://postgres.lwlryzfcvxwjwshvorfu:${encodeURIComponent(password)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true`;
     client = await tryConnect(poolerUsEast1, 'US East 1 Pooler');

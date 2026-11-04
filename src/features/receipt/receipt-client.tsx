@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Copy,
@@ -13,6 +13,10 @@ import {
   FileText,
   Layers,
   Users,
+  LayoutList,
+  Download,
+  Link2,
+  X,
 } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
@@ -26,6 +30,7 @@ import type {
   ReceiptViewMode,
 } from '@/features/receipt/receipt.schema';
 import { formatOrderItemTitle } from '@/server/services/order-calculator.service';
+import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui';
@@ -39,12 +44,16 @@ export function ReceiptClient({
   summary: OrderSessionSummary;
 }) {
   const { shareBillToLine } = useLiff();
+  const receiptRef = useRef<HTMLElement>(null);
   const [printFormat, setPrintFormat] = useState<ReceiptPrintFormat>('THERMAL_80MM');
   const [viewMode, setViewMode] = useState<ReceiptViewMode>('GROUPED');
   const [toast, setToast] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [isKhunThongCopied, setIsKhunThongCopied] = useState(false);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -99,6 +108,76 @@ export function ReceiptClient({
     }
   };
 
+  const handleShareLink = async () => {
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const receiptUrl = `${origin}/receipt/${session.id}`;
+    const shareText = buildReceiptShareText({
+      sessionId: session.id,
+      storeDisplayName: summary.storeDisplayName,
+      totalQuantity: summary.totalItemsCount,
+      grandTotalAmount: summary.grandTotalAmount,
+      orderUrl: `${origin}/order/${session.id}`,
+      receiptUrl,
+    });
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `ใบเสร็จ ${summary.storeDisplayName} | ตาลสั่ง`,
+          text: shareText,
+          url: receiptUrl,
+        });
+        notify('แชร์ลิงก์ใบเสร็จแล้ว!');
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(receiptUrl);
+        setIsLinkCopied(true);
+        notify('คัดลอกลิงก์ใบเสร็จแล้ว!');
+        setTimeout(() => setIsLinkCopied(false), 2000);
+      } catch {
+        notify('ไม่สามารถคัดลอกลิงก์ได้');
+      }
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!receiptRef.current) return;
+    try {
+      setIsDownloadingImage(true);
+      const { toPng } = await import('html-to-image');
+      const dataUrl = await toPng(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+
+      const fileName = `receipt-${session.id.slice(0, 8)}.png`;
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setPreviewImageUrl(dataUrl);
+      notify('บันทึกรูปภาพใบเสร็จแล้ว!');
+    } catch (err) {
+      console.error('Download receipt image failed:', err);
+      notify('ไม่สามารถสร้างรูปภาพใบเสร็จได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
+
   const formattedDate = formatThaiDateTime(session.closedAt ?? session.createdAt);
 
   return (
@@ -112,14 +191,39 @@ export function ReceiptClient({
           subtitle={summary.storeDisplayName}
           maxWidthClassName="max-w-2xl"
           actions={
-            <Link
-              href="/history"
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-medium text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili"
-              title="ดูประวัติบิลทั้งหมด"
-            >
-              <History className="h-3.5 w-3.5 text-ink-muted" />
-              <span className="hidden sm:inline">ประวัติบิล</span>
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleShareLink}
+                className={cn(
+                  'h-8 px-2.5 text-xs font-medium transition shadow-2xs',
+                  isLinkCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
+                )}
+                title="แชร์ลิงก์ใบเสร็จ (พร้อมดูพรีวิว Metadata)"
+              >
+                {isLinkCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600 mr-1" />
+                    <span>คัดลอกแล้ว</span>
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="h-3.5 w-3.5 text-ink-muted mr-1" />
+                    <span>แชร์ลิงก์</span>
+                  </>
+                )}
+              </Button>
+              <Link
+                href="/history"
+                className="inline-flex min-h-[32px] h-8 items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 text-xs font-medium text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili"
+                title="ดูประวัติบิลทั้งหมด"
+              >
+                <History className="h-3.5 w-3.5 text-ink-muted" />
+                <span className="hidden sm:inline">ประวัติบิล</span>
+              </Link>
+            </div>
           }
         />
       </div>
@@ -203,6 +307,19 @@ export function ReceiptClient({
                 <Users className="h-3.5 w-3.5" />
                 <span>แยกรายคน</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('ALL')}
+                className={cn(
+                  'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                  viewMode === 'ALL'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-secondary hover:text-ink',
+                )}
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span>ทั้งหมด</span>
+              </button>
             </div>
           </div>
         </div>
@@ -211,6 +328,7 @@ export function ReceiptClient({
       {/* Printable Receipt Sheet */}
       <main className="mx-auto mt-6 px-4 print:mt-0 print:px-0">
         <article
+          ref={receiptRef}
           className={`mx-auto border border-hairline bg-surface p-6 text-ink shadow-theme print:border-0 print:p-0 ${
             printFormat === 'THERMAL_80MM'
               ? 'max-w-[340px] font-mono text-xs print:max-w-[76mm]'
@@ -237,7 +355,7 @@ export function ReceiptClient({
           </div>
 
           {/* Section 1: Merchant Grouped Summary */}
-          {viewMode === 'GROUPED' && (
+          {(viewMode === 'GROUPED' || viewMode === 'ALL') && (
             <div className="py-3">
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                 สรุปรายการอาหารส่งร้าน ({summary.totalItemsCount} จาน)
@@ -263,8 +381,8 @@ export function ReceiptClient({
           )}
 
           {/* Section 2: Individual Recipient Breakdown */}
-          {viewMode === 'INDIVIDUAL' && (
-            <div className="py-3">
+          {(viewMode === 'INDIVIDUAL' || viewMode === 'ALL') && (
+            <div className={cn('py-3', viewMode === 'ALL' && 'border-t border-dashed border-ink pt-3')}>
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                 ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
               </h2>
@@ -357,29 +475,29 @@ export function ReceiptClient({
       </main>
 
       {/* Floating Sticky Bottom Action Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-theme print:hidden">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-1.5 sm:gap-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-2 sm:px-4 py-2.5 sm:py-3 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] shadow-theme print:hidden">
+        <div className="mx-auto flex max-w-2xl items-stretch justify-between gap-1 sm:gap-2">
           {/* ปุ่มคัดลอกส่งร้าน */}
           <Button
             type="button"
             variant="secondary"
             onClick={handleCopy}
             className={cn(
-              'flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium transition-all',
+              'flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium transition-all',
               isCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
             )}
             title="คัดลอกสรุปรายการอาหารสำหรับส่งร้านค้า"
           >
             {isCopied ? (
               <>
-                <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>คัดลอกแล้ว!</span>
+                <Check className="h-4 w-4 shrink-0 text-emerald-600 sm:mr-1" />
+                <span>คัดลอกแล้ว</span>
               </>
             ) : (
               <>
-                <Copy className="h-4 w-4 shrink-0 text-ink-muted" />
+                <Copy className="h-4 w-4 shrink-0 text-ink-muted sm:mr-1" />
                 <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
-                <span className="sm:hidden">ส่งร้าน</span>
+                <span className="sm:hidden leading-none mt-0.5">ส่งร้าน</span>
               </>
             )}
           </Button>
@@ -390,23 +508,37 @@ export function ReceiptClient({
             variant="secondary"
             onClick={handleCopyKhunThong}
             className={cn(
-              'flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium transition-all border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100',
+              'flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium transition-all border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100',
               isKhunThongCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
             )}
             title="คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทองช่วยหารบิล"
           >
             {isKhunThongCopied ? (
               <>
-                <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>คัดลอกแล้ว!</span>
+                <Check className="h-4 w-4 shrink-0 text-emerald-600 sm:mr-1" />
+                <span>คัดลอกแล้ว</span>
               </>
             ) : (
               <>
-                <Coins className="h-4 w-4 shrink-0 text-amber-600" />
+                <Coins className="h-4 w-4 shrink-0 text-amber-600 sm:mr-1" />
                 <span className="hidden sm:inline">คัดลอกส่งขุนทอง</span>
-                <span className="sm:hidden">ส่งขุนทอง</span>
+                <span className="sm:hidden leading-none mt-0.5">ขุนทอง</span>
               </>
             )}
+          </Button>
+
+          {/* ปุ่มโหลดภาพ (Download Image) */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleDownloadImage}
+            loading={isDownloadingImage}
+            className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium hover:border-sky-300 hover:text-sky-700"
+            title="บันทึกรูปภาพใบเสร็จลงอุปกรณ์"
+          >
+            <Download className="h-4 w-4 shrink-0 text-sky-600 sm:mr-1" />
+            <span className="hidden sm:inline">โหลดภาพ</span>
+            <span className="sm:hidden leading-none mt-0.5">โหลดรูป</span>
           </Button>
 
           {/* ปุ่มแชร์เข้า LINE */}
@@ -415,12 +547,12 @@ export function ReceiptClient({
             variant="secondary"
             onClick={handleShareLine}
             loading={isSharing}
-            className="flex-1 min-h-[42px] px-2 text-xs sm:px-2.5 sm:text-xs font-medium hover:border-emerald-300 hover:text-emerald-700"
+            className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium hover:border-emerald-300 hover:text-emerald-700"
             title="แชร์สรุปบิลเข้าห้องแชท LINE"
           >
-            <Share2 className="h-4 w-4 shrink-0 text-line" />
+            <Share2 className="h-4 w-4 shrink-0 text-line sm:mr-1" />
             <span className="hidden sm:inline">แชร์เข้า LINE</span>
-            <span className="sm:hidden">แชร์ LINE</span>
+            <span className="sm:hidden leading-none mt-0.5">แชร์ LINE</span>
           </Button>
 
           {/* ปุ่มหลักพิมพ์ใบเสร็จ */}
@@ -428,14 +560,117 @@ export function ReceiptClient({
             type="button"
             variant="primary"
             onClick={() => window.print()}
-            className="flex-1 min-h-[42px] px-2 text-xs sm:px-3 sm:text-xs font-medium shadow-sm transition-all"
+            className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-3 py-1 text-[10px] sm:text-xs font-medium shadow-sm transition-all"
             title="พิมพ์ใบเสร็จหรือบันทึกเป็น PDF"
           >
-            <Printer className="h-4 w-4 shrink-0" />
-            <span>พิมพ์บิล</span>
+            <Printer className="h-4 w-4 shrink-0 sm:mr-1" />
+            <span className="hidden sm:inline">พิมพ์บิล</span>
+            <span className="sm:hidden leading-none mt-0.5">พิมพ์</span>
           </Button>
         </div>
       </div>
+
+      {/* Modal Preview Image for Mobile & LINE users to save/share */}
+      {previewImageUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200 print:hidden"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border border-hairline bg-surface p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-hairline">
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-bold text-ink">รูปภาพใบเสร็จ</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewImageUrl(null)}
+                className="rounded-full p-1 text-ink-muted hover:bg-subtle hover:text-ink focus-visible:outline-none"
+                aria-label="ปิด"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="my-2.5 rounded-lg border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-900 leading-relaxed">
+              💡 <strong>สำหรับผู้ใช้มือถือ & LINE:</strong> แตะค้างที่รูปภาพด้านล่างเพื่อเลือก &quot;บันทึกรูปภาพ&quot; (Save Image) ลงในอัลบั้มรูปได้เลยครับ
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-hairline/80 bg-subtle p-2 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewImageUrl}
+                alt="รูปภาพใบเสร็จ"
+                className="mx-auto max-h-[48vh] w-auto rounded border border-hairline shadow-sm"
+              />
+            </div>
+
+            <div className="mt-3 flex items-center gap-2 pt-2 border-t border-hairline">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.download = `receipt-${session.id.slice(0, 8)}.png`;
+                  link.href = previewImageUrl;
+                  link.click();
+                  notify('ดาวน์โหลดรูปภาพแล้ว');
+                }}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                ดาวน์โหลดอีกครั้ง
+              </Button>
+              {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(previewImageUrl);
+                      const blob = await res.blob();
+                      const file = new File(
+                        [blob],
+                        `receipt-${session.id.slice(0, 8)}.png`,
+                        { type: 'image/png' },
+                      );
+                      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                          files: [file],
+                          title: `ใบเสร็จ-${summary.storeDisplayName}`,
+                        });
+                        return;
+                      }
+                    } catch {
+                      // ignore abort
+                    }
+                  }}
+                >
+                  <Share2 className="mr-1.5 h-3.5 w-3.5 text-ink-muted" />
+                  แชร์รูปภาพ
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="text-xs"
+                onClick={() => setPreviewImageUrl(null)}
+              >
+                ปิด
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

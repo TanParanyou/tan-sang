@@ -8,7 +8,7 @@ import type {
 export const ReceiptPrintFormatSchema = z.enum(['THERMAL_80MM', 'A4']);
 export type ReceiptPrintFormat = z.infer<typeof ReceiptPrintFormatSchema>;
 
-export const ReceiptViewModeSchema = z.enum(['GROUPED', 'INDIVIDUAL']);
+export const ReceiptViewModeSchema = z.enum(['GROUPED', 'INDIVIDUAL', 'ALL']);
 export type ReceiptViewMode = z.infer<typeof ReceiptViewModeSchema>;
 
 export interface ReceiptViewModel {

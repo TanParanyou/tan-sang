@@ -85,6 +85,18 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
   };
 }
 
+/**
+ * Builds standard human-readable receipt text for LINE sharing and Web Share.
+ * Serves as the single source of truth across LINE Flex buttons, LIFF share, and clipboard export.
+ */
+export function buildReceiptShareText(payload: LineFlexReceiptSharePayload): string {
+  const isGrandTotalZero = payload.grandTotalAmount === 0;
+  const grandTotal = formatGrandTotal(payload.grandTotalAmount, 'บาท');
+  return isGrandTotalZero
+    ? `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน)\nดูสรุปรายการอาหารสำหรับเช็คของได้ที่:\n${payload.receiptUrl}`
+    : `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน รวม ${grandTotal ?? `${payload.grandTotalAmount.toLocaleString('th-TH')} บาท`})\nดูใบเสร็จแยกรายคนสำหรับโอนเงินหรือให้ขุนทองหารยอดได้ที่:\n${payload.receiptUrl}`;
+}
+
 export function buildBillSummaryFlexMessage(
   payload: LineFlexReceiptSharePayload,
   recipientBreakdowns: RecipientOrderBreakdown[],
@@ -120,9 +132,7 @@ export function buildBillSummaryFlexMessage(
     ? `สรุปรายการสั่งอาหารร้าน ${payload.storeDisplayName} (${payload.totalQuantity} รายการ)`
     : `สรุปยอดบิล ${payload.storeDisplayName} รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท`;
 
-  const shareText = isGrandTotalZero
-    ? `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน)\nดูสรุปรายการอาหารสำหรับเช็คของได้ที่:\n${payload.receiptUrl}`
-    : `สรุปบิลสั่งอาหารร้าน "${payload.storeDisplayName}" (${payload.totalQuantity} จาน รวม ${payload.grandTotalAmount.toLocaleString('th-TH')} บาท)\nดูใบเสร็จแยกรายคนสำหรับโอนเงินหรือให้ขุนทองหารยอดได้ที่:\n${payload.receiptUrl}`;
+  const shareText = buildReceiptShareText(payload);
 
   return {
     type: 'flex' as const,
@@ -199,7 +209,7 @@ export function buildBillSummaryFlexMessage(
             color: '#141413',
             action: {
               type: 'uri',
-              label: 'ดูใบเสร็จฉบับเต็ม / สั่งพิมพ์',
+              label: 'ดูใบเสร็จฉบับเต็ม',
               uri: payload.receiptUrl,
             },
           },
@@ -208,7 +218,7 @@ export function buildBillSummaryFlexMessage(
             style: 'secondary',
             action: {
               type: 'uri',
-              label: 'แชร์สรุปบิลเข้ากลุ่ม LINE',
+              label: 'แชร์เข้ากลุ่ม LINE',
               uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`,
             },
           },

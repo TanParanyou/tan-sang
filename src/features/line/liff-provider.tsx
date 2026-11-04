@@ -7,6 +7,7 @@ import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
 import {
   buildBillSummaryFlexMessage,
+  buildReceiptShareText,
   buildSessionCreatedFlexMessage,
 } from '@/server/services/line-flex.service';
 
@@ -188,12 +189,14 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     recipientBreakdowns: RecipientOrderBreakdown[],
   ): Promise<{ shared: boolean; message: string }> => {
     const flexMsg = buildBillSummaryFlexMessage(payload, recipientBreakdowns);
+    const shareText = buildReceiptShareText(payload);
 
     try {
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
       if (liffId && liffId !== '1234567890-AbcdEfgh') {
         const { default: liff } = await import('@line/liff');
-        if (liff.isApiAvailable('shareTargetPicker')) {
+        // shareTargetPicker requires login
+        if (liff.isLoggedIn() && liff.isApiAvailable('shareTargetPicker')) {
           const res = await liff.shareTargetPicker([flexMsg as never]);
           if (res) {
             return {
@@ -207,16 +210,27 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
           };
         }
       }
-    } catch {
-      // Fallback to clipboard copy when outside LINE LIFF
+    } catch (err) {
+      console.warn('LIFF shareTargetPicker error or not supported:', err);
+    }
+
+    // Fallback: If shareTargetPicker is not available or not logged in,
+    // open the native LINE share scheme so the user can easily share to any LINE chat
+    const shareUrl = `https://line.me/R/share?text=${encodeURIComponent(shareText)}`;
+    if (typeof window !== 'undefined') {
+      window.open(shareUrl, '_blank');
+      return {
+        shared: true,
+        message: 'เปิดหน้าต่างแชร์เข้าห้องแชท LINE แล้ว',
+      };
     }
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(JSON.stringify(flexMsg, null, 2));
+      await navigator.clipboard.writeText(shareText);
     }
     return {
       shared: true,
-      message: 'จำลองการแชร์ LINE Flex Message (คัดลอก JSON Flex ลง Clipboard แล้ว)',
+      message: 'คัดลอกข้อความสรุปบิลสำหรับส่งใน LINE แล้ว',
     };
   };
 

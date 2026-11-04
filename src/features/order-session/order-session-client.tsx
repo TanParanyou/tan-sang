@@ -604,7 +604,7 @@ export function OrderSessionClient({
   ]);
 
   return (
-    <div className="min-h-screen bg-canvas pb-32">
+    <div className="min-h-screen bg-canvas pb-36">
       <DevPersonaBar hostUserId={session.hostUserId} />
 
       {/* Toast Feedback */}
@@ -1143,7 +1143,7 @@ export function OrderSessionClient({
                                 return isItemUserReady ? (
                                   <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
                                     <Check className="h-2.5 w-2.5 text-emerald-600" />
-                                    พร้อมแล้ว
+                                    พร้อม
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700">
@@ -1726,79 +1726,86 @@ export function OrderSessionClient({
           Sticky Bottom Dock (while OPEN) - Docked directly to screen bottom
           ==================================================================== */}
       {isOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-theme">
-          <div className="mx-auto flex max-w-lg flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-ink-secondary flex items-center gap-1">
-                    <span>ของ</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsNameModalOpen(true)}
-                      className="inline-flex items-center gap-1 font-bold text-ink underline decoration-dotted decoration-ink/40 hover:text-chili transition cursor-pointer"
-                      title="แตะเพื่อเปลี่ยนชื่อของคุณ"
-                    >
-                      <span className="max-w-[120px] truncate">{profile.displayName}</span>
-                      <Pencil className="h-2.5 w-2.5 text-ink-muted shrink-0" />
-                    </button>
-                    <span>({myItems.length} รายการ)</span>
-                  </p>
-                  {isCurrentUserReady ? (
-                    <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
-                      <Check className="h-2.5 w-2.5 text-emerald-600" />
-                      พร้อมแล้ว
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700">
-                      กำลังเลือก
-                    </span>
-                  )}
-                </div>
-                <p className="font-mono text-base font-bold text-ink tabular-nums">
-                  {myTotalAmount.toLocaleString('th-TH')} ฿
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
+        <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface/95 backdrop-blur-md px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-theme">
+          <div className="mx-auto flex max-w-lg flex-col gap-2.5">
+            {/* Top row: Summary info & user readiness */}
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                <span className="text-xs text-ink-muted shrink-0">ของ</span>
+                <button
                   type="button"
-                  variant={isCurrentUserReady ? 'secondary' : 'primary'}
-                  size="md"
-                  disabled={toggleReadyMutation.isPending}
-                  loading={toggleReadyMutation.isPending}
-                  onClick={() => toggleReadyMutation.mutate(!isCurrentUserReady)}
+                  onClick={() => setIsNameModalOpen(true)}
+                  className="inline-flex items-center gap-1 font-bold text-xs text-ink underline decoration-dotted decoration-ink/40 hover:text-chili transition cursor-pointer min-w-0"
+                  title="แตะเพื่อเปลี่ยนชื่อของคุณ"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {isCurrentUserReady ? 'ยกเลิกพร้อม' : 'กดเมื่อพร้อม'}
-                </Button>
-
-                {isHost && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="md"
-                    disabled={closeSessionMutation.isPending}
-                    loading={closeSessionMutation.isPending}
-                    onClick={() => {
-                      setConfirmDialog({
-                        isOpen: true,
-                        title: 'ยืนยันการปิดบิล',
-                        description: `ต้องการปิดรับออเดอร์ร้าน "${summary.storeDisplayName}" ใช่หรือไม่?\n\nเมื่อปิดแล้ว สมาชิกจะไม่สามารถสั่งหรือแก้ไขรายการอาหารเพิ่มได้ และระบบจะสรุปยอดบิลทันที`,
-                        confirmText: 'ปิดบิล',
-                        variant: 'danger',
-                        onConfirm: () => {
-                          setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
-                          closeSessionMutation.mutate();
-                        },
-                      });
-                    }}
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    ปิดบิล
-                  </Button>
+                  <span className="max-w-[120px] sm:max-w-[160px] truncate">{profile.displayName}</span>
+                  <Pencil className="h-2.5 w-2.5 text-ink-muted shrink-0" />
+                </button>
+                <span className="text-xs text-ink-secondary shrink-0">({myItems.length} รายการ)</span>
+                {isCurrentUserReady ? (
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shrink-0">
+                    <Check className="h-2.5 w-2.5 text-emerald-600" />
+                    พร้อม
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shrink-0">
+                    กำลังเลือก
+                  </span>
                 )}
               </div>
+
+              <div className="flex items-baseline gap-1.5 shrink-0 text-right">
+                <span className="text-[11px] text-ink-muted">รวม</span>
+                <span className="font-mono text-base font-bold text-ink tabular-nums">
+                  {formatPrice(myTotalAmount, {
+                    isGrandTotalZero: summary.grandTotalAmount === 0,
+                    zeroFallback: '0 ฿',
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Bottom row: Action buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={isCurrentUserReady ? 'secondary' : 'primary'}
+                size="md"
+                disabled={toggleReadyMutation.isPending}
+                loading={toggleReadyMutation.isPending}
+                onClick={() => toggleReadyMutation.mutate(!isCurrentUserReady)}
+                className="flex-1"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {isCurrentUserReady ? 'ยกเลิก' : 'พร้อม'}
+              </Button>
+
+              {isHost && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  disabled={closeSessionMutation.isPending}
+                  loading={closeSessionMutation.isPending}
+                  onClick={() => {
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: 'ยืนยันการปิดบิล',
+                      description: `ต้องการปิดรับออเดอร์ร้าน "${summary.storeDisplayName}" ใช่หรือไม่?\n\nเมื่อปิดแล้ว สมาชิกจะไม่สามารถสั่งหรือแก้ไขรายการอาหารเพิ่มได้ และระบบจะสรุปยอดบิลทันที`,
+                      confirmText: 'ปิดบิล',
+                      variant: 'danger',
+                      onConfirm: () => {
+                        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                        closeSessionMutation.mutate();
+                      },
+                    });
+                  }}
+                  className="shrink-0"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  ปิดบิล
+                </Button>
+              )}
             </div>
           </div>
         </div>
