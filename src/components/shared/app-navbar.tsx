@@ -36,7 +36,7 @@ export function AppNavbar({
   onBack,
   actions,
   subHeader,
-  maxWidthClassName = 'max-w-4xl',
+  maxWidthClassName,
   className,
 }: AppNavbarProps) {
   const hasBack = Boolean(backHref || onBack);
@@ -50,38 +50,33 @@ export function AppNavbar({
     >
       <div
         className={cn(
-          'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6',
+          'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6 max-w-4xl',
           maxWidthClassName,
         )}
       >
         {/* Left Section: Back Button or Brand Logo */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           {hasBack ? (
-            <div className="flex shrink-0 items-center gap-1.5">
-              {backHref ? (
-                <Link
-                  href={backHref}
-                  aria-label={backLabel ?? 'ย้อนกลับ'}
-                  className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  aria-label={backLabel ?? 'ย้อนกลับ'}
-                  className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-              )}
-              {backLabel && (
-                <span className="hidden text-xs font-medium text-ink-secondary sm:inline">
-                  {backLabel}
-                </span>
-              )}
-            </div>
+            backHref ? (
+              <Link
+                href={backHref}
+                aria-label={backLabel ?? 'ย้อนกลับ'}
+                title={backLabel ?? 'ย้อนกลับ'}
+                className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={backLabel ?? 'ย้อนกลับ'}
+                title={backLabel ?? 'ย้อนกลับ'}
+                className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )
           ) : (
             <Link
               href="/"

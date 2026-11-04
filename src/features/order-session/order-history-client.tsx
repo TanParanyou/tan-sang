@@ -93,7 +93,6 @@ export function OrderHistoryClient({
         backLabel="หน้าแรก"
         title="ประวัติบิลสั่งอาหาร"
         subtitle="Tan-Sang Ledger"
-        maxWidthClassName="max-w-2xl"
         actions={
           <Link
             href="/"

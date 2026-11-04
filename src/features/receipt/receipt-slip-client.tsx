@@ -8,17 +8,22 @@ import {
   Check,
   Link2,
   X,
+  Layers,
+  Users,
+  LayoutList,
 } from 'lucide-react';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
   OrderSession,
   OrderSessionSummary,
 } from '@/features/order-session/order-session.schema';
+import type { ReceiptViewMode } from '@/features/receipt/receipt.schema';
 import { formatOrderItemTitle } from '@/server/services/order-calculator.service';
 import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils/cn';
 
 export interface ReceiptSlipClientProps {
   session: OrderSession;
@@ -29,6 +34,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
   const { shareBillToLine } = useLiff();
   const receiptRef = useRef<HTMLElement>(null);
 
+  const [viewMode, setViewMode] = useState<ReceiptViewMode>('ALL');
   const [toast, setToast] = useState<string | null>(null);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -217,6 +223,56 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
         </div>
       </header>
 
+      {/* Mode Selector Toolbar: ให้เลือกโหมดการแสดงผล (ทั้งหมด / รวมเมนู / แยกรายคน) */}
+      <div className="border-b border-hairline/80 bg-surface px-4 py-2 print:hidden">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-ink-muted shrink-0">
+            การแสดงผล
+          </span>
+          <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode('ALL')}
+              className={cn(
+                'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                viewMode === 'ALL'
+                  ? 'bg-surface text-ink shadow-2xs font-semibold'
+                  : 'text-ink-secondary hover:text-ink',
+              )}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span>ทั้งหมด</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('GROUPED')}
+              className={cn(
+                'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                viewMode === 'GROUPED'
+                  ? 'bg-surface text-ink shadow-2xs font-semibold'
+                  : 'text-ink-secondary hover:text-ink',
+              )}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>รวมเมนู</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('INDIVIDUAL')}
+              className={cn(
+                'inline-flex min-h-[30px] items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all select-none',
+                viewMode === 'INDIVIDUAL'
+                  ? 'bg-surface text-ink shadow-2xs font-semibold'
+                  : 'text-ink-secondary hover:text-ink',
+              )}
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>แยกรายคน</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content: Pure Receipt Slip Only */}
       <main className="mx-auto mt-6 px-4 print:mt-0 print:px-0">
         <article
@@ -243,66 +299,75 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
           </div>
 
           {/* Section 1: Summary of all items */}
-          <div className="py-3">
-            <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-              สรุปรายการอาหาร ({summary.totalItemsCount} จาน)
-            </h3>
-            <div className="mt-2 space-y-2">
-              {summary.groupedItems.map((g, idx) => (
-                <div key={idx} className="flex items-start justify-between gap-2">
-                  <div className="flex-1 font-sans">
-                    <p className="font-semibold text-ink">
-                      {formatOrderItemTitle(g.menuName, g.variantName, g.optionNames)}
-                    </p>
-                    <p className="text-[11px] text-ink-secondary">
-                      สั่งโดย: {g.recipients.map((r) => r.recipientName).join(', ')}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-mono font-bold tabular-nums text-ink">
-                    x {g.totalQuantity}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 2: Individual Recipient Breakdown */}
-          <div className="border-t border-dashed border-ink py-3">
-            <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-              ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
-            </h3>
-
-            <div className="mt-2 space-y-3 font-sans">
-              {summary.recipientBreakdowns.map((rec) => (
-                <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
-                  <div className="flex items-center justify-between font-bold text-ink">
-                    <span>{rec.recipientName}</span>
-                    <span className="font-mono tabular-nums">
-                      {formatPrice(rec.totalAmount, {
-                        isGrandTotalZero: summary.grandTotalAmount === 0,
-                      })}
+          {(viewMode === 'GROUPED' || viewMode === 'ALL') && (
+            <div className="py-3">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                สรุปรายการอาหาร ({summary.totalItemsCount} จาน)
+              </h3>
+              <div className="mt-2 space-y-2">
+                {summary.groupedItems.map((g, idx) => (
+                  <div key={idx} className="flex items-start justify-between gap-2">
+                    <div className="flex-1 font-sans">
+                      <p className="font-semibold text-ink">
+                        {formatOrderItemTitle(g.menuName, g.variantName, g.optionNames)}
+                      </p>
+                      <p className="text-[11px] text-ink-secondary">
+                        สั่งโดย: {g.recipients.map((r) => r.recipientName).join(', ')}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-mono font-bold tabular-nums text-ink">
+                      x {g.totalQuantity}
                     </span>
                   </div>
-
-                  <ul className="mt-1 space-y-0.5 text-[11px] text-ink-secondary">
-                    {rec.items.map((it) => (
-                      <li key={it.itemId} className="flex justify-between">
-                        <span className="truncate pr-2">
-                          • {it.displayTitle} (x{it.quantity})
-                        </span>
-                        <span className="shrink-0 font-mono tabular-nums">
-                          {formatPrice(it.lineTotal, {
-                            isGrandTotalZero: summary.grandTotalAmount === 0,
-                            unpricedFallback: '-',
-                          })}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Section 2: Individual Recipient Breakdown */}
+          {(viewMode === 'INDIVIDUAL' || viewMode === 'ALL') && (
+            <div
+              className={cn(
+                'py-3',
+                viewMode === 'ALL' && 'border-t border-dashed border-ink pt-3',
+              )}
+            >
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
+                ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
+              </h3>
+
+              <div className="mt-2 space-y-3 font-sans">
+                {summary.recipientBreakdowns.map((rec) => (
+                  <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
+                    <div className="flex items-center justify-between font-bold text-ink">
+                      <span>{rec.recipientName}</span>
+                      <span className="font-mono tabular-nums">
+                        {formatPrice(rec.totalAmount, {
+                          isGrandTotalZero: summary.grandTotalAmount === 0,
+                        })}
+                      </span>
+                    </div>
+
+                    <ul className="mt-1 space-y-0.5 text-[11px] text-ink-secondary">
+                      {rec.items.map((it) => (
+                        <li key={it.itemId} className="flex justify-between">
+                          <span className="truncate pr-2">
+                            • {it.displayTitle} (x{it.quantity})
+                          </span>
+                          <span className="shrink-0 font-mono tabular-nums">
+                            {formatPrice(it.lineTotal, {
+                              isGrandTotalZero: summary.grandTotalAmount === 0,
+                              unpricedFallback: '-',
+                            })}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Grand Total */}
           <div className="border-t-2 border-ink pt-3 font-mono">

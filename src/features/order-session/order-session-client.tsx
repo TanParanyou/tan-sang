@@ -708,7 +708,6 @@ export function OrderSessionClient({
             />
           </div>
         }
-        maxWidthClassName="max-w-lg"
       />
 
       {/* Main Content Area */}
