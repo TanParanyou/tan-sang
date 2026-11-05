@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { DomainError } from '@/server/errors/domain.error';
+import { getRequestContext } from '@/server/context/request-context';
 
-export function apiSuccess<T>(data: T, status = 200) {
-  return NextResponse.json({ ok: true, data }, { status });
+export function apiSuccess<T>(data: T, status = 200, headers?: Record<string, string>) {
+  const correlationId = getRequestContext()?.correlationId;
+  return NextResponse.json(
+    { ok: true, data },
+    {
+      status,
+      headers: {
+        ...(correlationId ? { 'X-Correlation-Id': correlationId } : {}),
+        ...headers,
+      },
+    },
+  );
 }
 
 export function handleApiError(error: unknown) {
+  const correlationId = getRequestContext()?.correlationId;
+  const baseHeaders = correlationId ? { 'X-Correlation-Id': correlationId } : undefined;
+
   if (error instanceof ZodError) {
     const firstIssue = error.issues[0];
     return NextResponse.json(
@@ -17,8 +31,9 @@ export function handleApiError(error: unknown) {
           message: firstIssue?.message ?? 'ข้อมูลที่ส่งมาไม่ถูกต้อง',
           issues: error.issues,
         },
+        correlationId,
       },
-      { status: 400 },
+      { status: 400, headers: baseHeaders },
     );
   }
 
@@ -30,8 +45,9 @@ export function handleApiError(error: unknown) {
           code: error.code,
           message: error.message,
         },
+        correlationId,
       },
-      { status: error.statusCode },
+      { status: error.statusCode, headers: baseHeaders },
     );
   }
 
@@ -43,7 +59,8 @@ export function handleApiError(error: unknown) {
         code: 'INTERNAL_SERVER_ERROR',
         message,
       },
+      correlationId,
     },
-    { status: 500 },
+    { status: 500, headers: baseHeaders },
   );
 }

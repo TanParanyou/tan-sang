@@ -75,7 +75,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
           <button
             type="button"
             onClick={() => setIsNameModalOpen(true)}
-            className="inline-flex items-center gap-1.5 font-mono text-xs rounded-full bg-subtle px-2.5 py-1 text-ink-secondary border border-hairline hover:bg-neutral-200/60 hover:text-ink transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-mono text-xs rounded-full bg-subtle px-2.5 py-1 text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink transition cursor-pointer"
             title="แตะเพื่อเปลี่ยนชื่อ Host"
           >
             <span>Host: <strong className="text-ink">{profile.displayName}</strong></span>

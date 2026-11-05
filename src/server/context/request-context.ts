@@ -53,6 +53,11 @@ export function runWithRequestContext<R>(context: RequestContext, fn: () => R): 
   return contextStorage.run(context, fn);
 }
 
+export function withRequestContext<R>(req: Request, fn: () => R): R {
+  const context = createRequestContext(req);
+  return runWithRequestContext(context, fn);
+}
+
 export function getRequestContext(): RequestContext | undefined {
   return contextStorage.getStore();
 }

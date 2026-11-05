@@ -478,8 +478,8 @@ export function ReceiptClient({
               size="sm"
               onClick={handleCopyKhunThong}
               className={cn(
-                'h-7 bg-white border-amber-300 text-amber-900 hover:bg-amber-100 text-[11px] font-medium transition',
-                isKhunThongCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
+                'h-7 bg-surface border-amber-500/30 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 text-[11px] font-medium transition',
+                isKhunThongCopied && 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300',
               )}
             >
               {isKhunThongCopied ? (

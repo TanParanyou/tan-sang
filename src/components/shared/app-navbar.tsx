@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { ThemeToggle } from './theme-toggle';
+import { LocaleToggle } from './locale-toggle';
 
 export interface AppNavbarProps {
   /** Page or context title */
@@ -20,6 +22,10 @@ export interface AppNavbarProps {
   onBack?: () => void;
   /** Action elements on the right side of the navbar */
   actions?: React.ReactNode;
+  /** Whether to show the theme toggle button (default: true) */
+  showThemeToggle?: boolean;
+  /** Whether to show the language switcher toggle (default: true) */
+  showLocaleToggle?: boolean;
   /** Optional secondary content below main bar (e.g. ready members, filter tabs) */
   subHeader?: React.ReactNode;
   /** Custom max-width class (default: max-w-4xl) */
@@ -35,6 +41,8 @@ export function AppNavbar({
   backLabel,
   onBack,
   actions,
+  showThemeToggle = true,
+  showLocaleToggle = true,
   subHeader,
   maxWidthClassName = 'max-w-4xl',
   className,
@@ -51,7 +59,6 @@ export function AppNavbar({
       <div
         className={cn(
           'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6',
-          'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6 max-w-4xl',
           maxWidthClassName,
         )}
       >
@@ -119,12 +126,12 @@ export function AppNavbar({
           )}
         </div>
 
-        {/* Right Section: Actions */}
-        {actions && (
-          <div className="flex shrink-0 items-center gap-2">
-            {actions}
-          </div>
-        )}
+        {/* Right Section: Actions & Theme / Locale Toggle */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {actions}
+          {showLocaleToggle && <LocaleToggle />}
+          {showThemeToggle && <ThemeToggle />}
+        </div>
       </div>
 
       {/* SubHeader Section (e.g. Ready Participants Strip, Sub-tabs) */}

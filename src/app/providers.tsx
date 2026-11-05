@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LiffProvider } from '@/features/line/liff-provider';
+import { I18nProvider } from '@/lib/i18n/i18n-context';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -19,7 +20,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LiffProvider>{children}</LiffProvider>
+      <LiffProvider>
+        <I18nProvider>{children}</I18nProvider>
+      </LiffProvider>
     </QueryClientProvider>
   );
 }

@@ -3,9 +3,7 @@
 @tailwind utilities;
 
 :root,
-[data-theme='studio-blank'],
-[data-theme='street-food'],
-[data-theme='warm-palm'] {
+[data-theme='light'] {
   /* Surfaces & Canvas */
   --bg-canvas: #FAF6F0;
   --bg-surface: #FFFFFF;
@@ -39,6 +37,81 @@
   /* Shape & Elevation */
   --radius-theme: 12px;
   --shadow-theme: 0 1px 3px 0 rgb(54 37 32 / 0.05), 0 1px 2px -1px rgb(54 37 32 / 0.05);
+}
+
+/* System Dark Mode (Automatic when user system prefers dark) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    /* Surfaces & Canvas (Warm Cocoa Dark) */
+    --bg-canvas: #181311;
+    --bg-surface: #231B18;
+    --bg-subtle: #2E231F;
+
+    /* Typography / Ink */
+    --text-primary: #F6ECE2;
+    --text-secondary: #C6B5A8;
+    --text-muted: #988578;
+
+    /* Borders & Dividers */
+    --border-subtle: #3E312B;
+
+    /* Brand / Primary / Accent (Glowing Toasted Caramel) */
+    --color-primary: #E5732F;
+    --color-primary-fg: #FFFFFF;
+    --color-accent: #E5732F;
+    --color-accent-hover: #F08544;
+    --color-accent-subtle: #382218;
+
+    /* Success / LINE (Vibrant Emerald) */
+    --color-success: #10B981;
+    --color-success-hover: #059669;
+    --color-success-subtle: #142E25;
+    --color-success-accent: #10B981;
+
+    /* Warning & Danger */
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+
+    /* Elevation */
+    --shadow-theme: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.25);
+  }
+}
+
+/* Explicit Dark Mode Override (.dark or [data-theme='dark']) */
+.dark,
+[data-theme='dark'] {
+  /* Surfaces & Canvas (Warm Cocoa Dark) */
+  --bg-canvas: #181311;
+  --bg-surface: #231B18;
+  --bg-subtle: #2E231F;
+
+  /* Typography / Ink */
+  --text-primary: #F6ECE2;
+  --text-secondary: #C6B5A8;
+  --text-muted: #988578;
+
+  /* Borders & Dividers */
+  --border-subtle: #3E312B;
+
+  /* Brand / Primary / Accent (Glowing Toasted Caramel) */
+  --color-primary: #E5732F;
+  --color-primary-fg: #FFFFFF;
+  --color-accent: #E5732F;
+  --color-accent-hover: #F08544;
+  --color-accent-subtle: #382218;
+
+  /* Success / LINE (Vibrant Emerald) */
+  --color-success: #10B981;
+  --color-success-hover: #059669;
+  --color-success-subtle: #142E25;
+  --color-success-accent: #10B981;
+
+  /* Warning & Danger */
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  /* Elevation */
+  --shadow-theme: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.25);
 }
 
 html,

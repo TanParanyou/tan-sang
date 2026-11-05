@@ -12,6 +12,7 @@ Tan-Sang blends the appetizing warmth of Thai lunch culture with the crisp, trus
 
 ## 2. Color Tokens (OKLCH & Hex Equivalents)
 
+### Light Mode (Warm Palm & Roasted Cocoa)
 | Token Role | CSS Variable / Tailwind | OKLCH | Hex Fallback | Usage |
 | :--- | :--- | :--- | :--- | :--- |
 | **Canvas (Background)** | `--bg-canvas` / `bg-canvas` | `oklch(0.97 0.008 75)` | `#FAF6F0` | Warm unbleached paper background matching mascot body |
@@ -25,6 +26,19 @@ Tan-Sang blends the appetizing warmth of Thai lunch culture with the crisp, trus
 | **LINE / Ready Green** | `--color-success` / `bg-line` | `oklch(0.60 0.15 160)` | `#059669` | "เลือกเสร็จแล้ว (Ready)", "แชร์เข้า LINE" |
 | **Warning / Lock Amber** | `--color-warning` / `bg-amber-600` | `oklch(0.55 0.14 65)` | `#B45309` | Closed session badge, Host lock confirmation |
 | **Danger / Ban Red** | `--color-error` / `text-red-600` | `oklch(0.58 0.22 27)` | `#DC2626` | Delete item, Banned menu indicator |
+
+### Dark Mode (Warm Cocoa & Espresso Night)
+| Token Role | CSS Variable / Tailwind | Hex Token | Usage |
+| :--- | :--- | :--- | :--- |
+| **Canvas (Background)** | `--bg-canvas` / `bg-canvas` | `#181311` | Deep dark roasted espresso coffee background |
+| **Surface (Elevated)** | `--bg-surface` / `bg-surface` | `#231B18` | Dark cocoa surface for cards and trays |
+| **Surface Subtle** | `--bg-subtle` / `bg-subtle` | `#2E231F` | Warm dark mocha track and muted buttons |
+| **Ink Primary** | `--text-primary` / `text-ink` | `#F6ECE2` | Warm steamed milk froth text (WCAG AAA) |
+| **Ink Secondary** | `--text-secondary` / `text-ink-secondary` | `#C6B5A8` | Warm light mocha text |
+| **Ink Muted** | `--text-muted` / `text-ink-muted` | `#988578` | Muted cocoa timestamps and secondary meta |
+| **Border Hairline** | `--border-subtle` / `border-hairline` | `#3E312B` | Warm dark hairline dividers |
+| **Brand Primary (Glowing Caramel)** | `--color-accent` / `bg-chili` | `#E5732F` | Luminous toasted caramel CTA button |
+| **LINE / Ready Green** | `--color-success` / `bg-line` | `#10B981` | Vibrant emerald green for dark surfaces |
 
 ---
 

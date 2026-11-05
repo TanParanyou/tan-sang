@@ -44,9 +44,30 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      data-theme="street-food"
+      suppressHydrationWarning
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${ibmPlexMono.variable}`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (saved === 'dark' || (!saved && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased selection:bg-chili/20 selection:text-ink">
         <AppProviders>
           {children}

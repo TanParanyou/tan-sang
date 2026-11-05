@@ -753,7 +753,7 @@ export function OrderSessionClient({
                 trigger={
                   <button
                     type="button"
-                    className="inline-flex h-7 items-center gap-1 rounded-theme border border-emerald-300 bg-white px-2 text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 shadow-2xs transition cursor-pointer"
+                    className="inline-flex h-7 items-center gap-1 rounded-theme border border-emerald-500/30 bg-emerald-500/10 px-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 shadow-2xs transition cursor-pointer"
                     title="คัดลอกลิงก์ห้องสั่งอาหาร"
                   >
                     <Copy className="h-3 w-3" />
@@ -964,7 +964,7 @@ export function OrderSessionClient({
                               </span>
                               {isAvailable && (
                                 <span
-                                  className="inline-flex h-7 w-7 items-center justify-center rounded-theme border border-ink bg-ink text-surface shadow-2xs transition group-hover:bg-neutral-800"
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-theme border border-ink bg-ink text-surface shadow-2xs transition group-hover:opacity-90"
                                   aria-hidden="true"
                                 >
                                   <Plus className="h-3.5 w-3.5" />
@@ -1050,7 +1050,7 @@ export function OrderSessionClient({
                                   type="button"
                                   aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
                                   onClick={() => openMenuDrawer(menu)}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:bg-neutral-800"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:opacity-90"
                                 >
                                   <Plus className="h-4 w-4" />
                                 </button>
