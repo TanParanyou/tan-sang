@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusCircle, Sparkles, Store as StoreIcon, Pencil } from 'lucide-react';
 import { useLiff } from '@/features/line/liff-provider';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { NamePromptModal } from '@/components/shared/name-prompt-modal';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
@@ -12,6 +13,7 @@ import { Button, Input, Select, Card, Badge } from '@/components/ui';
 export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
   const router = useRouter();
   const { profile, updateProfileName } = useLiff();
+  const { t, locale } = useI18n();
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string>(stores[0]?.id ?? 'CUSTOM');
   const [customStoreName, setCustomStoreName] = useState<string>('');
@@ -48,13 +50,13 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
       };
 
       if (!json.ok || !json.data) {
-        setErrorMessage(json.error?.message ?? 'ไม่สามารถเปิดบิลได้');
+        setErrorMessage(json.error?.message ?? t.landing.createFailed);
         return;
       }
 
       router.push(`/order/${json.data.id}`);
     } catch {
-      setErrorMessage('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      setErrorMessage(t.landing.connectionError);
     } finally {
       setIsCreating(false);
     }
@@ -69,14 +71,14 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
               <StoreIcon className="h-4 w-4" />
             </div>
             <h2 className="text-base font-bold text-ink">
-              เปิดบิลสั่งอาหารห้องใหม่ <span className="text-xs font-normal text-ink-muted">(Host Quick Start)</span>
+              {t.landing.quickStartTitle} <span className="text-xs font-normal text-ink-muted">{t.landing.quickStartSubtitle}</span>
             </h2>
           </div>
           <button
             type="button"
             onClick={() => setIsNameModalOpen(true)}
             className="inline-flex items-center gap-1.5 font-mono text-xs rounded-full bg-subtle px-2.5 py-1 text-ink-secondary border border-hairline hover:bg-hairline hover:text-ink transition cursor-pointer"
-            title="แตะเพื่อเปลี่ยนชื่อ Host"
+            title={t.landing.changeHostTitle}
           >
             <span>Host: <strong className="text-ink">{profile.displayName}</strong></span>
             <Pencil className="h-3 w-3 text-ink-muted shrink-0" />
@@ -93,17 +95,17 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
           {/* Store Selection */}
           <div className="space-y-1.5">
             <Select
-              label="เลือกร้านอาหาร"
+              label={t.landing.selectStore}
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
               className="w-full"
             >
               {stores.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {getLocalizedText(s.name, 'th')}
+                  {getLocalizedText(s.name, locale)}
                 </option>
               ))}
-              <option value="CUSTOM">+ ระบุชื่อร้านอาหารเอง...</option>
+              <option value="CUSTOM">{t.landing.customStoreOption}</option>
             </Select>
 
             {/* Subtle store info tag */}
@@ -112,7 +114,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
                 <span className="font-mono rounded-theme border border-hairline bg-subtle px-1.5 py-0.5 font-semibold text-ink">
                   {selectedStore.id}
                 </span>
-                <span>• ระบบโหลดเมนูและราคาอัตโนมัติ</span>
+                <span>{t.landing.autoLoadHint}</span>
               </div>
             )}
           </div>
@@ -120,7 +122,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
           {/* LINE Group ID */}
           <div className="space-y-1.5">
             <Input
-              label="LINE Group ID"
+              label={t.landing.lineGroupId}
               value={lineGroupId}
               onChange={(e) => setLineGroupId(e.target.value)}
               required
@@ -131,11 +133,11 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
         {isCustom && (
           <div className="rounded-theme border border-dashed border-hairline bg-subtle/50 p-3.5">
             <Input
-              label="ชื่อร้านอาหารที่ต้องการสั่ง"
+              label={t.landing.customStoreNameLabel}
               required
               value={customStoreName}
               onChange={(e) => setCustomStoreName(e.target.value)}
-              placeholder="เช่น ข้าวมันไก่ตอนประตูน้ำ, ก๋วยเตี๋ยวเรืออยุธยา"
+              placeholder={t.landing.customStorePlaceholder}
             />
           </div>
         )}
@@ -149,7 +151,7 @@ export function QuickStartSessionForm({ stores }: { stores: Store[] }) {
             className="w-full sm:w-auto px-6 font-semibold"
           >
             <PlusCircle className="h-4 w-4" />
-            {isCreating ? 'กำลังเปิดบิล...' : 'เปิดบิลสั่งอาหาร (เริ่มเลย)'}
+            {isCreating ? t.landing.startingSession : t.landing.startSessionButton}
           </Button>
         </div>
       </form>

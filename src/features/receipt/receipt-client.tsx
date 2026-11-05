@@ -34,6 +34,7 @@ import { formatOrderItemTitle } from '@/server/services/order-calculator.service
 import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Button, Toast } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
@@ -45,6 +46,7 @@ export function ReceiptClient({
   summary: OrderSessionSummary;
 }) {
   const { shareBillToLine } = useLiff();
+  const { t } = useI18n();
   const receiptRef = useRef<HTMLElement>(null);
   const [printFormat, setPrintFormat] = useState<ReceiptPrintFormat>('THERMAL_80MM');
   const [viewMode, setViewMode] = useState<ReceiptViewMode>('GROUPED');
@@ -206,8 +208,8 @@ export function ReceiptClient({
         <DevPersonaBar hostUserId={session.hostUserId} />
         <AppNavbar
           backHref={`/order/${session.id}`}
-          backLabel="ห้องสั่งอาหาร"
-          title="จัดการบิล & ใบเสร็จ"
+          backLabel={t.session.title}
+          title={t.receipt.title}
           subtitle={summary.storeDisplayName}
           maxWidthClassName="max-w-2xl"
           actions={
@@ -215,11 +217,11 @@ export function ReceiptClient({
               <Link
                 href={`/receipt/${session.id}/slip`}
                 className="inline-flex min-h-[32px] h-8 items-center gap-1 rounded-theme border border-hairline bg-surface px-2.5 text-xs font-medium text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili"
-                title="ดูหน้าสลิปใบเสร็จแบบที่แชร์ให้เพื่อน"
+                title={t.receipt.openSlipView}
                 target="_blank"
               >
                 <ExternalLink className="h-3.5 w-3.5 text-ink-muted" />
-                <span className="hidden sm:inline">ดูหน้าสลิป</span>
+                <span className="hidden sm:inline">{t.receipt.openSlipView}</span>
               </Link>
               <Button
                 type="button"
@@ -230,24 +232,24 @@ export function ReceiptClient({
                   'h-8 px-2.5 text-xs font-medium transition shadow-2xs',
                   isLinkCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
                 )}
-                title="แชร์ลิงก์สลิปใบเสร็จให้เพื่อน"
+                title={t.receipt.shareToLine}
               >
                 {isLinkCopied ? (
                   <>
                     <Check className="h-3.5 w-3.5 text-emerald-600 mr-1" />
-                    <span>คัดลอกแล้ว</span>
+                    <span>{t.common.copied}</span>
                   </>
                 ) : (
                   <>
                     <Link2 className="h-3.5 w-3.5 text-ink-muted mr-1" />
-                    <span>แชร์สลิป</span>
+                    <span>{t.receipt.shareToLine}</span>
                   </>
                 )}
               </Button>
               <Link
                 href="/history"
                 className="inline-flex min-h-[32px] h-8 items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 text-xs font-medium text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili"
-                title="ดูประวัติบิลทั้งหมด"
+                title={t.nav.orderHistory}
               >
                 <History className="h-3.5 w-3.5 text-ink-muted" />
                 <span className="hidden sm:inline">ประวัติบิล</span>

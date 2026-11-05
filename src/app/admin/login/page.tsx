@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound, Lock, ShieldCheck } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 const EXPECTED_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || '1234';
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +26,7 @@ export default function AdminLoginPage() {
       }
       router.push('/admin/stores');
     } else {
-      setError('รหัสผ่านผู้ดูแลไม่ถูกต้อง (รหัสเริ่มต้นคือ 1234)');
+      setError(t.storeAdmin.loginFailed);
       setIsLoading(false);
     }
   };
@@ -35,47 +37,41 @@ export default function AdminLoginPage() {
         <KeyRound className="h-5 w-5" />
       </div>
 
-      <h1 className="mt-3 text-lg font-semibold text-ink">เข้าสู่ระบบผู้ดูแลร้าน (Admin)</h1>
+      <h1 className="mt-3 text-lg font-semibold text-ink">{t.storeAdmin.adminLoginTitle}</h1>
       <p className="mt-1 text-xs text-ink-secondary leading-relaxed">
-        สำหรับจัดการรายชื่อร้านค้า เพิ่ม/ลบเมนู ตั้งราคาธรรมดา/พิเศษ และท็อปปิ้ง
+        {t.storeAdmin.adminLoginDesc}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <div>
           <label htmlFor="admin-passcode" className="block text-xs font-semibold text-ink">
-            รหัสผ่านผู้ดูแล (Admin Passcode)
+            {t.storeAdmin.passcodeLabel}
           </label>
           <div className="relative mt-1">
             <input
               id="admin-passcode"
               type="password"
-              required
-              autoFocus
               value={passcode}
               onChange={(e) => {
                 setPasscode(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="กรอกรหัสผ่าน (เช่น 1234)"
-              className="min-h-[44px] w-full rounded-lg border border-hairline bg-canvas px-3 text-sm font-mono text-ink tabular-nums focus:border-chili focus:outline-none"
+              placeholder={t.storeAdmin.passcodePlaceholder}
+              autoFocus
+              className="w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none transition focus:border-chili focus:ring-1 focus:ring-chili"
             />
+            <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-muted" />
           </div>
-          {error ? (
-            <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>
-          ) : (
-            <p className="mt-1 text-[11px] text-ink-muted">
-              * รหัสเริ่มต้นสำหรับทดสอบระบบ: <strong className="font-mono text-ink">1234</strong>
-            </p>
-          )}
+          {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
         </div>
 
         <button
           type="submit"
-          disabled={isLoading || !passcode.trim()}
-          className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg bg-chili px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-chili-hover disabled:opacity-50"
+          disabled={isLoading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-chili py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-chili-hover disabled:opacity-50"
         >
-          <Lock className="h-4 w-4" />
-          เข้าสู่ระบบผู้ดูแล
+          <ShieldCheck className="h-4 w-4" />
+          <span>{isLoading ? t.common.loading : t.storeAdmin.loginButton}</span>
         </button>
       </form>
     </div>

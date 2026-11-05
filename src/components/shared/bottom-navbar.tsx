@@ -5,22 +5,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Calculator, History, Home, Store } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'หน้าหลัก', icon: Home },
-  { href: '/harn', label: 'หารค่าข้าว', icon: Calculator },
-  { href: '/history', label: 'ประวัติบิล', icon: History },
-  { href: '/admin/stores', label: 'จัดการร้านค้า', icon: Store },
-];
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export function BottomNavbar() {
   const pathname = usePathname();
+  const { t } = useI18n();
+
+  const navItems = [
+    { href: '/', label: t.nav.home, icon: Home },
+    { href: '/harn', label: t.nav.splitBill, icon: Calculator },
+    { href: '/history', label: t.nav.orderHistory, icon: History },
+    { href: '/admin/stores', label: t.nav.manageStores, icon: Store },
+  ];
 
   // Hide the global bottom navbar inside active order and receipt sessions to prevent dual-dock crowding
   if (pathname.startsWith('/order') || pathname.startsWith('/receipt')) {
@@ -33,7 +29,7 @@ export function BottomNavbar() {
       className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom,0px)] print:hidden shadow-theme"
     >
       <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-3">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === '/'

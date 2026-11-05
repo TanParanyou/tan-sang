@@ -16,6 +16,7 @@ import {
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { useLiff } from '@/features/line/liff-provider';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { SessionHistoryItem } from '@/features/order-session/order-session.schema';
 import { calculateOrderItemTotals } from '@/server/services/order-calculator.service';
 import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
@@ -28,6 +29,7 @@ export function OrderHistoryClient({
   initialHistory: SessionHistoryItem[];
 }) {
   const { profile } = useLiff();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [filterMode, setFilterMode] = useState<'ALL' | 'MINE'>('ALL');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -83,8 +85,8 @@ export function OrderHistoryClient({
 
       <AppNavbar
         backHref="/"
-        backLabel="หน้าแรก"
-        title="ประวัติบิลสั่งอาหาร"
+        backLabel={t.common.back}
+        title={t.history.title}
         subtitle="Tan-Sang Ledger"
         maxWidthClassName="max-w-2xl"
         actions={
@@ -93,14 +95,14 @@ export function OrderHistoryClient({
             className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-subtle"
           >
             <Plus className="h-3.5 w-3.5 text-chili" />
-            <span>เปิดบิลใหม่</span>
+            <span>{t.history.openNewSession}</span>
           </Link>
         }
       />
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <p className="text-xs text-ink-secondary sm:text-sm">
-          รายการบิลกลุ่มทั้งหมด สรุปยอดรวม ยอดรายคน และทางลัดเข้าสู่ห้องสั่งและใบเสร็จ
+          {t.history.subtitle}
         </p>
 
         {/* Filter Segmented Control */}
@@ -121,7 +123,7 @@ export function OrderHistoryClient({
                   : 'border-transparent text-ink-secondary hover:text-ink'
               }`}
             >
-              บิลทั้งหมด ({history.length})
+              {t.history.filterAll} ({history.length})
             </button>
             <button
               type="button"
@@ -134,7 +136,7 @@ export function OrderHistoryClient({
                   : 'border-transparent text-ink-secondary hover:text-ink'
               }`}
             >
-              บิลที่ฉันมีส่วนร่วม
+              {t.history.filterMine}
             </button>
           </div>
         </div>

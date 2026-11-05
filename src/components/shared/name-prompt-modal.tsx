@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Check, X } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Button, Input } from '@/components/ui';
 
 export interface NamePromptModalProps {
@@ -19,6 +20,7 @@ export function NamePromptModal({
   currentName = '',
   canClose = true,
 }: NamePromptModalProps) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,12 +44,13 @@ export function NamePromptModal({
     e?.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('กรุณาระบุชื่อของคุณก่อนทำรายการ');
+      setError(t.nameModal.requiredError);
       inputRef.current?.focus();
       return;
     }
     if (trimmed.length > 30) {
-      setError('ชื่อต้องไม่เกิน 30 ตัวอักษร');
+      setError(t.nameModal.maxError);
+      inputRef.current?.focus();
       return;
     }
     onSave(trimmed);
@@ -77,10 +80,10 @@ export function NamePromptModal({
             </div>
             <div>
               <h2 id="name-modal-title" className="text-base font-bold text-ink">
-                กรอกชื่อของคุณ
+                {t.nameModal.title}
               </h2>
               <p className="text-xs text-ink-secondary">
-                เพื่อให้เพื่อนในห้องรู้ว่าใครสั่งรายการไหน
+                {t.nameModal.desc}
               </p>
             </div>
           </div>
@@ -89,7 +92,7 @@ export function NamePromptModal({
               type="button"
               onClick={handleSkip}
               className="rounded-theme p-1 text-ink-muted hover:text-ink transition hover:bg-subtle"
-              aria-label="ปิด"
+              aria-label={t.common.close}
             >
               <X className="h-4 w-4" />
             </button>
@@ -99,7 +102,7 @@ export function NamePromptModal({
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
             <label htmlFor="user-display-name-input" className="block text-xs font-semibold text-ink mb-1.5">
-              ชื่อของคุณ / ชื่อเล่น <span className="text-chili">*</span>
+              {t.nameModal.inputLabel} <span className="text-chili">*</span>
             </label>
             <Input
               id="user-display-name-input"
@@ -110,7 +113,7 @@ export function NamePromptModal({
                 setName(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="เช่น เอก, เมย์, ตาล, กอล์ฟ"
+              placeholder={t.nameModal.placeholder}
               maxLength={30}
               className="text-sm font-medium"
             />
@@ -126,7 +129,7 @@ export function NamePromptModal({
                 onClick={handleSkip}
                 className="min-h-[40px] text-xs"
               >
-                ไว้ก่อน
+                {t.common.cancel}
               </Button>
             )}
             <Button
@@ -137,7 +140,7 @@ export function NamePromptModal({
               className="min-h-[40px] gap-1.5 text-xs font-semibold px-5"
             >
               <Check className="h-3.5 w-3.5" />
-              <span>บันทึกชื่อ</span>
+              <span>{t.nameModal.saveButton}</span>
             </Button>
           </div>
         </form>
