@@ -353,7 +353,7 @@ export function ReceiptClient({
       <main className="mx-auto mt-6 px-4 print:mt-0 print:px-0">
         <article
           ref={receiptRef}
-          className={`mx-auto border border-hairline bg-surface p-6 text-ink shadow-theme print:border-0 print:p-0 ${
+          className={`mx-auto border border-hairline bg-surface p-6 text-ink shadow-theme animate-paper-slide print:animate-none print:border-0 print:p-0 ${
             printFormat === 'THERMAL_80MM'
               ? 'max-w-[340px] font-mono text-xs print:max-w-[76mm]'
               : 'max-w-2xl text-sm print:max-w-none'

@@ -143,9 +143,11 @@ export function OrderHistoryClient({
 
         {/* Empty State */}
         {filteredHistory.length === 0 ? (
-          <div className="mt-8 rounded-xl border border-hairline bg-surface p-12 text-center">
-            <Clock className="mx-auto h-8 w-8 text-ink-muted" />
-            <h2 className="mt-3 text-base font-semibold text-ink">
+          <div className="mt-8 rounded-xl border border-hairline bg-surface p-12 text-center flex flex-col items-center justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-xs mb-2">
+              <img src="/brand-mascot.png" alt="น้องตาล" className="h-9 w-9 object-contain animate-mascot-breathe" />
+            </div>
+            <h2 className="mt-1 text-base font-semibold text-ink">
               {filterMode === 'MINE'
                 ? `ไม่พบบิลที่คุณ (${profile.displayName}) มีส่วนร่วม`
                 : 'ยังไม่มีประวัติการสั่งอาหารในระบบ'}

@@ -272,7 +272,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
       <main className="mx-auto mt-6 px-4 print:mt-0 print:px-0">
         <article
           ref={receiptRef}
-          className="mx-auto max-w-[340px] border border-hairline bg-surface p-6 font-mono text-xs text-ink shadow-theme print:border-0 print:p-0 print:max-w-[76mm]"
+          className="mx-auto max-w-[340px] border border-hairline bg-surface p-6 font-mono text-xs text-ink shadow-theme animate-paper-slide print:animate-none print:border-0 print:p-0 print:max-w-[76mm]"
         >
           {/* Slip Header */}
           <div className="border-b border-dashed border-ink pb-3 text-center">

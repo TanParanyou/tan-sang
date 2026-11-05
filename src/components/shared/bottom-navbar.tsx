@@ -41,7 +41,7 @@ export function BottomNavbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'group flex flex-1 flex-col items-center justify-center py-1 transition-all focus:outline-none min-h-[48px]',
+                'group flex flex-1 flex-col items-center justify-center py-1 transition-all focus:outline-none min-h-[48px] active:scale-95 duration-150',
                 isActive ? 'text-chili' : 'text-ink-secondary hover:text-ink',
               )}
             >

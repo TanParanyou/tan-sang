@@ -25,9 +25,16 @@ export function LoadingScreen({
       role="status"
       aria-live="polite"
     >
-      <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline shadow-xs">
-        <img src="/logo.png" alt="ตาลสั่ง" className="h-8 w-8 object-contain" />
-        <Loader2 className="absolute -inset-1.5 h-[68px] w-[68px] animate-spin text-chili/30" />
+      <div className="relative flex flex-col items-center justify-center">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-subtle border border-hairline shadow-xs animate-mascot-float">
+          <img
+            src="/brand-mascot.png"
+            alt="ตาลสั่ง"
+            className="h-10 w-10 object-contain animate-mascot-breathe drop-shadow-xs"
+          />
+          <div className="absolute -inset-1.5 rounded-full border border-chili/25 animate-soft-pulse pointer-events-none" />
+        </div>
+        <div className="mt-2.5 h-1.5 w-10 rounded-full bg-ink/10 blur-[1px] animate-soft-pulse" />
       </div>
       <div className="space-y-1">
         <p className="text-sm font-semibold text-ink">{message}</p>

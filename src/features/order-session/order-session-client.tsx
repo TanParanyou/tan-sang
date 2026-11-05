@@ -1050,7 +1050,7 @@ export function OrderSessionClient({
                                   type="button"
                                   aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
                                   onClick={() => openMenuDrawer(menu)}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:opacity-90"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:opacity-90 active:scale-90 transition-transform duration-150"
                                 >
                                   <Plus className="h-4 w-4" />
                                 </button>
@@ -1062,9 +1062,11 @@ export function OrderSessionClient({
                     </Card>
                   )
                 ) : (
-                  <Card className="p-8 text-center">
-                    <UtensilsCrossed className="mx-auto h-8 w-8 text-ink-muted" />
-                    <h3 className="mt-2 text-base font-semibold text-ink">
+                  <Card className="p-8 text-center flex flex-col items-center justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-2xs mb-2">
+                      <img src="/brand-mascot.png" alt="น้องตาล" className="h-7 w-7 object-contain animate-mascot-breathe" />
+                    </div>
+                    <h3 className="text-base font-semibold text-ink">
                       {searchQuery ? 'ไม่พบเมนูที่ค้นหา' : 'โหมดพิมพ์สั่งอาหารตามใจชอบ'}
                     </h3>
                     <p className="mt-1 text-sm text-ink-secondary">
@@ -1100,7 +1102,10 @@ export function OrderSessionClient({
               /* Group Tray Tab (while OPEN) */
               <section className="mt-4 space-y-3" aria-label="รายการอาหารในห้อง">
                 {session.items.length === 0 ? (
-                  <Card className="p-8 text-center">
+                  <Card className="p-8 text-center flex flex-col items-center justify-center gap-3">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-xs">
+                      <img src="/brand-mascot.png" alt="น้องตาล" className="h-9 w-9 object-contain animate-mascot-breathe" />
+                    </div>
                     <p className="text-sm text-ink-secondary">
                       ยังไม่มีรายการอาหารในห้องนี้ กดเลือกเมนูจากแท็บแรกได้เลย
                     </p>
@@ -1488,7 +1493,7 @@ export function OrderSessionClient({
           aria-label="เลือกรายละเอียดเมนูอาหาร"
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-theme border border-hairline bg-surface p-5 shadow-theme">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-theme border border-hairline bg-surface p-5 shadow-theme animate-paper-slide">
             <div className="flex items-start justify-between gap-3 border-b border-hairline pb-3">
               <div>
                 <h2 className="text-base font-bold text-ink">
@@ -1736,7 +1741,7 @@ export function OrderSessionClient({
                 </button>
                 <span className="text-xs text-ink-secondary shrink-0">({myItems.length} รายการ)</span>
                 {isCurrentUserReady ? (
-                  <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shrink-0">
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shrink-0 animate-soft-pulse">
                     <Check className="h-2.5 w-2.5 text-emerald-600" />
                     พร้อม
                   </span>
