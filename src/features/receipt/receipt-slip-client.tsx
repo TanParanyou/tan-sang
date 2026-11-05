@@ -51,7 +51,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
       setIsSharing(true);
       const origin =
         typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-      const slipUrl = `${origin}/receipt/${session.id}/slip`;
+      const slipUrl = `${origin}/receipt/${session.id}/slip?v=2`;
       const res = await shareBillToLine(
         {
           sessionId: session.id,

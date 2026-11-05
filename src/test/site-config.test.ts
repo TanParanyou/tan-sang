@@ -7,7 +7,7 @@ describe('siteConfig & constructMetadata', () => {
     expect(siteConfig.title).toBeDefined();
     expect(siteConfig.description).toBeDefined();
     expect(siteConfig.url).toBeDefined();
-    expect(siteConfig.ogImage).toBe('/og.png');
+    expect(siteConfig.ogImage).toBe('/og.png?v=20261105b');
     expect(siteConfig.keywords.length).toBeGreaterThan(0);
     expect(siteConfig.themeColor).toBe('#FAFAFA');
     expect(siteConfig.locale).toBe('th_TH');
