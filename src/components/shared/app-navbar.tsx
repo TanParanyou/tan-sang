@@ -36,7 +36,7 @@ export function AppNavbar({
   onBack,
   actions,
   subHeader,
-  maxWidthClassName,
+  maxWidthClassName = 'max-w-4xl',
   className,
 }: AppNavbarProps) {
   const hasBack = Boolean(backHref || onBack);
@@ -50,6 +50,7 @@ export function AppNavbar({
     >
       <div
         className={cn(
+          'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6',
           'mx-auto flex min-h-[56px] h-14 items-center justify-between gap-3 px-4 sm:px-6 max-w-4xl',
           maxWidthClassName,
         )}

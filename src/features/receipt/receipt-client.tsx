@@ -209,6 +209,7 @@ export function ReceiptClient({
           backLabel="ห้องสั่งอาหาร"
           title="จัดการบิล & ใบเสร็จ"
           subtitle={summary.storeDisplayName}
+          maxWidthClassName="max-w-2xl"
           actions={
             <div className="flex items-center gap-1.5">
               <Link
