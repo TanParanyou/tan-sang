@@ -17,7 +17,7 @@ export const siteConfig = {
   description:
     'สั่งอาหารกลุ่มในแชท LINE เลือกเมนู ท็อปปิ้ง แยกบิลรายคน และคัดลอกข้อความสรุปส่งร้านค้าได้ในคลิกเดียว',
   url: getAppUrl(),
-  ogImage: '/og.png?v=20261105b',
+  ogImage: '/og.png?v=20261105c',
   keywords: [
     'ตาลสั่ง',
     'ทันสั่ง',

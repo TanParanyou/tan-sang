@@ -59,6 +59,7 @@ import {
   QuantityStepper,
   ConfirmDialog,
   DropdownMenu,
+  Toast,
 } from '@/components/ui';
 
 interface SessionDetailPayload {
@@ -608,15 +609,7 @@ export function OrderSessionClient({
       <DevPersonaBar hostUserId={session.hostUserId} />
 
       {/* Toast Feedback */}
-      {toastMessage && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-hairline rounded-theme bg-ink px-4 py-2 text-xs font-medium text-surface shadow-theme"
-        >
-          {toastMessage}
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       {/* Unified App Header */}
       <AppNavbar

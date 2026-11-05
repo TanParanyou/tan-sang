@@ -83,9 +83,11 @@ export function AppNavbar({
               href="/"
               className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili rounded-theme"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-theme bg-chili text-white shadow-xs border border-chili">
-                <Utensils className="h-4 w-4" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="ตาลสั่ง"
+                className="h-8 w-8 shrink-0 object-contain"
+              />
               {!title && (
                 <div className="flex flex-col">
                   <span className="font-bold tracking-tight text-ink text-sm sm:text-base leading-none">

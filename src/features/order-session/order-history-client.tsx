@@ -20,6 +20,7 @@ import type { SessionHistoryItem } from '@/features/order-session/order-session.
 import { calculateOrderItemTotals } from '@/server/services/order-calculator.service';
 import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
 import { formatThaiDateTime } from '@/lib/utils/date';
+import { Toast } from '@/components/ui';
 
 export function OrderHistoryClient({
   initialHistory,
@@ -78,15 +79,7 @@ export function OrderHistoryClient({
       <DevPersonaBar />
 
       {/* Toast Feedback */}
-      {toastMessage && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-hairline rounded-theme bg-ink px-4 py-2 text-xs font-medium text-surface shadow-theme"
-        >
-          {toastMessage}
-        </div>
-      )}
+      <Toast message={toastMessage} />
 
       <AppNavbar
         backHref="/"

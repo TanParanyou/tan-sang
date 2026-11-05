@@ -175,9 +175,9 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img
-              src="/apple-touch-icon.png"
+              src="/logo.png"
               alt="ตาลสั่ง"
-              className="h-7 w-7 shrink-0 rounded-lg shadow-2xs object-cover"
+              className="h-7 w-7 shrink-0 object-contain"
             />
             <div className="min-w-0">
               <h1 className="text-xs font-bold text-ink leading-tight">ตาลสั่ง • สลิปใบเสร็จ</h1>

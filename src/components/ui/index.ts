@@ -6,3 +6,4 @@ export * from './quantity-stepper';
 export * from './checkbox';
 export * from './confirm-dialog';
 export * from './dropdown-menu';
+export * from './toast';

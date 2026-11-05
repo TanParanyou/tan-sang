@@ -26,7 +26,7 @@ export function LoadingScreen({
       aria-live="polite"
     >
       <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline shadow-xs">
-        <Utensils className="h-6 w-6 text-chili" />
+        <img src="/logo.png" alt="ตาลสั่ง" className="h-8 w-8 object-contain" />
         <Loader2 className="absolute -inset-1.5 h-[68px] w-[68px] animate-spin text-chili/30" />
       </div>
       <div className="space-y-1">
