@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { THEME_COLORS } from './theme';
 
 const getAppUrl = (): string => {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -40,7 +41,7 @@ export const siteConfig = {
     },
   ],
   creator: 'Tan-Sang',
-  themeColor: '#FAFAFA',
+  themeColor: THEME_COLORS.canvas,
   locale: 'th_TH',
   links: {
     github: 'https://github.com',

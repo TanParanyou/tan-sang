@@ -4,21 +4,41 @@
 
 :root,
 [data-theme='studio-blank'],
-[data-theme='street-food'] {
-  --bg-canvas: #F8FAFC;
+[data-theme='street-food'],
+[data-theme='warm-palm'] {
+  /* Surfaces & Canvas */
+  --bg-canvas: #FAF6F0;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F1F5F9;
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #64748B;
-  --border-subtle: #E2E8F0;
-  --color-primary: #D9480F;
+  --bg-subtle: #F3ECE2;
+
+  /* Typography / Ink */
+  --text-primary: #362520;
+  --text-secondary: #6E5850;
+  --text-muted: #948078;
+
+  /* Borders & Dividers */
+  --border-subtle: #E9DFD3;
+
+  /* Brand / Primary / Accent (Warm Palm Caramel) */
+  --color-primary: #D4621A;
   --color-primary-fg: #FFFFFF;
-  --color-accent: #D9480F;
+  --color-accent: #D4621A;
+  --color-accent-hover: #BC5313;
+  --color-accent-subtle: #FCEFE7;
+
+  /* Success / LINE */
   --color-success: #059669;
+  --color-success-hover: #047857;
+  --color-success-subtle: #ECFDF5;
+  --color-success-accent: #059669;
+
+  /* Warning & Danger */
+  --color-warning: #B45309;
   --color-error: #DC2626;
+
+  /* Shape & Elevation */
   --radius-theme: 12px;
-  --shadow-theme: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-theme: 0 1px 3px 0 rgb(54 37 32 / 0.05), 0 1px 2px -1px rgb(54 37 32 / 0.05);
 }
 
 html,

@@ -1,0 +1,20 @@
+{
+  "project": {
+    "name": "tan-sang",
+    "title": "ตาลสั่ง (Tan-Sang) - Group Food Ordering on LINE LIFF",
+    "description": "ระบบสั่งอาหารกลุ่ม สรุปยอด และหารค่าอาหารอัตโนมัติสำหรับชาวออฟฟิศผ่าน LINE",
+    "version": "0.1.0"
+  },
+  "theme": {
+    "palette": "warm-palm",
+    "radius": "md",
+    "density": "spacious",
+    "fontSans": "'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif",
+    "fontMono": "'JetBrains Mono', 'IBM Plex Mono', monospace",
+    "controlHeights": {
+      "compact": "36px",
+      "comfortable": "40px",
+      "spacious": "44px"
+    }
+  }
+}

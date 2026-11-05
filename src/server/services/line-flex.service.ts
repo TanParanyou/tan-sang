@@ -1,6 +1,7 @@
 import type { LineFlexReceiptSharePayload } from '@/features/line/line.schema';
 import type { RecipientOrderBreakdown } from '@/features/order-session/order-session.schema';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
+import { THEME_COLORS } from '@/config/theme';
 
 export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayload) {
   const title =
@@ -16,7 +17,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#FAF8F5',
+        backgroundColor: THEME_COLORS.canvas,
         paddingAll: '16px',
         contents: [
           {
@@ -24,14 +25,14 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
             text: 'ตาลสั่ง • เปิดบิลสั่งอาหารกลุ่ม',
             size: 'xs',
             weight: 'bold',
-            color: '#D9480F',
+            color: THEME_COLORS.accent.DEFAULT,
           },
           {
             type: 'text',
             text: payload.storeDisplayName,
             size: 'xl',
             weight: 'bold',
-            color: '#141413',
+            color: THEME_COLORS.ink.primary,
             margin: 'xs',
             wrap: true,
           },
@@ -46,7 +47,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
             type: 'text',
             text: 'แตะปุ่มด้านล่างเพื่อเลือกเมนู ขนาด ท็อปปิ้ง (หรือพิมพ์เมนูตามสั่งเอง) เมื่อสั่งครบแล้วให้พิมพ์ "ปิดบิล" ในแชท เพื่อสรุปยอดรวมและแยกยอดรายคนครับ',
             size: 'sm',
-            color: '#57534E',
+            color: THEME_COLORS.ink.secondary,
             wrap: true,
           },
         ],
@@ -60,7 +61,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
           {
             type: 'button',
             style: 'primary',
-            color: '#D9480F',
+            color: THEME_COLORS.accent.DEFAULT,
             action: {
               type: 'uri',
               label: 'กดสั่งอาหารเลย',
@@ -70,7 +71,7 @@ export function buildSessionCreatedFlexMessage(payload: LineFlexReceiptSharePayl
           {
             type: 'button',
             style: 'secondary',
-            color: '#141413',
+            color: THEME_COLORS.ink.primary,
             action: {
               type: 'uri',
               label: 'แชร์เข้ากลุ่ม LINE',
@@ -112,7 +113,7 @@ export function buildBillSummaryFlexMessage(
         type: 'text',
         text: `${r.recipientName} (${r.totalQuantity})`,
         size: 'sm',
-        color: '#141413',
+        color: THEME_COLORS.ink.primary,
         flex: 3,
         wrap: true,
       },
@@ -121,7 +122,7 @@ export function buildBillSummaryFlexMessage(
         text: formatPrice(r.totalAmount, { isGrandTotalZero }),
         size: 'sm',
         weight: 'bold',
-        color: '#141413',
+        color: THEME_COLORS.ink.primary,
         align: 'end',
         flex: 2,
       },
@@ -142,7 +143,7 @@ export function buildBillSummaryFlexMessage(
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#141413',
+        backgroundColor: THEME_COLORS.ink.primary,
         paddingAll: '16px',
         contents: [
           {
@@ -183,14 +184,14 @@ export function buildBillSummaryFlexMessage(
                 text: `รวมทั้งหมด (${payload.totalQuantity} รายการ)`,
                 size: 'sm',
                 weight: 'bold',
-                color: '#57534E',
+                color: THEME_COLORS.ink.secondary,
               },
               {
                 type: 'text',
                 text: formatGrandTotal(payload.grandTotalAmount) ?? 'รอร้านคิดเงิน',
                 size: 'md',
                 weight: 'bold',
-                color: '#D9480F',
+                color: THEME_COLORS.accent.DEFAULT,
                 align: 'end',
               },
             ],
@@ -206,7 +207,7 @@ export function buildBillSummaryFlexMessage(
           {
             type: 'button',
             style: 'primary',
-            color: '#141413',
+            color: THEME_COLORS.ink.primary,
             action: {
               type: 'uri',
               label: 'ดูใบเสร็จฉบับเต็ม',

@@ -14,17 +14,17 @@ Tan-Sang blends the appetizing warmth of Thai lunch culture with the crisp, trus
 
 | Token Role | CSS Variable / Tailwind | OKLCH | Hex Fallback | Usage |
 | :--- | :--- | :--- | :--- | :--- |
-| **Canvas (Background)** | `--bg-canvas` / `bg-[#FAF8F5]` | `oklch(0.98 0.006 85)` | `#FAF8F5` | Warm unbleached paper background |
-| **Surface (Elevated)** | `--bg-surface` / `bg-white` | `oklch(1.00 0 0)` | `#FFFFFF` | Active sheets, receipt paper, primary list group |
-| **Surface Subtle** | `--bg-subtle` / `bg-[#F3EFEA]` | `oklch(0.95 0.01 80)` | `#F3EFEA` | Segmented control track, muted pill background |
-| **Ink Primary** | `--text-primary` / `text-[#141413]` | `oklch(0.19 0.005 85)` | `#141413` | Headings, menu titles, prices (WCAG AAA) |
-| **Ink Secondary** | `--text-secondary` / `text-[#57534E]` | `oklch(0.45 0.012 75)` | `#57534E` | Variants, add-on descriptions, recipient labels |
-| **Ink Muted** | `--text-muted` / `text-[#78716C]` | `oklch(0.56 0.012 75)` | `#78716C` | Timestamps, secondary metadata |
-| **Border Hairline** | `--border-subtle` / `border-[#E7E3DA]` | `oklch(0.91 0.012 82)` | `#E7E3DA` | List row dividers, section borders |
-| **Brand Primary (Chili Orange)** | `--accent-primary` / `bg-[#D9480F]` | `oklch(0.58 0.19 36)` | `#D9480F` | Primary CTA ("เพิ่มลงบิล", "คัดลอกส่งร้าน") |
-| **LINE / Ready Green** | `--accent-line` / `bg-[#059669]` | `oklch(0.60 0.15 160)` | `#059669` | "เลือกเสร็จแล้ว (Ready)", "แชร์เข้า LINE" |
-| **Warning / Lock Amber** | `--accent-warn` / `bg-[#B45309]` | `oklch(0.55 0.14 65)` | `#B45309` | Closed session badge, Host lock confirmation |
-| **Danger / Ban Red** | `--accent-danger` / `text-[#DC2626]` | `oklch(0.58 0.22 27)` | `#DC2626` | Delete item, Banned menu indicator |
+| **Canvas (Background)** | `--bg-canvas` / `bg-canvas` | `oklch(0.97 0.008 75)` | `#FAF6F0` | Warm unbleached paper background matching mascot body |
+| **Surface (Elevated)** | `--bg-surface` / `bg-surface` | `oklch(1.00 0 0)` | `#FFFFFF` | Active sheets, receipt paper, primary list group |
+| **Surface Subtle** | `--bg-subtle` / `bg-subtle` | `oklch(0.94 0.012 75)` | `#F3ECE2` | Segmented control track, muted pill background |
+| **Ink Primary** | `--text-primary` / `text-ink` | `oklch(0.25 0.025 45)` | `#362520` | Headings, menu titles, prices (Roasted Cocoa Ink, WCAG AAA) |
+| **Ink Secondary** | `--text-secondary` / `text-ink-secondary` | `oklch(0.46 0.025 45)` | `#6E5850` | Variants, add-on descriptions, recipient labels |
+| **Ink Muted** | `--text-muted` / `text-ink-muted` | `oklch(0.58 0.020 45)` | `#948078` | Timestamps, secondary metadata |
+| **Border Hairline** | `--border-subtle` / `border-hairline` | `oklch(0.90 0.012 75)` | `#E9DFD3` | List row dividers, section borders |
+| **Brand Primary (Warm Palm Caramel)** | `--color-accent` / `bg-chili` | `oklch(0.58 0.17 48)` | `#D4621A` | Primary CTA ("เพิ่มลงบิล", "คัดลอกส่งร้าน") |
+| **LINE / Ready Green** | `--color-success` / `bg-line` | `oklch(0.60 0.15 160)` | `#059669` | "เลือกเสร็จแล้ว (Ready)", "แชร์เข้า LINE" |
+| **Warning / Lock Amber** | `--color-warning` / `bg-amber-600` | `oklch(0.55 0.14 65)` | `#B45309` | Closed session badge, Host lock confirmation |
+| **Danger / Ban Red** | `--color-error` / `text-red-600` | `oklch(0.58 0.22 27)` | `#DC2626` | Delete item, Banned menu indicator |
 
 ---
 

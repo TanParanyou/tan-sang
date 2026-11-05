@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { siteConfig, constructMetadata } from '@/config/site';
+import { THEME_COLORS } from '@/config/theme';
 
 describe('siteConfig & constructMetadata', () => {
   it('has valid site configuration defaults', () => {
@@ -9,7 +10,7 @@ describe('siteConfig & constructMetadata', () => {
     expect(siteConfig.url).toBeDefined();
     expect(siteConfig.ogImage).toBe('/og.png?v=mascot-20261105');
     expect(siteConfig.keywords.length).toBeGreaterThan(0);
-    expect(siteConfig.themeColor).toBe('#FAFAFA');
+    expect(siteConfig.themeColor).toBe(THEME_COLORS.canvas);
     expect(siteConfig.locale).toBe('th_TH');
   });
 

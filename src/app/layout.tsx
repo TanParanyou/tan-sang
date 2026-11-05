@@ -47,7 +47,7 @@ export default function RootLayout({
       data-theme="street-food"
       className={`${inter.variable} ${ibmPlexSansThai.variable} ${ibmPlexMono.variable}`}
     >
-      <body className="min-h-screen bg-canvas font-sans text-ink antialiased selection:bg-neutral-200 selection:text-black">
+      <body className="min-h-screen bg-canvas font-sans text-ink antialiased selection:bg-chili/20 selection:text-ink">
         <AppProviders>
           {children}
           <BottomNavbar />
