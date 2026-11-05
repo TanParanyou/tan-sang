@@ -34,7 +34,7 @@ import { formatOrderItemTitle } from '@/server/services/order-calculator.service
 import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
-import { Button } from '@/components/ui';
+import { Button, Toast } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
 export function ReceiptClient({
@@ -257,14 +257,7 @@ export function ReceiptClient({
         />
       </div>
 
-      {toast && (
-        <div
-          role="status"
-          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full border border-hairline bg-ink/90 px-4 py-2 text-xs font-medium text-surface shadow-lg backdrop-blur print:hidden"
-        >
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
 
       {/* Non-Print Format & View Mode Control Toolbar for Host */}
       <div className="border-b border-hairline/80 bg-surface px-4 py-2.5 print:hidden">

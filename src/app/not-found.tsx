@@ -10,7 +10,7 @@ export default function NotFoundPage() {
       </p>
       <Link
         href="/"
-        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:bg-ink/90"
+        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
       >
         กลับหน้าแรก
       </Link>

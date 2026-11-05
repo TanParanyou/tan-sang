@@ -22,7 +22,7 @@ import { formatOrderItemTitle } from '@/server/services/order-calculator.service
 import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
-import { Button } from '@/components/ui';
+import { Button, Toast } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
 export interface ReceiptSlipClientProps {
@@ -161,14 +161,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
   return (
     <div className="min-h-screen bg-canvas pb-28 print:bg-white print:pb-0">
       {/* Toast Notification */}
-      {toast && (
-        <div
-          role="status"
-          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full border border-hairline bg-ink/90 px-4 py-2 text-xs font-medium text-surface shadow-lg backdrop-blur print:hidden"
-        >
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
 
       {/* Top Bar: Minimal and clean branding */}
       <header className="sticky top-0 z-20 border-b border-hairline bg-surface/95 px-4 py-3 backdrop-blur shadow-2xs print:hidden">
