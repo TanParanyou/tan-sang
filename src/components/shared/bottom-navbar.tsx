@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { History, Home, Store } from 'lucide-react';
+import { Calculator, History, Home, Store } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface NavItem {
@@ -14,6 +14,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'หน้าหลัก', icon: Home },
+  { href: '/harn', label: 'หารค่าข้าว', icon: Calculator },
   { href: '/history', label: 'ประวัติบิล', icon: History },
   { href: '/admin/stores', label: 'จัดการร้านค้า', icon: Store },
 ];
