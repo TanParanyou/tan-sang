@@ -18,6 +18,7 @@ import { Button, Toast } from '@/components/ui';
 import { useClipboardCopy } from '@/lib/hooks/use-clipboard-copy';
 import { useDragReorder } from '@/lib/hooks/use-drag-reorder';
 import { parsePromptPayTarget } from '@/lib/utils/promptpay';
+import { siteConfig } from '@/config/site';
 import { BillInfoSection } from './components/bill-info-section';
 import { BillLedgerSection } from './components/bill-ledger-section';
 import { MemberItemRow } from './components/member-item-row';
@@ -29,6 +30,8 @@ import {
   formatSplitBillCopyText,
   reorderArray,
   sortSplitItems,
+  encodeSplitBillToUrl,
+  decodeSplitBillFromUrl,
 } from './split-calculator.service';
 
 const SAMPLE_DEMO_ITEMS: SplitItem[] = [
@@ -83,11 +86,11 @@ export function SplitCalculatorClient() {
       const params = new URLSearchParams(window.location.search);
       const encodedData = params.get('d');
       if (encodedData) {
-        const decoded = JSON.parse(decodeURIComponent(atob(encodedData)));
-        if (decoded.items && Array.isArray(decoded.items)) {
+        const decoded = decodeSplitBillFromUrl(encodedData);
+        if (decoded && decoded.items && decoded.items.length > 0) {
           setItems(decoded.items);
-          setDeliveryFeeInput(decoded.deliveryFee?.toString() ?? '0');
-          setDiscountInput(decoded.discount?.toString() ?? '0');
+          setDeliveryFeeInput(decoded.deliveryFee > 0 ? decoded.deliveryFee.toString() : '');
+          setDiscountInput(decoded.discount > 0 ? decoded.discount.toString() : '');
           if (decoded.splitMethod) setSplitMethod(decoded.splitMethod);
           if (decoded.promptPay) setPromptPayAccount(decoded.promptPay);
         }
@@ -197,28 +200,68 @@ export function SplitCalculatorClient() {
     await copyToClipboard(text, 'คัดลอกสรุปยอดส่ง LINE / ขุนทอง แล้ว!');
   };
 
+  const getBaseShareUrl = (): string => {
+    if (typeof window === 'undefined') return siteConfig.url;
+    // Always use production URL when on localhost so that links shared to other devices/LINE can be opened
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return siteConfig.url || window.location.origin;
+    }
+    if (window.location.hostname.includes('liff.line.me')) {
+      return siteConfig.url;
+    }
+    return window.location.origin;
+  };
+
   const handleShareLink = async () => {
     if (typeof window === 'undefined') return;
     try {
-      const payload = {
+      const validItems = items.filter(
+        (it) => it.name.trim() !== '' || (typeof it.price === 'number' && it.price > 0),
+      );
+      const itemsToShare = validItems.length > 0 ? validItems : items;
+
+      const encoded = encodeSplitBillToUrl({
         deliveryFee: parseFloat(deliveryFeeInput) || 0,
         discount: parseFloat(discountInput) || 0,
         splitMethod,
         promptPay: promptPayAccount.trim(),
-        items: items.map((it) => ({
-          id: it.id,
-          name: it.name,
-          price: typeof it.price === 'number' ? it.price : 0,
-        })),
-      };
-      const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
-      const shareUrl = `${window.location.origin}/harn?d=${encoded}`;
-      await navigator.clipboard.writeText(shareUrl);
-      setIsLinkCopied(true);
-      notify('คัดลอกลิงก์แชร์บิลนี้แล้ว! ส่งต่อให้เพื่อนเปิดดูได้เลย');
-      setTimeout(() => setIsLinkCopied(false), 2000);
+        items: itemsToShare,
+      });
+
+      const baseUrl = getBaseShareUrl();
+      const shareUrl = `${baseUrl}/harn?d=${encoded}`;
+
+      // 1. Try Native Web Share API first (on mobile iOS / Android)
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({
+            title: 'บิลหารค่าข้าว | ตาลหาร (Tan-Harn)',
+            text: `สรุปยอดบิลหารค่าอาหาร ${calculationResult.members.length} คน ยอดสุทธิ ${calculationResult.grandTotal} บาท เปิดดูบิลและพร้อมเพย์ได้ที่นี่:`,
+            url: shareUrl,
+          });
+          setIsLinkCopied(true);
+          notify('แชร์ลิงก์บิลสำเร็จแล้ว!');
+          setTimeout(() => setIsLinkCopied(false), 2000);
+          return;
+        } catch (shareErr: unknown) {
+          if (shareErr instanceof Error && shareErr.name === 'AbortError') {
+            return;
+          }
+          // If native share fails or is blocked, gracefully fall through to clipboard copy
+        }
+      }
+
+      // 2. Fallback to robust Clipboard Copy (with textarea fallback for LINE In-App Browser)
+      const success = await copyToClipboard(
+        shareUrl,
+        'คัดลอกลิงก์แชร์บิลนี้แล้ว! ส่งต่อให้เพื่อนเปิดดูได้เลย',
+      );
+      if (success) {
+        setIsLinkCopied(true);
+        setTimeout(() => setIsLinkCopied(false), 2000);
+      }
     } catch {
-      notify('ไม่สามารถคัดลอกลิงก์ได้');
+      notify('ไม่สามารถแชร์หรือคัดลอกลิงก์ได้');
     }
   };
 
@@ -307,7 +350,7 @@ export function SplitCalculatorClient() {
                         e.target.value = '';
                       }
                     }}
-                    className="appearance-none h-[34px] pl-2.5 pr-7 text-xs font-semibold text-ink bg-subtle hover:bg-neutral-200/70 border border-hairline rounded-theme focus:outline-none cursor-pointer leading-[32px] box-border"
+                    className="appearance-none h-[34px] pl-2.5 pr-7 text-xs font-semibold text-ink bg-subtle hover:bg-hairline border border-hairline rounded-theme focus:outline-none cursor-pointer leading-[32px] box-border"
                     defaultValue=""
                   >
                     <option value="" disabled>

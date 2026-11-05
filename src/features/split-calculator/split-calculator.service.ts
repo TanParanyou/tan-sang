@@ -275,3 +275,136 @@ export function sortSplitItems<T extends { name: string; price: number | '' }>(
     return 0;
   });
 }
+
+export interface SplitBillSharePayload {
+  deliveryFee: number;
+  discount: number;
+  splitMethod: 'PROPORTIONAL' | 'EQUAL';
+  promptPay: string;
+  items: Array<{ id?: string; name: string; price: number | '' }>;
+}
+
+export interface DecodedSplitBill {
+  deliveryFee: number;
+  discount: number;
+  splitMethod: 'PROPORTIONAL' | 'EQUAL';
+  promptPay: string;
+  items: Array<{ id: string; name: string; price: number | '' }>;
+}
+
+/**
+ * Encodes a string (including UTF-8 Thai characters) to Base64URL without '+', '/', or '='.
+ */
+function utf8ToBase64Url(str: string): string {
+  const utf8Bytes = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+    String.fromCharCode(parseInt(p1, 16)),
+  );
+  const base64 =
+    typeof window !== 'undefined'
+      ? window.btoa(utf8Bytes)
+      : Buffer.from(utf8Bytes, 'binary').toString('base64');
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * Encodes bill split data into an ultra-compact Base64URL string safe for all chat apps.
+ */
+export function encodeSplitBillToUrl(payload: SplitBillSharePayload): string {
+  const compact = {
+    f: payload.deliveryFee || 0,
+    d: payload.discount || 0,
+    m: payload.splitMethod === 'EQUAL' ? 'E' : 'P',
+    p: (payload.promptPay || '').trim(),
+    i: payload.items.map((it) => [
+      it.name || '',
+      typeof it.price === 'number' ? it.price : Number(it.price) || 0,
+    ]),
+  };
+  return utf8ToBase64Url(JSON.stringify(compact));
+}
+
+/**
+ * Decodes a URL query parameter string back into split bill data.
+ * Resilient against missing base64 padding, space replacements from '+', and legacy formats.
+ */
+export function decodeSplitBillFromUrl(raw: string): DecodedSplitBill | null {
+  if (!raw || typeof raw !== 'string') return null;
+
+  try {
+    let b64 = raw.replace(/-/g, '+').replace(/_/g, '/').replace(/ /g, '+');
+    while (b64.length % 4) b64 += '=';
+
+    const binary =
+      typeof window !== 'undefined'
+        ? window.atob(b64)
+        : Buffer.from(b64, 'base64').toString('binary');
+
+    let parsedJson: any = null;
+
+    // Try format 1: new UTF-8 Base64URL encoding
+    try {
+      const decodedUtf8 = decodeURIComponent(
+        binary
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(''),
+      );
+      parsedJson = JSON.parse(decodedUtf8);
+    } catch {
+      // Fallback format 2: old URI component encoding
+      try {
+        parsedJson = JSON.parse(decodeURIComponent(binary));
+      } catch {
+        // Fallback format 3: raw binary JSON
+        parsedJson = JSON.parse(binary);
+      }
+    }
+
+    if (!parsedJson || typeof parsedJson !== 'object') return null;
+
+    // Check if new compact format { f, d, m, p, i: [[name, price], ...] }
+    if (Array.isArray(parsedJson.i)) {
+      return {
+        deliveryFee: Number(parsedJson.f) || 0,
+        discount: Number(parsedJson.d) || 0,
+        splitMethod: parsedJson.m === 'E' ? 'EQUAL' : 'PROPORTIONAL',
+        promptPay: typeof parsedJson.p === 'string' ? parsedJson.p : '',
+        items: parsedJson.i.map((entry: any, idx: number) => {
+          const name = Array.isArray(entry) ? String(entry[0] || '') : String(entry?.name || '');
+          const price = Array.isArray(entry)
+            ? typeof entry[1] === 'number'
+              ? entry[1]
+              : Number(entry[1]) || ''
+            : typeof entry?.price === 'number'
+            ? entry.price
+            : Number(entry?.price) || '';
+          return {
+            id: String(idx + 1),
+            name,
+            price: price === 0 || price === '' ? '' : price,
+          };
+        }),
+      };
+    }
+
+    // Check if old verbose format { deliveryFee, discount, splitMethod, promptPay, items }
+    if (Array.isArray(parsedJson.items)) {
+      return {
+        deliveryFee: Number(parsedJson.deliveryFee) || 0,
+        discount: Number(parsedJson.discount) || 0,
+        splitMethod: parsedJson.splitMethod === 'EQUAL' ? 'EQUAL' : 'PROPORTIONAL',
+        promptPay: typeof parsedJson.promptPay === 'string' ? parsedJson.promptPay : '',
+        items: parsedJson.items.map((it: any, idx: number) => ({
+          id: it.id ? String(it.id) : String(idx + 1),
+          name: typeof it.name === 'string' ? it.name : '',
+          price: typeof it.price === 'number' ? it.price : Number(it.price) || '',
+        })),
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('Failed to decode split bill payload from URL:', err);
+    return null;
+  }
+}

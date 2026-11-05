@@ -5,6 +5,8 @@ import {
   parseQuickPasteText,
   reorderArray,
   sortSplitItems,
+  encodeSplitBillToUrl,
+  decodeSplitBillFromUrl,
 } from '@/features/split-calculator/split-calculator.service';
 
 describe('Split Calculator Service (ตาลหาร - Tan-Harn)', () => {
@@ -247,5 +249,64 @@ describe('Split Calculator Service (ตาลหาร - Tan-Harn)', () => {
 
     const asc = sortSplitItems(sample, 'PRICE_ASC');
     expect(asc.map((i) => i.name)).toEqual(['บอส', 'ตาล', 'กัส']);
+  });
+
+  describe('Stateless Share URL Encoding/Decoding', () => {
+    it('encodes bill payload into an ultra-compact Base64URL string without +, /, or =', () => {
+      const payload = {
+        deliveryFee: 15,
+        discount: 60,
+        splitMethod: 'PROPORTIONAL' as const,
+        promptPay: '0812345678',
+        items: [
+          { id: '1', name: 'กัส', price: 79.5 },
+          { id: '2', name: 'ตาล', price: 79.5 },
+          { id: '3', name: 'เอฟ', price: 79.5 },
+        ],
+      };
+
+      const encoded = encodeSplitBillToUrl(payload);
+      expect(encoded).toBeDefined();
+      expect(encoded.length).toBeGreaterThan(0);
+      // Ensure no URL unsafe characters (+, /, =)
+      expect(encoded).not.toContain('+');
+      expect(encoded).not.toContain('/');
+      expect(encoded).not.toContain('=');
+
+      // Decode and check fidelity
+      const decoded = decodeSplitBillFromUrl(encoded);
+      expect(decoded).not.toBeNull();
+      expect(decoded?.deliveryFee).toBe(15);
+      expect(decoded?.discount).toBe(60);
+      expect(decoded?.splitMethod).toBe('PROPORTIONAL');
+      expect(decoded?.promptPay).toBe('0812345678');
+      expect(decoded?.items).toHaveLength(3);
+      expect(decoded?.items?.[0]?.name).toBe('กัส');
+      expect(decoded?.items?.[0]?.price).toBe(79.5);
+      expect(decoded?.items?.[1]?.name).toBe('ตาล');
+      expect(decoded?.items?.[1]?.price).toBe(79.5);
+    });
+
+    it('gracefully decodes strings with spaces or stripped padding (chat app resilient)', () => {
+      const payload = {
+        deliveryFee: 10,
+        discount: 20,
+        splitMethod: 'EQUAL' as const,
+        promptPay: '0899999999',
+        items: [{ id: '1', name: 'ข้าวผัด', price: 65 }],
+      };
+
+      const encoded = encodeSplitBillToUrl(payload);
+      // Simulate chat app replacing characters or stripping padding
+      const withSpaces = encoded.replace(/-/g, ' ');
+      const decoded = decodeSplitBillFromUrl(withSpaces);
+
+      expect(decoded).not.toBeNull();
+      expect(decoded?.deliveryFee).toBe(10);
+      expect(decoded?.discount).toBe(20);
+      expect(decoded?.splitMethod).toBe('EQUAL');
+      expect(decoded?.items?.[0]?.name).toBe('ข้าวผัด');
+      expect(decoded?.items?.[0]?.price).toBe(65);
+    });
   });
 });
