@@ -28,7 +28,7 @@ export function PromptPaySection({
           บัญชีพร้อมเพย์สำหรับรับโอนเงิน
         </label>
         {parsedPromptPay && (
-          <span className="text-[11px] font-mono text-line-accent font-semibold flex items-center gap-1">
+          <span className="text-[11px] font-mono text-emerald-600 font-semibold flex items-center gap-1">
             <Check className="h-3 w-3" />
             {parsedPromptPay.type === 'PHONE' ? 'เบอร์พร้อมเพย์' : 'เลขบัตร ปชช.'} ({parsedPromptPay.formatted})
           </span>

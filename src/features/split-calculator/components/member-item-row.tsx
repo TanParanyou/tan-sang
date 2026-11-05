@@ -133,7 +133,7 @@ export function MemberItemRow({
               <span
                 className={cn(
                   'font-medium truncate',
-                  member.discountAmount > 0 ? 'text-line-accent' : 'text-red-600',
+                  member.discountAmount > 0 ? 'text-emerald-600' : 'text-red-600',
                 )}
               >
                 {member.discountAmount > 0

@@ -123,7 +123,7 @@ export function BillInfoSection({
           className={cn(
             'font-mono font-bold tabular-nums text-sm',
             netDiscount > 0
-              ? 'text-line-accent flex items-center'
+              ? 'text-emerald-600 flex items-center'
               : netDiscount < 0
               ? 'text-red-600 flex items-center'
               : 'text-ink-secondary',

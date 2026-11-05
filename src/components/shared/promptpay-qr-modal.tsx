@@ -150,7 +150,7 @@ export function PromptPayQrModal({
               >
                 <span>{parsedTarget?.formatted}</span>
                 {isCopied ? (
-                  <Check className="h-3 w-3 text-line-accent" />
+                  <Check className="h-3 w-3 text-emerald-600" />
                 ) : (
                   <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100" />
                 )}
