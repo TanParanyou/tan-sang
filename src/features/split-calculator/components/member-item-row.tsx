@@ -53,24 +53,24 @@ export function MemberItemRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={cn(
-        'py-2 px-1 transition-all rounded-theme select-none',
+        'py-2 px-0.5 sm:px-1 transition-all rounded-theme select-none w-full max-w-full overflow-hidden box-border',
         isBeingDragged && 'opacity-30 bg-subtle border-dashed border-ink/40 scale-[0.98]',
         isDragTarget && 'border-t-2 border-t-chili bg-chili/5',
         !isBeingDragged && !isDragTarget && 'hover:bg-subtle/50',
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
         {/* Drag Handle with Index (Touch & Mouse) */}
         <button
           type="button"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
-          className="flex h-9 w-8 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink cursor-grab active:cursor-grabbing touch-none shrink-0"
+          className="flex h-9 w-7 shrink-0 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink cursor-grab active:cursor-grabbing touch-none p-0"
           title="แตะค้างหรือลากเพื่อสลับอันดับ"
           aria-label={`ลากสลับอันดับคนที่ ${index + 1}`}
         >
-          <GripVertical className="h-3.5 w-3.5 mr-0.5 opacity-60" />
+          <GripVertical className="h-3 w-3 mr-0.5 opacity-60 shrink-0" />
           <span className="font-mono text-xs font-bold text-ink-secondary">{index + 1}</span>
         </button>
 
@@ -84,11 +84,11 @@ export function MemberItemRow({
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.currentTarget.select()}
           placeholder={`ชื่อคนที่ ${index + 1}`}
-          className="flex-1 min-h-[40px] px-3 bg-canvas/80 text-ink text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+          className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/80 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
         />
 
         {/* Original Price */}
-        <div className="relative w-28 shrink-0">
+        <div className="relative w-[80px] sm:w-[92px] shrink-0">
           <input
             id={`price-input-${member.id}`}
             type="number"
@@ -100,9 +100,9 @@ export function MemberItemRow({
             onFocus={(e) => e.target.select()}
             onClick={(e) => e.currentTarget.select()}
             placeholder="0"
-            className="w-full min-h-[40px] px-2.5 pr-6 bg-canvas/80 text-ink font-mono tabular-nums text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+            className="w-full min-w-0 min-h-[40px] pl-2 pr-5 bg-canvas/80 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
           />
-          <span className="absolute right-2 top-2.5 text-xs text-ink-muted pointer-events-none">
+          <span className="absolute right-1.5 top-2.5 text-xs text-ink-muted pointer-events-none">
             ฿
           </span>
         </div>
@@ -112,7 +112,7 @@ export function MemberItemRow({
           type="button"
           onClick={onRemove}
           disabled={totalMembers <= 1}
-          className="flex h-9 w-8 items-center justify-center text-ink-muted hover:text-red-600 disabled:opacity-20 transition-colors rounded-theme shrink-0"
+          className="flex h-9 w-7 shrink-0 items-center justify-center text-ink-muted hover:text-red-600 disabled:opacity-20 transition-colors rounded-theme p-0"
           aria-label={`ลบคนที่ ${index + 1}`}
           title="ลบแถวนี้"
         >
@@ -124,15 +124,15 @@ export function MemberItemRow({
       {member.originalPrice > 0 && (
         <div
           onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
-          className="mt-1 flex items-center justify-between pl-10 pr-9 text-xs cursor-pointer group"
+          className="mt-1 flex items-center justify-between pl-8 sm:pl-9 pr-8 sm:pr-9 text-xs cursor-pointer group"
           title="คลิกเพื่อแก้ไขยอดเงิน"
         >
-          <div className="flex items-center gap-2 text-ink-secondary font-mono text-[11px]">
+          <div className="flex items-center gap-1.5 text-ink-secondary font-mono text-[11px] truncate">
             <span>{member.percentShare.toFixed(1)}%</span>
             {member.discountAmount !== 0 && (
               <span
                 className={cn(
-                  'font-medium',
+                  'font-medium truncate',
                   member.discountAmount > 0 ? 'text-line-accent' : 'text-red-600',
                 )}
               >
@@ -143,9 +143,9 @@ export function MemberItemRow({
             )}
           </div>
 
-          <div className="flex items-baseline gap-1 font-mono">
+          <div className="flex items-baseline gap-1 font-mono shrink-0 pl-2">
             <span className="text-[11px] text-ink-muted">จ่ายจริง:</span>
-            <span className="text-sm font-bold text-ink tabular-nums group-hover:text-chili transition-colors">
+            <span className="text-xs sm:text-sm font-bold text-ink tabular-nums group-hover:text-chili transition-colors">
               {member.finalPrice} ฿
             </span>
           </div>

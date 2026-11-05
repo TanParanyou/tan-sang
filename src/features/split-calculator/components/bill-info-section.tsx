@@ -66,8 +66,8 @@ export function BillInfoSection({
       </div>
 
       {/* Inputs Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
+        <div className="min-w-0 w-full">
           <label htmlFor="delivery-fee-input" className="block text-xs font-medium text-ink-secondary mb-1">
             <Truck className="inline h-3.5 w-3.5 mr-1 text-ink-muted" />
             ค่าส่ง (บาท)
@@ -77,30 +77,32 @@ export function BillInfoSection({
             type="number"
             min="0"
             step="any"
+            containerClassName="w-full min-w-0"
             value={deliveryFeeInput}
             onChange={(e) => onDeliveryFeeChange(e.target.value)}
             onFocus={(e) => e.target.select()}
             onClick={(e) => e.currentTarget.select()}
             placeholder="0"
-            className="font-mono tabular-nums text-right font-semibold text-sm h-11"
+            className="font-mono tabular-nums text-right font-semibold text-sm h-11 w-full min-w-0"
           />
         </div>
-        <div>
+        <div className="min-w-0 w-full">
           <label htmlFor="discount-input" className="block text-xs font-medium text-ink-secondary mb-1">
             <BadgePercent className="inline h-3.5 w-3.5 mr-1 text-chili" />
-            ส่วนลดร้าน/แอป (บาท)
+            ส่วนลดรวม (บาท)
           </label>
           <Input
             id="discount-input"
             type="number"
             min="0"
             step="any"
+            containerClassName="w-full min-w-0"
             value={discountInput}
             onChange={(e) => onDiscountChange(e.target.value)}
             onFocus={(e) => e.target.select()}
             onClick={(e) => e.currentTarget.select()}
             placeholder="0"
-            className="font-mono tabular-nums text-right font-semibold text-sm h-11 text-chili"
+            className="font-mono tabular-nums text-right font-semibold text-sm h-11 w-full min-w-0 text-chili"
           />
         </div>
       </div>

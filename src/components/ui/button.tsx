@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'line';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }
@@ -18,6 +18,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       secondary: 'bg-surface text-ink border border-hairline hover:bg-subtle active:bg-neutral-200 shadow-xs',
       ghost: 'bg-transparent text-ink border border-transparent hover:border-hairline hover:bg-subtle active:bg-neutral-200',
       destructive: 'bg-red-600 text-white border border-red-700 hover:bg-red-700 active:bg-red-800 shadow-xs',
+      line: 'bg-[#059669] text-white border border-[#059669] hover:bg-[#047857] active:bg-[#065f46] shadow-xs',
     };
 
     // Heights aligned with mobile ergonomics: md and lg are standard touch targets (40px/44px)

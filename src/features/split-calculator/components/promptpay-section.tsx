@@ -21,8 +21,8 @@ export function PromptPaySection({
   onOpenQrModal,
 }: PromptPaySectionProps) {
   return (
-    <div className="p-4 sm:p-5 bg-subtle/40 border-t border-hairline space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="p-3.5 sm:p-5 bg-subtle/40 border-t border-hairline space-y-2 w-full box-border">
+      <div className="flex items-center justify-between gap-1 flex-wrap">
         <label htmlFor="promptpay-input" className="block text-xs font-bold text-ink">
           <CreditCard className="inline h-3.5 w-3.5 mr-1 text-ink-muted" />
           บัญชีพร้อมเพย์สำหรับรับโอนเงิน
@@ -35,12 +35,13 @@ export function PromptPaySection({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full min-w-0">
         <Input
           id="promptpay-input"
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
+          containerClassName="flex-1 min-w-0"
           value={promptPayAccount}
           onChange={(e) => {
             // กรอกได้เฉพาะตัวเลขเท่านั้น ไม่เกิน 15 หลัก
@@ -50,7 +51,7 @@ export function PromptPaySection({
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.currentTarget.select()}
           placeholder="กรอกเฉพาะตัวเลข เช่น 0812345678"
-          className="text-xs font-mono h-10 flex-1 bg-surface"
+          className="text-xs font-mono h-10 w-full min-w-0 bg-surface"
         />
         <Button
           type="button"
@@ -58,7 +59,7 @@ export function PromptPaySection({
           size="md"
           onClick={onOpenQrModal}
           className={cn(
-            'shrink-0 text-xs px-3.5 h-10 font-bold transition-all',
+            'shrink-0 text-xs px-3 sm:px-3.5 h-10 font-bold transition-all',
             parsedPromptPay
               ? 'bg-[#003d6b] hover:bg-[#002f52] text-white border-[#003d6b] shadow-2xs'
               : 'text-ink-secondary hover:text-ink',

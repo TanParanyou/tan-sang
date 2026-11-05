@@ -270,9 +270,9 @@ export function SplitCalculatorClient() {
         }
       />
 
-      <main className="mx-auto max-w-lg px-3 sm:px-4 pt-4 space-y-4">
+      <main className="mx-auto max-w-lg px-2.5 sm:px-4 pt-4 space-y-4 w-full box-border overflow-x-hidden">
         {/* Unified Calculation Paper Sheet */}
-        <div className="rounded-xl border border-hairline bg-surface shadow-xs divide-y divide-hairline overflow-hidden">
+        <div className="rounded-xl border border-hairline bg-surface shadow-xs divide-y divide-hairline overflow-hidden w-full">
           {/* Section 1: ข้อมูลบิลส่วนกลาง (ค่าส่ง, ส่วนลด) */}
           <BillInfoSection
             deliveryFeeInput={deliveryFeeInput}
@@ -285,7 +285,7 @@ export function SplitCalculatorClient() {
           />
 
           {/* Section 2: รายชื่อคนสั่ง (Member List) */}
-          <section aria-labelledby="members-heading" className="p-4 sm:p-5 space-y-3">
+          <section aria-labelledby="members-heading" className="p-3 sm:p-5 space-y-3 w-full box-border">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <h2 id="members-heading" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
@@ -331,11 +331,12 @@ export function SplitCalculatorClient() {
               </div>
             </div>
 
-            {/* Table Header: Legible ledger columns */}
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-ink-muted px-2 pt-1 border-b border-hairline pb-1.5">
-              <span className="w-8 text-center">#</span>
-              <span className="flex-1 pl-2">ชื่อผู้สั่ง</span>
-              <span className="w-28 text-right pr-8">ยอดเดิม</span>
+            {/* Table Header: Legible ledger columns aligned with row inputs */}
+            <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-0.5 sm:px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full">
+              <span className="w-7 text-center shrink-0">#</span>
+              <span className="flex-1 min-w-0 pl-1">ชื่อผู้สั่ง</span>
+              <span className="w-[80px] sm:w-[92px] text-right pr-4 shrink-0">ยอดเดิม</span>
+              <span className="w-7 shrink-0" aria-hidden="true" />
             </div>
 
             {/* Members Rows */}
@@ -396,13 +397,13 @@ export function SplitCalculatorClient() {
         </div>
 
         {/* Clean Primary Actions Block (Right under the ticket - No dual-dock crowding) */}
-        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+        <div className="flex flex-col sm:flex-row gap-2 pt-1 w-full">
           <Button
             type="button"
-            variant="primary"
+            variant="line"
             size="lg"
             onClick={handleCopyText}
-            className="flex-1 min-h-[50px] !bg-[#059669] hover:!bg-[#047857] active:!bg-[#065f46] !border-[#059669] !text-white font-bold text-sm shadow-sm"
+            className="flex-1 min-h-[50px] font-bold text-sm shadow-xs"
           >
             {isCopied ? (
               <span className="inline-flex items-center gap-2 text-white font-bold">
@@ -422,11 +423,11 @@ export function SplitCalculatorClient() {
             variant="secondary"
             size="lg"
             onClick={handleShareLink}
-            className="min-h-[50px] px-5 text-sm font-semibold text-ink hover:bg-subtle"
+            className="min-h-[50px] px-5 text-sm font-semibold text-ink hover:bg-subtle shrink-0"
           >
             {isLinkCopied ? (
-              <span className="inline-flex items-center gap-1.5 text-line-accent">
-                <Check className="h-4 w-4 text-line-accent" />
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <Check className="h-4 w-4 text-emerald-600" />
                 <span>คัดลอกลิงก์แล้ว</span>
               </span>
             ) : (
