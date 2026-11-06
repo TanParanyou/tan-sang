@@ -106,25 +106,43 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
   }
 
   async addOrderItem(input: AddOrderItemInput): Promise<OrderItem> {
-    const { data: itemRow, error: itemErr } = await this.db
+    const basePayload = {
+      session_id: input.sessionId,
+      ordered_by_user_id: input.orderedByUserId,
+      recipient_name: input.recipientName,
+      menu_id: input.menuId ?? null,
+      menu_name: input.menuName,
+      variant_name: input.variantName ?? null,
+      unit_price: input.unitPrice,
+      quantity: input.quantity,
+      note: input.note ?? null,
+    };
+
+    let itemRow: Database['public']['Tables']['order_items']['Row'] | null = null;
+    const firstTry = await this.db
       .from('order_items')
       .insert({
-        session_id: input.sessionId,
-        ordered_by_user_id: input.orderedByUserId,
-        recipient_name: input.recipientName,
+        ...basePayload,
         picture_url: input.pictureUrl ?? null,
-        menu_id: input.menuId ?? null,
-        menu_name: input.menuName,
-        variant_name: input.variantName ?? null,
-        unit_price: input.unitPrice,
-        quantity: input.quantity,
-        note: input.note ?? null,
       })
       .select('*')
       .single();
 
-    if (itemErr || !itemRow) {
-      throw new Error(`Failed to insert order item: ${itemErr?.message ?? 'Unknown error'}`);
+    if (firstTry.error && firstTry.error.message.includes('picture_url')) {
+      // Graceful fallback if schema cache hasn't synced picture_url yet
+      const retryWithoutPicture = await this.db
+        .from('order_items')
+        .insert(basePayload)
+        .select('*')
+        .single();
+      if (retryWithoutPicture.error || !retryWithoutPicture.data) {
+        throw new Error(`Failed to insert order item: ${retryWithoutPicture.error?.message ?? 'Unknown error'}`);
+      }
+      itemRow = retryWithoutPicture.data;
+    } else if (firstTry.error || !firstTry.data) {
+      throw new Error(`Failed to insert order item: ${firstTry.error?.message ?? 'Unknown error'}`);
+    } else {
+      itemRow = firstTry.data;
     }
 
     if (input.options.length === 0) {
@@ -151,25 +169,44 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
   }
 
   async updateOrderItem(input: UpdateOrderItemInput): Promise<OrderItem> {
-    const { data: itemRow, error: itemErr } = await this.db
+    const baseUpdatePayload = {
+      recipient_name: input.recipientName,
+      menu_id: input.menuId ?? null,
+      menu_name: input.menuName,
+      variant_name: input.variantName ?? null,
+      unit_price: input.unitPrice,
+      quantity: input.quantity,
+      note: input.note ?? null,
+    };
+
+    let itemRow: Database['public']['Tables']['order_items']['Row'] | null = null;
+    const firstTry = await this.db
       .from('order_items')
       .update({
-        recipient_name: input.recipientName,
+        ...baseUpdatePayload,
         picture_url: input.pictureUrl ?? null,
-        menu_id: input.menuId ?? null,
-        menu_name: input.menuName,
-        variant_name: input.variantName ?? null,
-        unit_price: input.unitPrice,
-        quantity: input.quantity,
-        note: input.note ?? null,
       })
       .eq('id', input.itemId)
       .eq('session_id', input.sessionId)
       .select('*')
       .single();
 
-    if (itemErr || !itemRow) {
-      throw new Error(`Failed to update order item: ${itemErr?.message ?? 'Unknown error'}`);
+    if (firstTry.error && firstTry.error.message.includes('picture_url')) {
+      const retryWithoutPicture = await this.db
+        .from('order_items')
+        .update(baseUpdatePayload)
+        .eq('id', input.itemId)
+        .eq('session_id', input.sessionId)
+        .select('*')
+        .single();
+      if (retryWithoutPicture.error || !retryWithoutPicture.data) {
+        throw new Error(`Failed to update order item: ${retryWithoutPicture.error?.message ?? 'Unknown error'}`);
+      }
+      itemRow = retryWithoutPicture.data;
+    } else if (firstTry.error || !firstTry.data) {
+      throw new Error(`Failed to update order item: ${firstTry.error?.message ?? 'Unknown error'}`);
+    } else {
+      itemRow = firstTry.data;
     }
 
     const { error: delOptErr } = await this.db
