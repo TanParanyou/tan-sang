@@ -29,7 +29,7 @@ export function NamePromptModal({
     if (isOpen) {
       // If currentName is the default placeholder, don't prefill with default
       const defaultPlaceholder = t.nameModal.defaultMePlaceholder;
-      setName(currentName && currentName !== defaultPlaceholder && currentName !== 'ฉัน (ผู้สั่งอาหาร)' ? currentName : '');
+      setName(currentName && currentName !== defaultPlaceholder && currentName !== 'ฉัน (ผู้สั่งอาหาร)' && currentName !== 'Me (Ordering)' ? currentName : '');
       setError(null);
       setTimeout(() => {
         inputRef.current?.focus();

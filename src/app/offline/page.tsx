@@ -22,7 +22,7 @@ export default function OfflinePage() {
         <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
           <Image
             src="/logo.png"
-            alt="ตาลสั่ง (Tan-Sang)"
+            alt="Tan-Sang"
             width={80}
             height={80}
             className="animate-mascot-float object-contain"

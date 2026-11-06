@@ -203,7 +203,7 @@ export function ReceiptClient({
 
   return (
     <div className="min-h-screen bg-canvas pb-32 print:bg-white print:pb-0">
-      {/* Dev Persona Bar for Host */}
+      
       <div className="print:hidden">
         <DevPersonaBar hostUserId={session.hostUserId} />
         <AppNavbar
@@ -261,10 +261,10 @@ export function ReceiptClient({
 
       <Toast message={toast} />
 
-      {/* Non-Print Format & View Mode Control Toolbar for Host */}
+      
       <div className="border-b border-hairline/80 bg-surface px-4 py-2.5 print:hidden">
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2.5">
-          {/* Format selection */}
+          
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
               {t.receipt.thermalSlip}
@@ -299,7 +299,7 @@ export function ReceiptClient({
             </div>
           </div>
 
-          {/* View mode selection */}
+          
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
               {t.receipt.displayMode}
@@ -349,7 +349,7 @@ export function ReceiptClient({
         </div>
       </div>
 
-      {/* Printable Receipt Sheet */}
+      
       <main className="mx-auto mt-6 px-4 print:mt-0 print:px-0">
         <article
           ref={receiptRef}
@@ -359,7 +359,7 @@ export function ReceiptClient({
               : 'max-w-2xl text-sm print:max-w-none'
           }`}
         >
-          {/* Receipt Header */}
+          
           <div className="border-b border-dashed border-ink pb-3 text-center">
             <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-ink-secondary">
               TAN-SANG GROUP ORDER
@@ -378,7 +378,7 @@ export function ReceiptClient({
             </p>
           </div>
 
-          {/* Section 1: Merchant Grouped Summary */}
+          
           {(viewMode === 'GROUPED' || viewMode === 'ALL') && (
             <div className="py-3">
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
@@ -404,7 +404,7 @@ export function ReceiptClient({
             </div>
           )}
 
-          {/* Section 2: Individual Recipient Breakdown */}
+          
           {(viewMode === 'INDIVIDUAL' || viewMode === 'ALL') && (
             <div
               className={cn(
@@ -449,7 +449,7 @@ export function ReceiptClient({
             </div>
           )}
 
-          {/* Grand Total Summary */}
+          
           <div className="border-t-2 border-ink pt-3 font-mono">
             <div className="flex items-center justify-between text-base font-bold text-ink">
               <span>{t.receipt.totalWithCount} ({summary.totalItemsCount} {t.common.dishes})</span>
@@ -467,7 +467,7 @@ export function ReceiptClient({
           </div>
         </article>
 
-        {/* KhunThong / Split Bill Helper Card for Host */}
+        
         <div className="mx-auto mt-4 max-w-2xl rounded-theme border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-950 shadow-2xs print:hidden">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 font-bold text-amber-900">
@@ -498,15 +498,15 @@ export function ReceiptClient({
             </Button>
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
-            ระบบจัดรูปแบบข้อความแยกยอดรายคนไว้ให้แล้ว สามารถกดคัดลอกแล้วนำไปแปะในกลุ่มแชทที่มีขุนทองเพื่อเปิดบิลหารเงินต่อได้ทันที
+            {t.receipt.khunthongHelp}
           </p>
         </div>
       </main>
 
-      {/* Floating Sticky Bottom Action Dock for Host */}
+      
       <div className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface px-2 sm:px-4 py-2.5 sm:py-3 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] shadow-theme print:hidden">
         <div className="mx-auto flex max-w-2xl items-stretch justify-between gap-1 sm:gap-2">
-          {/* ปุ่มคัดลอกส่งร้าน */}
+          
           <Button
             type="button"
             variant="secondary"
@@ -531,7 +531,7 @@ export function ReceiptClient({
             )}
           </Button>
 
-          {/* ปุ่มคัดลอกส่งขุนทอง */}
+          
           <Button
             type="button"
             variant="secondary"
@@ -556,7 +556,7 @@ export function ReceiptClient({
             )}
           </Button>
 
-          {/* ปุ่มโหลดภาพ (Download Image) */}
+          
           <Button
             type="button"
             variant="secondary"
@@ -570,7 +570,7 @@ export function ReceiptClient({
             <span className="sm:hidden leading-none mt-0.5">{t.receipt.saveSlipImageButton}</span>
           </Button>
 
-          {/* ปุ่มแชร์เข้า LINE */}
+          
           <Button
             type="button"
             variant="secondary"
@@ -584,7 +584,7 @@ export function ReceiptClient({
             <span className="sm:hidden leading-none mt-0.5">{t.receipt.shareToLine}</span>
           </Button>
 
-          {/* ปุ่มหลักพิมพ์ใบเสร็จ */}
+          
           <Button
             type="button"
             variant="primary"
@@ -599,7 +599,7 @@ export function ReceiptClient({
         </div>
       </div>
 
-      {/* Modal Preview Image for Mobile & LINE users */}
+      
       {previewImageUrl && (
         <div
           role="dialog"
@@ -614,27 +614,27 @@ export function ReceiptClient({
             <div className="flex items-center justify-between pb-3 border-b border-hairline shrink-0">
               <div className="flex items-center gap-2">
                 <Download className="h-4 w-4 text-chili" />
-                <h3 className="text-sm font-bold text-ink">รูปภาพใบเสร็จ</h3>
+                <h3 className="text-sm font-bold text-ink">{t.receipt.imagePreviewTitle}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewImageUrl(null)}
                 className="rounded-full p-1 text-ink-muted hover:bg-subtle hover:text-ink focus-visible:outline-none"
-                aria-label="ปิด"
+                aria-label={t.common.close}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="my-2.5 rounded-lg border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-900 leading-relaxed shrink-0">
-              💡 <strong>สำหรับผู้ใช้มือถือ & LINE:</strong> แตะค้างที่รูปภาพด้านล่างเพื่อเลือก &quot;บันทึกรูปภาพ&quot; (Save Image) ลงในอัลบั้มรูปได้เลยครับ
+              {t.receipt.imagePreviewTip}
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-hairline/80 bg-subtle p-3 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              
               <img
                 src={previewImageUrl}
-                alt="รูปภาพใบเสร็จ"
+                alt={t.receipt.imagePreviewAlt}
                 className="mx-auto block h-auto w-full max-w-[340px] rounded border border-hairline bg-white shadow-md"
               />
             </div>
@@ -650,11 +650,11 @@ export function ReceiptClient({
                   link.download = `receipt-${session.id.slice(0, 8)}.png`;
                   link.href = previewImageUrl;
                   link.click();
-                  notify('ดาวน์โหลดรูปภาพแล้ว');
+                  notify(t.receipt.downloadSuccess);
                 }}
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                ดาวน์โหลดอีกครั้ง
+                {t.receipt.downloadAgain}
               </Button>
               {typeof navigator !== 'undefined' && 'share' in navigator && (
                 <Button
@@ -674,7 +674,7 @@ export function ReceiptClient({
                       if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
                           files: [file],
-                          title: `ใบเสร็จ-${summary.storeDisplayName}`,
+                          title: `${t.receipt.title}-${summary.storeDisplayName}`,
                         });
                         return;
                       }
@@ -684,7 +684,7 @@ export function ReceiptClient({
                   }}
                 >
                   <Share2 className="mr-1.5 h-3.5 w-3.5 text-ink-muted" />
-                  แชร์รูปภาพ
+                  {t.receipt.shareImage}
                 </Button>
               )}
               <Button
@@ -694,7 +694,7 @@ export function ReceiptClient({
                 className="text-xs"
                 onClick={() => setPreviewImageUrl(null)}
               >
-                ปิด
+                {t.common.close}
               </Button>
             </div>
           </div>

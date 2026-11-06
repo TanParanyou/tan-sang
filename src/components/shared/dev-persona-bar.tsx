@@ -3,9 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLiff } from '@/features/line/liff-provider';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export function DevPersonaBar({ hostUserId }: { hostUserId?: string }) {
   const { profile, isInLineClient, personas, setDevPersona } = useLiff();
+  const { t } = useI18n();
 
   // Hide simulator completely in production or when in LINE client
   if (process.env.NODE_ENV === 'production' || isInLineClient) {
@@ -44,10 +46,10 @@ export function DevPersonaBar({ hostUserId }: { hostUserId?: string }) {
         </div>
         <div className="flex items-center gap-3 font-mono text-[11px]">
           <Link href="/" className="underline-offset-2 hover:text-ink hover:underline">
-            หน้าแรก
+            {t.nav.home}
           </Link>
           <Link href="/receipt" className="underline-offset-2 hover:text-ink hover:underline">
-            ใบเสร็จ
+            {t.receipt.title}
           </Link>
         </div>
       </div>

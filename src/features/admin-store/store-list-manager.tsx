@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Edit2, Plus, Power, Shuffle, Trash2, X } from 'lucide-react';
 import type { Store } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Button, Checkbox, ConfirmDialog } from '@/components/ui';
 
 function generateRandomStoreId(existingStores: Store[]): string {
@@ -38,6 +39,7 @@ function generateRandomStoreId(existingStores: Store[]): string {
 }
 
 export function StoreListManager({ initialStores }: { initialStores: Store[] }) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>(initialStores);
 
@@ -79,7 +81,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       description,
       type: 'alert',
       variant: 'primary',
-      confirmText: 'ตกลง',
+      confirmText: t.common.confirm,
     });
   };
 
@@ -126,7 +128,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       };
 
       if (!json.ok || !json.data) {
-        setErrorMsg(json.error?.message ?? 'ไม่สามารถสร้างร้านค้าได้');
+        setErrorMsg(json.error?.message ?? t.storeAdmin.createStoreFailed);
         return;
       }
 
@@ -139,7 +141,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       setIsActive(true);
       router.refresh();
     } catch {
-      setErrorMsg('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      setErrorMsg(t.storeAdmin.serverConnectionError);
     } finally {
       setIsSubmitting(false);
     }
@@ -175,7 +177,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       };
 
       if (!json.ok || !json.data) {
-        setEditErrorMsg(json.error?.message ?? 'ไม่สามารถแก้ไขร้านค้าได้');
+        setEditErrorMsg(json.error?.message ?? t.storeAdmin.editStoreFailed);
         return;
       }
 
@@ -184,7 +186,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       cancelEdit();
       router.refresh();
     } catch {
-      setEditErrorMsg('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      setEditErrorMsg(t.storeAdmin.serverConnectionError);
     } finally {
       setIsUpdating(false);
     }
@@ -207,14 +209,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
 
       const json = (await res.json()) as { ok: boolean; data?: Store; error?: { message: string } };
       if (!json.ok || !json.data) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.updateStatusFailed);
         return;
       }
       const updated = json.data;
       setStores((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
@@ -231,7 +233,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.deleteStoreFailed);
         return;
       }
 
@@ -241,7 +243,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       }
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
@@ -249,11 +251,11 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
     const storeTitle = getLocalizedText(store.name, 'th');
     setDialogState({
       isOpen: true,
-      title: `ลบร้าน "${storeTitle}"`,
-      description: `คุณต้องการลบร้าน "${storeTitle}" (${store.id}) ใช่หรือไม่?\n\nคำเตือน: เมนูอาหารและตัวเลือกทั้งหมดของร้านนี้จะถูกลบถาวร`,
+      title: t.storeAdmin.deleteStoreConfirmTitle.replace('{name}', storeTitle),
+      description: t.storeAdmin.deleteStoreConfirmDesc.replace('{name}', storeTitle).replace('{id}', store.id),
       type: 'confirm',
       variant: 'danger',
-      confirmText: 'ลบร้านค้า',
+      confirmText: t.storeAdmin.deleteStoreBtn,
       onConfirm: async () => {
         closeDialog();
         await performDeleteStore(store);
@@ -269,8 +271,8 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
         className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">เพิ่มร้านอาหารใหม่</h2>
-          <span className="text-[11px] text-ink-muted">รหัสร้านถูกสุ่มให้อัตโนมัติ สามารถแก้ไขได้</span>
+          <h2 className="text-sm font-semibold text-ink">{t.storeAdmin.newStoreHeader}</h2>
+          <span className="text-[11px] text-ink-muted">{t.storeAdmin.storeIdHint}</span>
         </div>
 
         {errorMsg && (
@@ -285,14 +287,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
               required
               value={storeId}
               onChange={(e) => setStoreId(e.target.value.toUpperCase())}
-              placeholder="รหัสร้าน *"
+              placeholder={t.storeAdmin.storeIdPlaceholder}
               className="h-[44px] min-h-[44px] w-full rounded-theme border border-hairline bg-canvas pl-3.5 pr-10 font-mono text-sm uppercase text-ink focus:border-chili focus:outline-none"
             />
             <button
               type="button"
               onClick={() => setStoreId(generateRandomStoreId(stores))}
-              title="สุ่มรหัสร้านใหม่"
-              aria-label="สุ่มรหัสร้านใหม่"
+              title={t.storeAdmin.randomStoreId}
+              aria-label={t.storeAdmin.randomStoreId}
               className="absolute right-2 inline-flex h-8 w-8 items-center justify-center rounded text-ink-muted transition-colors hover:bg-subtle hover:text-chili"
             >
               <Shuffle className="h-4 w-4" />
@@ -304,21 +306,21 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             required
             value={nameTh}
             onChange={(e) => setNameTh(e.target.value)}
-            placeholder="ชื่อร้านภาษาไทย *"
+            placeholder={t.storeAdmin.storeNameThPlaceholder}
             className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
-            placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
+            placeholder={t.storeAdmin.storeNameEnPlaceholder}
             className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <div className="flex h-[44px] min-h-[44px] items-center px-1">
             <Checkbox
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              label="เปิดใช้งานทันที"
+              label={t.storeAdmin.activeNowLabel}
             />
           </div>
           <Button
@@ -329,7 +331,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
             className="h-[44px] min-h-[44px] bg-chili text-white hover:bg-chili-hover border-chili"
           >
             <Plus className="h-4 w-4" />
-            บันทึกร้านค้า
+            {t.storeAdmin.saveStoreBtn}
           </Button>
         </div>
       </form>
@@ -338,14 +340,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
       <div className="overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
         <div className="border-b border-hairline bg-canvas/50 px-5 py-3">
           <h2 className="text-sm font-semibold text-ink">
-            รายชื่อร้านอาหารทั้งหมด ({stores.length} ร้าน)
+            {t.storeAdmin.allStoresCount.replace('{count}', String(stores.length))}
           </h2>
         </div>
 
         <div className="divide-y divide-hairline">
           {stores.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-ink-muted">
-              ยังไม่มีร้านอาหารในระบบ กรุณาเพิ่มร้านอาหารด้านบน
+              {t.storeAdmin.emptyStores}
             </div>
           ) : (
             stores.map((store) => {
@@ -360,7 +362,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                     <form onSubmit={handleUpdateStore} className="space-y-3">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold text-chili">{store.id}</span>
-                        <span className="text-xs font-semibold text-ink">แก้ไขชื่อร้านค้า</span>
+                        <span className="text-xs font-semibold text-ink">{t.storeAdmin.editStoreNameTitle}</span>
                       </div>
                       {editErrorMsg && (
                         <p className="text-xs font-medium text-red-600">{editErrorMsg}</p>
@@ -371,14 +373,14 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           required
                           value={editNameTh}
                           onChange={(e) => setEditNameTh(e.target.value)}
-                          placeholder="ชื่อร้านภาษาไทย *"
+                          placeholder={t.storeAdmin.storeNameThPlaceholder}
                           className="h-[40px] min-h-[40px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
                         />
                         <input
                           type="text"
                           value={editNameEn}
                           onChange={(e) => setEditNameEn(e.target.value)}
-                          placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
+                          placeholder={t.storeAdmin.storeNameEnPlaceholder}
                           className="h-[40px] min-h-[40px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
                         />
                         <div className="flex items-center gap-2">
@@ -389,9 +391,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                             disabled={isUpdating}
                             className="h-[40px] min-h-[40px] bg-chili text-white hover:bg-chili-hover border-chili px-4"
                           >
-                            <Check className="h-3.5 w-3.5" />
-                            บันทึก
-                          </Button>
+                            <Check className="h-3.5 w-3.5" />{t.common.save}</Button>
                           <Button
                             type="button"
                             size="sm"
@@ -400,9 +400,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                             disabled={isUpdating}
                             className="h-[40px] min-h-[40px] px-4"
                           >
-                            <X className="h-3.5 w-3.5" />
-                            ยกเลิก
-                          </Button>
+                            <X className="h-3.5 w-3.5" />{t.common.cancel}</Button>
                         </div>
                       </div>
                     </form>
@@ -423,7 +421,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                                 store.isActive ? 'bg-emerald-500' : 'bg-neutral-400'
                               }`}
                             />
-                            {store.isActive ? 'เปิดใช้งาน' : 'ปิดชั่วคราว'}
+                            {store.isActive ? t.storeAdmin.activeStatus : t.storeAdmin.inactiveStatus}
                           </span>
                         </div>
                         <p className="mt-1 text-base font-semibold text-ink">
@@ -441,7 +439,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                         <button
                           type="button"
                           onClick={() => handleToggleActive(store)}
-                          title={store.isActive ? 'คลิกเพื่อปิดร้าน' : 'คลิกเพื่อเปิดร้าน'}
+                          title={store.isActive ? t.storeAdmin.closeStoreAction : t.storeAdmin.openStoreAction}
                           className={`inline-flex min-h-[34px] items-center gap-1.5 rounded-theme border px-3 py-1 text-xs font-medium transition ${
                             store.isActive
                               ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
@@ -449,7 +447,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           }`}
                         >
                           <Power className="h-3.5 w-3.5" />
-                          <span>{store.isActive ? 'ปิดร้าน' : 'เปิดร้าน'}</span>
+                          <span>{store.isActive ? t.storeAdmin.closeStoreAction : t.storeAdmin.openStoreAction}</span>
                         </button>
 
                         {/* Edit Store button */}
@@ -459,7 +457,7 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           className="inline-flex min-h-[34px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 py-1 text-xs font-medium text-ink transition hover:bg-subtle"
                         >
                           <Edit2 className="h-3.5 w-3.5 text-ink-muted" />
-                          <span>แก้ไขชื่อ</span>
+                          <span>{t.storeAdmin.editNameAction}</span>
                         </button>
 
                         {/* Manage menu link */}
@@ -467,18 +465,18 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           href={`/admin/stores/${store.id}`}
                           className="inline-flex min-h-[34px] items-center rounded-theme border border-hairline bg-canvas px-3 py-1 text-xs font-semibold text-ink transition hover:border-ink hover:bg-subtle"
                         >
-                          จัดการเมนูและราคา →
+                          {t.storeAdmin.manageMenuAction}
                         </Link>
 
                         {/* Delete Store button */}
                         <button
                           type="button"
                           onClick={() => handleDeleteStore(store)}
-                          aria-label={`ลบร้าน ${getLocalizedText(store.name, 'th')}`}
+                          aria-label={`${t.storeAdmin.deleteStoreAction} ${getLocalizedText(store.name, locale)}`}
                           className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-canvas px-2.5 py-1 text-xs font-medium text-ink-muted hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">ลบร้าน</span>
+                          <span className="hidden sm:inline">{t.storeAdmin.deleteStoreAction}</span>
                         </button>
                       </div>
                     </div>

@@ -16,8 +16,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-canvas pb-24">
       <AppNavbar
         backHref="/"
-        backLabel="หน้าแรก"
-        title="ระบบจัดการร้านค้า"
+        
+        title="Admin"
         badge={
           <span className="rounded bg-chili/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-chili">
             ADMIN
@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-subtle"
           >
             <Store className="h-3.5 w-3.5 text-chili" />
-            <span>รายชื่อร้านค้า</span>
+            <span>Stores</span>
           </Link>
         }
       />

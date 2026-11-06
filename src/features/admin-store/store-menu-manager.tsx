@@ -21,6 +21,7 @@ import type {
   StoreMenu,
 } from '@/features/store-catalog/store-catalog.schema';
 import { getLocalizedText } from '@/lib/utils/i18n.schema';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { Button, ConfirmDialog } from '@/components/ui';
 
 export function StoreMenuManager({
@@ -28,6 +29,7 @@ export function StoreMenuManager({
 }: {
   initialCatalog: StoreCatalogAggregate;
 }) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [catalog, setCatalog] = useState<StoreCatalogAggregate>(initialCatalog);
 
@@ -103,7 +105,7 @@ export function StoreMenuManager({
       description,
       type: 'alert',
       variant: 'primary',
-      confirmText: 'ตกลง',
+      confirmText: t.common.confirm,
     });
   };
 
@@ -141,7 +143,7 @@ export function StoreMenuManager({
         setIsEditingStore(false);
         router.refresh();
       } else {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถแก้ไขชื่อร้านได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.editStoreFailed);
       }
     } finally {
       setIsSavingStore(false);
@@ -175,10 +177,10 @@ export function StoreMenuManager({
         }));
         router.refresh();
       } else {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะร้านได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.updateStatusFailed);
       }
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
@@ -195,14 +197,14 @@ export function StoreMenuManager({
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบร้านค้าได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.deleteStoreFailed);
         return;
       }
 
       router.push('/admin/stores');
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
@@ -210,11 +212,11 @@ export function StoreMenuManager({
     const storeTitle = getLocalizedText(catalog.store.name, 'th');
     setDialogState({
       isOpen: true,
-      title: `ลบร้าน "${storeTitle}"`,
-      description: `คุณต้องการลบร้าน "${storeTitle}" (${catalog.store.id}) ใช่หรือไม่?\n\nคำเตือน: ข้อมูลเมนูอาหารและท็อปปิ้งทั้งหมดของร้านนี้จะถูกลบถาวร`,
+      title: t.storeAdmin.deleteStoreConfirmTitle.replace('{name}', storeTitle),
+      description: t.storeAdmin.deleteStoreConfirmDesc.replace('{name}', storeTitle).replace('{id}', catalog.store.id),
       type: 'confirm',
       variant: 'danger',
-      confirmText: 'ลบร้านค้า',
+      confirmText: t.storeAdmin.deleteStoreBtn,
       onConfirm: async () => {
         closeDialog();
         await performDeleteThisStore();
@@ -236,7 +238,7 @@ export function StoreMenuManager({
 
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะเมนูได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.updateStatusFailed);
         return;
       }
 
@@ -246,7 +248,7 @@ export function StoreMenuManager({
       }));
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
@@ -263,7 +265,7 @@ export function StoreMenuManager({
 
       const variants = [
         {
-          name: { th: 'ธรรมดา', en: 'Regular' },
+          name: { th: t.storeAdmin.regularSize, en: 'Regular' },
           price: Number.isFinite(parsedReg) && parsedReg >= 0 ? parsedReg : 0,
           isDefault: true,
         },
@@ -271,7 +273,7 @@ export function StoreMenuManager({
 
       if (parsedSpecial !== null && Number.isFinite(parsedSpecial) && parsedSpecial > 0) {
         variants.push({
-          name: { th: 'พิเศษ', en: 'Large' },
+          name: { th: t.storeAdmin.largeSize, en: 'Large' },
           price: parsedSpecial,
           isDefault: false,
         });
@@ -301,7 +303,7 @@ export function StoreMenuManager({
       };
 
       if (!json.ok || !json.data) {
-        setCreateMenuError(json.error?.message ?? 'ไม่สามารถเพิ่มเมนูได้');
+        setCreateMenuError(json.error?.message ?? t.storeAdmin.createStoreFailed);
         return;
       }
 
@@ -316,7 +318,7 @@ export function StoreMenuManager({
       setSpecialPrice('');
       router.refresh();
     } catch {
-      setCreateMenuError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      setCreateMenuError(t.storeAdmin.serverConnectionError);
     } finally {
       setIsSubmitting(false);
     }
@@ -337,7 +339,7 @@ export function StoreMenuManager({
             isDefault: v.isDefault,
           }))
         : [
-            { nameTh: 'ธรรมดา', nameEn: 'Regular', price: 0, isDefault: true },
+            { nameTh: t.storeAdmin.regularSize, nameEn: 'Regular', price: 0, isDefault: true },
           ],
     );
     setEditMenuError(null);
@@ -355,7 +357,7 @@ export function StoreMenuManager({
     setEditMenuVariants((prev) => [
       ...prev,
       {
-        nameTh: prev.length === 1 ? 'พิเศษ' : `ขนาด ${prev.length + 1}`,
+        nameTh: prev.length === 1 ? t.storeAdmin.largeSize : t.storeAdmin.sizeNumbered.replace('{num}', String(prev.length + 1)),
         nameEn: prev.length === 1 ? 'Large' : undefined,
         price: '',
         isDefault: false,
@@ -365,7 +367,7 @@ export function StoreMenuManager({
 
   const removeVariantFromEdit = (idxToRemove: number) => {
     if (editMenuVariants.length <= 1) {
-      showAlert('แจ้งเตือน', 'เมนูต้องมีราคาอย่างน้อย 1 ขนาด');
+      showAlert(t.storeAdmin.warningTitle, t.storeAdmin.minOneVariantWarning);
       return;
     }
     setEditMenuVariants((prev) => prev.filter((_, idx) => idx !== idxToRemove));
@@ -376,7 +378,7 @@ export function StoreMenuManager({
     if (!editingMenuId || !editMenuTh.trim()) return;
 
     if (editMenuVariants.length === 0) {
-      setEditMenuError('ต้องระบุราคาอย่างน้อย 1 ขนาด');
+      setEditMenuError(t.storeAdmin.minOneVariantWarning);
       return;
     }
 
@@ -393,7 +395,7 @@ export function StoreMenuManager({
         variants: editMenuVariants.map((v, index) => ({
           id: v.id,
           name: {
-            th: v.nameTh.trim() || `ขนาด ${index + 1}`,
+            th: v.nameTh.trim() || t.storeAdmin.sizeNumbered.replace('{num}', String(index + 1)),
             en: v.nameEn?.trim() || undefined,
           },
           price: Number.isFinite(Number(v.price)) && Number(v.price) >= 0 ? Number(v.price) : 0,
@@ -417,7 +419,7 @@ export function StoreMenuManager({
       };
 
       if (!json.ok || !json.data) {
-        setEditMenuError(json.error?.message ?? 'ไม่สามารถแก้ไขเมนูได้');
+        setEditMenuError(json.error?.message ?? t.storeAdmin.editStoreFailed);
         return;
       }
 
@@ -429,7 +431,7 @@ export function StoreMenuManager({
       cancelEditMenu();
       router.refresh();
     } catch {
-      setEditMenuError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      setEditMenuError(t.storeAdmin.serverConnectionError);
     } finally {
       setIsSavingMenu(false);
     }
@@ -448,7 +450,7 @@ export function StoreMenuManager({
       });
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบเมนูได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.deleteMenuBtn);
         return;
       }
 
@@ -461,18 +463,18 @@ export function StoreMenuManager({
       }
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
   const handleDeleteMenu = (menuId: string, menuTitle: string) => {
     setDialogState({
       isOpen: true,
-      title: `ลบเมนู "${menuTitle}"`,
-      description: `คุณต้องการลบเมนู "${menuTitle}" ใช่หรือไม่?`,
+      title: t.storeAdmin.deleteMenuConfirmTitle.replace('{name}', menuTitle),
+      description: t.storeAdmin.deleteMenuConfirmDesc.replace('{name}', menuTitle),
       type: 'confirm',
       variant: 'danger',
-      confirmText: 'ลบเมนู',
+      confirmText: t.storeAdmin.deleteMenuBtn,
       onConfirm: async () => {
         closeDialog();
         await performDeleteMenu(menuId);
@@ -518,7 +520,7 @@ export function StoreMenuManager({
         setOptionPrice('');
         router.refresh();
       } else {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถเพิ่มท็อปปิ้งได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.addOptionBtn);
       }
     } finally {
       setIsSubmittingOption(false);
@@ -570,7 +572,7 @@ export function StoreMenuManager({
       };
 
       if (!json.ok || !json.data) {
-        setEditOptionError(json.error?.message ?? 'ไม่สามารถแก้ไขท็อปปิ้งได้');
+        setEditOptionError(json.error?.message ?? t.storeAdmin.editOption);
         return;
       }
 
@@ -582,7 +584,7 @@ export function StoreMenuManager({
       cancelEditOption();
       router.refresh();
     } catch {
-      setEditOptionError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      setEditOptionError(t.storeAdmin.serverConnectionError);
     } finally {
       setIsSavingOption(false);
     }
@@ -601,7 +603,7 @@ export function StoreMenuManager({
       });
       const json = (await res.json()) as { ok: boolean; error?: { message: string } };
       if (!json.ok) {
-        showAlert('ข้อผิดพลาด', json.error?.message ?? 'ไม่สามารถลบท็อปปิ้งได้');
+        showAlert(t.storeAdmin.errorTitle, json.error?.message ?? t.storeAdmin.deleteOption);
         return;
       }
 
@@ -614,19 +616,19 @@ export function StoreMenuManager({
       }
       router.refresh();
     } catch {
-      showAlert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      showAlert(t.storeAdmin.errorTitle, t.storeAdmin.serverConnectionError);
     }
   };
 
   const handleDeleteOption = (optionId: string, optionTitle?: string) => {
-    const title = optionTitle || 'ท็อปปิ้งนี้';
+    const title = optionTitle || t.storeAdmin.editOption;
     setDialogState({
       isOpen: true,
-      title: `ลบท็อปปิ้ง "${title}"`,
-      description: `คุณต้องการลบท็อปปิ้ง "${title}" ใช่หรือไม่?`,
+      title: t.storeAdmin.deleteOptionConfirmTitle.replace('{name}', title),
+      description: t.storeAdmin.deleteOptionConfirmDesc.replace('{name}', title),
       type: 'confirm',
       variant: 'danger',
-      confirmText: 'ลบท็อปปิ้ง',
+      confirmText: t.storeAdmin.deleteOptionBtn,
       onConfirm: async () => {
         closeDialog();
         await performDeleteOption(optionId);
@@ -643,7 +645,7 @@ export function StoreMenuManager({
           className="mb-3 inline-flex min-h-[32px] items-center gap-1.5 text-xs font-semibold text-ink-secondary transition-colors hover:text-ink"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          <span>กลับหน้ารายชื่อร้านค้า</span>
+          <span>{t.storeAdmin.backToList}</span>
         </Link>
 
         {isEditingStore ? (
@@ -653,7 +655,7 @@ export function StoreMenuManager({
           >
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-bold text-chili">{catalog.store.id}</span>
-              <span className="text-xs font-semibold text-ink">แก้ไขชื่อร้านค้า</span>
+              <span className="text-xs font-semibold text-ink">{t.storeAdmin.editStoreNameTitle}</span>
             </div>
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <input
@@ -661,14 +663,14 @@ export function StoreMenuManager({
                 required
                 value={editStoreNameTh}
                 onChange={(e) => setEditStoreNameTh(e.target.value)}
-                placeholder="ชื่อร้าน (ภาษาไทย) *"
+                placeholder={t.storeAdmin.storeNameThPlaceholder}
                 className="min-h-[38px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
               />
               <input
                 type="text"
                 value={editStoreNameEn}
                 onChange={(e) => setEditStoreNameEn(e.target.value)}
-                placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
+                placeholder={t.storeAdmin.storeNameEnPlaceholder}
                 className="min-h-[38px] rounded-theme border border-hairline bg-canvas px-3 text-sm text-ink focus:border-chili focus:outline-none"
               />
               <div className="flex items-center gap-2">
@@ -680,7 +682,7 @@ export function StoreMenuManager({
                   className="bg-chili text-white hover:bg-chili-hover border-chili"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  บันทึก
+                  {t.common.save}
                 </Button>
                 <Button
                   type="button"
@@ -690,7 +692,7 @@ export function StoreMenuManager({
                   disabled={isSavingStore}
                 >
                   <X className="h-3.5 w-3.5" />
-                  ยกเลิก
+                  {t.common.cancel}
                 </Button>
               </div>
             </div>
@@ -712,7 +714,7 @@ export function StoreMenuManager({
                       catalog.store.isActive ? 'bg-emerald-500' : 'bg-neutral-400'
                     }`}
                   />
-                  {catalog.store.isActive ? 'เปิดใช้งาน' : 'ปิดชั่วคราว'}
+                  {catalog.store.isActive ? t.storeAdmin.activeStatus : t.storeAdmin.inactiveStatus}
                 </span>
               </div>
               <div className="mt-1 flex items-center gap-2">
@@ -727,15 +729,15 @@ export function StoreMenuManager({
                 <button
                   type="button"
                   onClick={startEditStore}
-                  title="แก้ไขชื่อร้าน"
-                  aria-label="แก้ไขชื่อร้าน"
+                  title={t.storeAdmin.editStoreNameTitle}
+                  aria-label={t.storeAdmin.editStoreNameTitle}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink transition-colors"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
               </div>
               <p className="mt-1 text-xs text-ink-secondary">
-                จัดการรายการอาหาร ราคาธรรมดา/พิเศษ ท็อปปิ้งประจำร้าน และสถานะการขายของแต่ละเมนู
+                {t.storeAdmin.storeDesc}
               </p>
             </div>
 
@@ -750,17 +752,17 @@ export function StoreMenuManager({
                 }`}
               >
                 <Power className="h-3.5 w-3.5" />
-                <span>{catalog.store.isActive ? 'ปิดรับออเดอร์ร้านนี้' : 'เปิดรับออเดอร์ร้านนี้'}</span>
+                <span>{catalog.store.isActive ? t.storeAdmin.closeStoreOrderAction : t.storeAdmin.openStoreOrderAction}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleDeleteThisStore}
                 className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3 py-1.5 text-xs font-medium text-ink-muted hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors"
-                title="ลบร้านค้านี้"
+                title={t.storeAdmin.deleteStoreSingleAction}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span>ลบร้านนี้</span>
+                <span>{t.storeAdmin.deleteStoreSingleAction}</span>
               </button>
             </div>
           </div>
@@ -773,7 +775,7 @@ export function StoreMenuManager({
         className="rounded-theme border border-hairline bg-surface p-5 shadow-xs"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">1. เพิ่มเมนูอาหารใหม่</h2>
+          <h2 className="text-sm font-semibold text-ink">{t.storeAdmin.addMenuHeader}</h2>
           <button
             type="button"
             onClick={() => {
@@ -782,10 +784,10 @@ export function StoreMenuManager({
               setMenuEn(dish.nameEn ?? '');
             }}
             className="inline-flex items-center gap-1.5 rounded-theme border border-hairline bg-subtle px-2.5 py-1 text-xs font-semibold text-ink hover:border-chili hover:text-chili transition active:scale-95"
-            title="สุ่มชื่อเมนูอาหาร"
+            title={t.storeAdmin.randomDishTip}
           >
             <Dices className="h-3.5 w-3.5 text-chili" />
-            <span>สุ่มไอเดียเมนู</span>
+            <span>{t.storeAdmin.randomDishTip}</span>
           </button>
         </div>
         {createMenuError && (
@@ -797,14 +799,14 @@ export function StoreMenuManager({
             required
             value={menuTh}
             onChange={(e) => setMenuTh(e.target.value)}
-            placeholder="ชื่อเมนู (ภาษาไทย) *"
+            placeholder={t.storeAdmin.menuNameThPlaceholder}
             className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
             type="text"
             value={menuEn}
             onChange={(e) => setMenuEn(e.target.value)}
-            placeholder="ชื่อภาษาอังกฤษ (ถ้ามี)"
+            placeholder={t.storeAdmin.storeNameEnPlaceholder}
             className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
@@ -812,7 +814,7 @@ export function StoreMenuManager({
             min={0}
             value={regPrice}
             onChange={(e) => setRegPrice(e.target.value)}
-            placeholder="ราคาธรรมดา *"
+            placeholder={t.storeAdmin.regularPricePlaceholder}
             className="h-[44px] min-h-[44px] rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <div className="flex items-center gap-2">
@@ -821,7 +823,7 @@ export function StoreMenuManager({
               min={0}
               value={specialPrice}
               onChange={(e) => setSpecialPrice(e.target.value)}
-              placeholder="ราคาพิเศษ (เว้นว่างได้)"
+              placeholder={t.storeAdmin.largePricePlaceholder}
               className="h-[44px] min-h-[44px] w-full rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
             />
             <Button
@@ -832,7 +834,7 @@ export function StoreMenuManager({
               className="h-[44px] min-h-[44px] shrink-0 bg-chili text-white hover:bg-chili-hover border-chili px-4"
             >
               <Plus className="h-4 w-4" />
-              เพิ่มเมนู
+              {t.storeAdmin.addMenuBtn}
             </Button>
           </div>
         </div>
@@ -842,10 +844,10 @@ export function StoreMenuManager({
       <div className="rounded-theme border border-hairline bg-surface p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">
-            2. ท็อปปิ้งประจำร้าน ({catalog.storeWideOptions.length} รายการ)
+            {t.storeAdmin.storeOptionsHeader.replace('{count}', String(catalog.storeWideOptions.length))}
           </h2>
           <span className="text-xs text-ink-muted hidden sm:inline">
-            ท็อปปิ้งที่ลูกค้าสามารถเลือกเพิ่มได้กับทุกเมนู
+            {t.storeAdmin.storeOptionsDesc}
           </span>
         </div>
 
@@ -853,7 +855,7 @@ export function StoreMenuManager({
         <div className="mt-3 flex flex-wrap gap-2.5">
           {catalog.storeWideOptions.length === 0 ? (
             <p className="text-xs text-ink-muted py-2">
-              ยังไม่มีท็อปปิ้งประจำร้าน สามารถเพิ่มได้ที่แบบฟอร์มด้านล่าง
+              {t.storeAdmin.emptyStoreOptions}
             </p>
           ) : (
             catalog.storeWideOptions.map((opt) => {
@@ -872,7 +874,7 @@ export function StoreMenuManager({
                       required
                       value={editOptionTh}
                       onChange={(e) => setEditOptionTh(e.target.value)}
-                      placeholder="ชื่อท็อปปิ้ง *"
+                      placeholder={t.storeAdmin.newOptionPlaceholder}
                       className="h-8 min-w-[120px] rounded border border-hairline bg-surface px-2.5 text-xs font-medium text-ink focus:border-chili focus:outline-none"
                     />
                     <div className="flex items-center gap-1">
@@ -882,10 +884,10 @@ export function StoreMenuManager({
                         required
                         value={editOptionPrice}
                         onChange={(e) => setEditOptionPrice(e.target.value)}
-                        placeholder="ราคา"
+                        placeholder={t.storeAdmin.variantPricePlaceholder}
                         className="h-8 w-20 rounded border border-hairline bg-surface px-2 font-mono text-xs text-ink tabular-nums focus:border-chili focus:outline-none"
                       />
-                      <span className="text-xs text-ink-secondary">฿</span>
+                      <span className="text-xs text-ink-secondary">{t.common.baht}</span>
                     </div>
                     <button
                       type="submit"
@@ -893,7 +895,7 @@ export function StoreMenuManager({
                       className="inline-flex h-8 items-center gap-1 rounded bg-chili px-2.5 text-xs font-semibold text-white hover:bg-chili-hover transition-colors shadow-xs"
                     >
                       <Check className="h-3.5 w-3.5" />
-                      <span>บันทึก</span>
+                      <span>{t.common.save}</span>
                     </button>
                     <button
                       type="button"
@@ -901,16 +903,16 @@ export function StoreMenuManager({
                       className="inline-flex h-8 items-center rounded border border-hairline bg-surface px-2 text-xs text-ink-muted hover:bg-subtle hover:text-ink transition-colors"
                     >
                       <X className="h-3.5 w-3.5" />
-                      <span>ยกเลิก</span>
+                      <span>{t.common.cancel}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDeleteOption(opt.id, optTitle)}
                       className="inline-flex h-8 items-center gap-1 rounded border border-red-200 bg-red-50 px-2 text-xs text-red-600 hover:bg-red-100 transition-colors"
-                      title="ลบท็อปปิ้งนี้"
+                      title={t.storeAdmin.deleteOption}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>ลบ</span>
+                      <span>{t.storeAdmin.deleteOption}</span>
                     </button>
                   </form>
                 );
@@ -922,15 +924,15 @@ export function StoreMenuManager({
                   className="inline-flex items-center gap-2 rounded-theme border border-hairline bg-canvas px-3 py-1.5 text-xs font-medium text-ink transition hover:border-hairline shadow-2xs"
                 >
                   <span className="font-semibold text-ink">{optTitle}</span>
-                  <span className="font-mono font-bold text-chili tabular-nums">+{opt.price}฿</span>
+                  <span className="font-mono font-bold text-chili tabular-nums">+{opt.price}{t.common.baht}</span>
 
                   <div className="flex items-center gap-1 border-l border-hairline pl-2 ml-1">
                     {/* Edit Option button */}
                     <button
                       type="button"
                       onClick={() => startEditOption(opt)}
-                      aria-label={`แก้ไขท็อปปิ้ง ${optTitle}`}
-                      title="แก้ไขท็อปปิ้ง"
+                      aria-label={`${t.storeAdmin.editOption} ${optTitle}`}
+                      title={t.storeAdmin.editOption}
                       className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-muted hover:bg-subtle hover:text-ink transition-colors"
                     >
                       <Edit2 className="h-3.5 w-3.5" />
@@ -940,8 +942,8 @@ export function StoreMenuManager({
                     <button
                       type="button"
                       onClick={() => handleDeleteOption(opt.id, optTitle)}
-                      aria-label={`ลบท็อปปิ้ง ${optTitle}`}
-                      title="ลบท็อปปิ้ง"
+                      aria-label={`${t.storeAdmin.deleteOption} ${optTitle}`}
+                      title={t.storeAdmin.deleteOption}
                       className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-muted hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -964,7 +966,7 @@ export function StoreMenuManager({
             required
             value={optionTh}
             onChange={(e) => setOptionTh(e.target.value)}
-            placeholder="ชื่อท็อปปิ้งใหม่ เช่น ไข่เค็ม, หมูยอทอด *"
+            placeholder={t.storeAdmin.newOptionPlaceholder}
             className="h-[44px] min-h-[44px] flex-1 rounded-theme border border-hairline bg-canvas px-3.5 text-sm text-ink focus:border-chili focus:outline-none"
           />
           <input
@@ -972,7 +974,7 @@ export function StoreMenuManager({
             min={0}
             value={optionPrice}
             onChange={(e) => setOptionPrice(e.target.value)}
-            placeholder="ราคา (ค่าเริ่มต้น 0)"
+            placeholder={t.storeAdmin.optionPricePlaceholder}
             className="h-[44px] min-h-[44px] w-36 rounded-theme border border-hairline bg-canvas px-3.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
           />
           <Button
@@ -984,7 +986,7 @@ export function StoreMenuManager({
             className="h-[44px] min-h-[44px] px-4"
           >
             <Plus className="h-4 w-4" />
-            เพิ่มท็อปปิ้ง
+            {t.storeAdmin.addOptionBtn}
           </Button>
         </form>
       </div>
@@ -993,14 +995,14 @@ export function StoreMenuManager({
       <div className="overflow-hidden rounded-theme border border-hairline bg-surface shadow-xs">
         <div className="border-b border-hairline bg-canvas/50 px-5 py-3">
           <h2 className="text-sm font-semibold text-ink">
-            รายการอาหารทั้งหมด ({catalog.menus.length} รายการ)
+            {t.storeAdmin.allMenusCount.replace('{count}', String(catalog.menus.length))}
           </h2>
         </div>
 
         <div className="divide-y divide-hairline">
           {catalog.menus.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-ink-muted">
-              ยังไม่มีเมนูอาหารในร้านนี้ กรุณาเพิ่มเมนูในแบบฟอร์มด้านบน
+              {t.storeAdmin.emptyMenus}
             </div>
           ) : (
             catalog.menus.map((menu) => {
@@ -1011,7 +1013,7 @@ export function StoreMenuManager({
                   {isEditingThisMenu ? (
                     <form onSubmit={handleUpdateMenu} className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-ink">แก้ไขข้อมูลเมนู</span>
+                        <span className="text-sm font-semibold text-ink">{t.storeAdmin.editMenuTitle}</span>
                         <div className="flex items-center gap-2">
                           <Button
                             type="submit"
@@ -1021,7 +1023,7 @@ export function StoreMenuManager({
                             className="bg-chili text-white hover:bg-chili-hover border-chili"
                           >
                             <Check className="h-3.5 w-3.5" />
-                            บันทึกเมนู
+                            {t.storeAdmin.saveMenuBtn}
                           </Button>
                           <Button
                             type="button"
@@ -1031,7 +1033,7 @@ export function StoreMenuManager({
                             disabled={isSavingMenu}
                           >
                             <X className="h-3.5 w-3.5" />
-                            ยกเลิก
+                            {t.common.cancel}
                           </Button>
                         </div>
                       </div>
@@ -1043,7 +1045,7 @@ export function StoreMenuManager({
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="block text-xs font-medium text-ink-secondary mb-1">
-                            ชื่อเมนูภาษาไทย *
+                            {t.storeAdmin.menuNameThLabel}
                           </label>
                           <input
                             type="text"
@@ -1055,7 +1057,7 @@ export function StoreMenuManager({
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-ink-secondary mb-1">
-                            ชื่อเมนูภาษาอังกฤษ
+                            {t.storeAdmin.menuNameEnLabel}
                           </label>
                           <input
                             type="text"
@@ -1070,7 +1072,7 @@ export function StoreMenuManager({
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <label className="text-xs font-medium text-ink-secondary">
-                            ราคาและขนาด (Variants)
+                            {t.storeAdmin.variantsLabel}
                           </label>
                           <button
                             type="button"
@@ -1078,7 +1080,7 @@ export function StoreMenuManager({
                             className="inline-flex items-center gap-1 text-xs font-medium text-chili hover:underline"
                           >
                             <Plus className="h-3 w-3" />
-                            เพิ่มขนาด/ราคา
+                            {t.storeAdmin.addVariantBtn}
                           </button>
                         </div>
 
@@ -1100,7 +1102,7 @@ export function StoreMenuManager({
                                     ),
                                   );
                                 }}
-                                placeholder="ชื่อขนาด เช่น ธรรมดา, พิเศษ"
+                                placeholder={t.storeAdmin.variantPlaceholder}
                                 className="w-32 min-h-[34px] rounded border border-hairline bg-surface px-2.5 text-xs font-medium text-ink focus:border-chili focus:outline-none"
                               />
                               <div className="flex flex-1 items-center gap-1">
@@ -1117,17 +1119,17 @@ export function StoreMenuManager({
                                       ),
                                     );
                                   }}
-                                  placeholder="ราคา"
+                                  placeholder={t.storeAdmin.variantPricePlaceholder}
                                   className="w-full min-h-[34px] rounded border border-hairline bg-surface px-2.5 font-mono text-sm text-ink tabular-nums focus:border-chili focus:outline-none"
                                 />
-                                <span className="text-xs text-ink-secondary font-mono">฿</span>
+                                <span className="text-xs text-ink-secondary font-mono">{t.common.baht}</span>
                               </div>
                               {editMenuVariants.length > 1 && (
                                 <button
                                   type="button"
                                   onClick={() => removeVariantFromEdit(idx)}
-                                  title="ลบขนาดนี้"
-                                  aria-label="ลบขนาดนี้"
+                                  title={t.storeAdmin.deleteVariantTitle}
+                                  aria-label={t.storeAdmin.deleteVariantTitle}
                                   className="inline-flex h-8 w-8 items-center justify-center rounded text-ink-muted hover:bg-subtle hover:text-red-600 transition-colors"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -1154,9 +1156,9 @@ export function StoreMenuManager({
                         <p className="mt-0.5 font-mono text-xs text-ink-secondary tabular-nums">
                           {menu.variants.length > 0
                             ? menu.variants
-                                .map((v) => `${getLocalizedText(v.name, 'th')} ${v.price}฿`)
+                                .map((v) => `${getLocalizedText(v.name, locale)} ${v.price}${t.common.baht}`)
                                 .join(' / ')
-                            : 'ยังไม่ได้ระบุราคา'}
+                            : t.storeAdmin.noPriceSpecified}
                         </p>
                       </div>
 
@@ -1167,10 +1169,10 @@ export function StoreMenuManager({
                             const active = menu.status === status;
                             const label =
                               status === 'ACTIVE'
-                                ? 'ขายปกติ'
+                                ? t.storeAdmin.active
                                 : status === 'OUT_OF_STOCK'
-                                  ? 'ของหมด'
-                                  : 'งดสั่ง';
+                                  ? t.storeAdmin.outOfStock
+                                  : t.storeAdmin.banned;
                             return (
                               <button
                                 key={status}
@@ -1195,7 +1197,7 @@ export function StoreMenuManager({
                           className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-canvas px-3 py-1 text-xs font-medium text-ink transition hover:bg-subtle"
                         >
                           <Edit2 className="h-3.5 w-3.5 text-ink-muted" />
-                          <span>แก้ไข</span>
+                          <span>{t.storeAdmin.editMenuAction}</span>
                         </button>
 
                         {/* Delete menu button */}
@@ -1204,11 +1206,11 @@ export function StoreMenuManager({
                           onClick={() =>
                             handleDeleteMenu(menu.id, getLocalizedText(menu.name, 'th'))
                           }
-                          aria-label={`ลบเมนู ${getLocalizedText(menu.name, 'th')}`}
+                          aria-label={`${t.storeAdmin.deleteMenuBtn} ${getLocalizedText(menu.name, locale)}`}
                           className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-canvas px-2.5 py-1 text-xs font-medium text-ink-muted hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">ลบเมนู</span>
+                          <span className="hidden sm:inline">{t.storeAdmin.deleteMenuAction}</span>
                         </button>
                       </div>
                     </div>

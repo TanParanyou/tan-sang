@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { Button } from './button';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface ConfirmDialogProps {
   isOpen: boolean;
@@ -22,12 +23,15 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmText = 'ยืนยัน',
-  cancelText = 'ยกเลิก',
+  confirmText,
+  cancelText,
   variant = 'primary',
   loading = false,
   type = 'confirm',
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const resolvedConfirmText = confirmText ?? t.common.confirm;
+  const resolvedCancelText = cancelText ?? t.common.cancel;
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -77,7 +81,7 @@ export function ConfirmDialog({
               onClick={onClose}
               className="min-h-[36px]"
             >
-              {cancelText}
+              {resolvedCancelText}
             </Button>
           )}
           <Button
@@ -89,7 +93,7 @@ export function ConfirmDialog({
             onClick={handleConfirm}
             className="min-h-[36px]"
           >
-            {type === 'alert' && confirmText === 'ยืนยัน' ? 'ตกลง' : confirmText}
+            {type === 'alert' && !confirmText ? t.common.confirm : resolvedConfirmText}
           </Button>
         </div>
       </div>

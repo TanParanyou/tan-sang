@@ -10,9 +10,9 @@ export default async function AdminStoresPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-ink">จัดการร้านอาหาร (Stores)</h1>
+        <h1 className="text-xl font-semibold text-ink">Stores Management</h1>
         <p className="mt-0.5 text-xs text-ink-secondary">
-          เพิ่มร้านอาหารใหม่ หรือเลือกร้านเพื่อตั้งค่าเมนู ขนาดราคา ท็อปปิ้ง และสถานะเมนูงดสั่ง
+          Add new restaurant or select a store to manage dishes, prices, and options.
         </p>
       </div>
 
