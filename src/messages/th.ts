@@ -28,6 +28,10 @@ export const th = {
     error: 'เกิดข้อผิดพลาด',
     serverConnectionError: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์',
     pleaseWait: 'กำลังดำเนินการ...',
+    themeToggle: 'เปลี่ยนธีม (สว่าง / มืด)',
+    switchToLight: 'สลับเป็นโหมดสว่าง',
+    switchToDark: 'สลับเป็นโหมดมืด',
+    switchLanguage: 'เปลี่ยนภาษา / Switch language',
   },
   nav: {
     home: 'หน้าหลัก',

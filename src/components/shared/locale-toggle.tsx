@@ -9,7 +9,7 @@ export interface LocaleToggleProps {
 }
 
 export function LocaleToggle({ className }: LocaleToggleProps) {
-  const { locale, setLocale, isMounted } = useI18n();
+  const { locale, setLocale, isMounted, t } = useI18n();
 
   if (!isMounted) {
     return (
@@ -27,7 +27,7 @@ export function LocaleToggle({ className }: LocaleToggleProps) {
   return (
     <div
       role="group"
-      aria-label="เปลี่ยนภาษา / Switch language"
+      aria-label={t.common.switchLanguage}
       className={cn(
         'inline-flex min-h-[38px] h-[38px] items-center rounded-theme border border-hairline bg-surface p-0.5 shadow-2xs select-none',
         className,

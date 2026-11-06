@@ -47,7 +47,7 @@ export function OrderHistoryClient({
       const res = await fetch('/api/v1/sessions');
       const json = (await res.json()) as { ok: boolean; data?: SessionHistoryItem[] };
       if (!json.ok || !json.data) {
-        throw new Error('ไม่สามารถดึงข้อมูลประวัติการสั่งได้');
+        throw new Error(t.history.fetchFailed);
       }
       return json.data;
     },
@@ -109,7 +109,7 @@ export function OrderHistoryClient({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <div
             role="tablist"
-            aria-label="ตัวกรองประวัติบิล"
+            aria-label={t.history.title}
             className="inline-flex rounded-theme border border-hairline bg-subtle p-1"
           >
             <button
@@ -145,23 +145,23 @@ export function OrderHistoryClient({
         {filteredHistory.length === 0 ? (
           <div className="mt-8 rounded-xl border border-hairline bg-surface p-12 text-center flex flex-col items-center justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-xs mb-2">
-              <img src="/brand-mascot.png" alt="น้องตาล" className="h-9 w-9 object-contain animate-mascot-breathe" />
+              <img src="/brand-mascot.png" alt={t.common.brandName} className="h-9 w-9 object-contain animate-mascot-breathe" />
             </div>
             <h2 className="mt-1 text-base font-semibold text-ink">
               {filterMode === 'MINE'
-                ? `ไม่พบบิลที่คุณ (${profile.displayName}) มีส่วนร่วม`
-                : 'ยังไม่มีประวัติการสั่งอาหารในระบบ'}
+                ? t.history.emptyDescMine.replace("{name}", profile.displayName)
+                : t.history.emptyDescAll}
             </h2>
             <p className="mt-1 text-xs text-ink-secondary">
               {filterMode === 'MINE'
-                ? 'ลองสลับตัวละครใน DevPersonaBar หรือเลือกดู "บิลทั้งหมด"'
-                : 'เริ่มต้นเปิดบิลแรกของกลุ่มได้ที่หน้าหลัก'}
+                ? t.history.subtitle
+                : t.history.emptyDesc}
             </p>
             <Link
               href="/"
               className="mt-5 inline-flex min-h-[42px] items-center gap-1.5 rounded-lg bg-chili px-4 py-2 text-xs font-semibold text-white hover:bg-chili-hover"
             >
-              ไปยังหน้าหลัก
+              {t.nav.home}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -176,7 +176,7 @@ export function OrderHistoryClient({
                     className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-line"
                   >
                     <span className="h-2 w-2 rounded-full bg-line animate-pulse" />
-                    กำลังเปิดรับออเดอร์ ({openSessions.length})
+                    {t.session.statusOpen} ({openSessions.length})
                   </h2>
                 </div>
 
@@ -200,14 +200,14 @@ export function OrderHistoryClient({
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-line-subtle px-2.5 py-0.5 text-xs font-semibold text-line">
                               <span className="h-1.5 w-1.5 rounded-full bg-line" />
-                              เปิดรับออเดอร์
+                              {t.history.statusOpen}
                             </span>
                             <span className="font-mono text-xs text-ink-muted">
                               {formatThaiDateTime(session.createdAt)}
                             </span>
                             {isHost && (
                               <span className="rounded-theme border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                                คุณเป็น Host
+                                Host
                               </span>
                             )}
                           </div>
@@ -218,20 +218,20 @@ export function OrderHistoryClient({
 
                           <div className="flex flex-wrap items-center gap-3 font-mono text-xs tabular-nums text-ink-secondary">
                             <span>
-                              รวม <strong className="text-ink">{summary.totalItemsCount}</strong>{' '}
-                              จาน
+                              {t.session.sumLabel} <strong className="text-ink">{summary.totalItemsCount}</strong>{' '}
+                              {t.common.dishes}
                             </span>
                             <span>•</span>
                             <span>
-                              ยอดรวม{' '}
+                              {t.session.sumLabel}{' '}
                               <strong className="text-ink">
                                 {summary.grandTotalAmount.toLocaleString('th-TH')}
                               </strong>{' '}
-                              ฿
+                              {t.common.baht}
                             </span>
                             <span>•</span>
                             <span className={myTotal > 0 ? 'text-chili font-semibold' : 'text-ink-muted'}>
-                              ยอดของคุณ: {myTotal.toLocaleString('th-TH')} ฿
+                              {t.session.yourTotal}: {myTotal.toLocaleString('th-TH')} {t.common.baht}
                             </span>
                           </div>
                         </div>
@@ -242,7 +242,7 @@ export function OrderHistoryClient({
                             href={`/order/${session.id}`}
                             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-theme border border-chili bg-chili px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-chili-hover"
                           >
-                            เข้าห้องสั่ง
+                            {t.common.openApp}
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                           <Link
@@ -250,7 +250,7 @@ export function OrderHistoryClient({
                             className="inline-flex min-h-[40px] items-center gap-1 rounded-theme border border-hairline bg-surface px-3 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
                           >
                             <Printer className="h-3.5 w-3.5 text-ink-secondary" />
-                            ใบเสร็จ
+                            {t.receipt.title}
                           </Link>
                           <DeleteSessionButton
                             sessionId={session.id}
@@ -261,7 +261,7 @@ export function OrderHistoryClient({
                             className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition"
                             onSuccess={async () => {
                               await queryClient.invalidateQueries({ queryKey: ['session-history'] });
-                              showToast('ลบบิลเรียบร้อยแล้ว');
+                              showToast(t.session.deletedSuccess);
                             }}
                             onError={(err) => showToast(err)}
                           />
@@ -282,7 +282,7 @@ export function OrderHistoryClient({
                     className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-secondary"
                   >
                     <Lock className="h-3.5 w-3.5 text-ink-muted" />
-                    ปิดบิลแล้ว ({closedSessions.length})
+                    {t.history.statusClosed} ({closedSessions.length})
                   </h2>
                 </div>
 
@@ -306,14 +306,14 @@ export function OrderHistoryClient({
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center gap-1 rounded-full bg-subtle px-2.5 py-0.5 text-xs font-medium text-ink-secondary">
                               <Lock className="h-3 w-3 text-ink-muted" />
-                              ปิดบิลแล้ว
+                              {t.history.statusClosed}
                             </span>
                             <span className="font-mono text-xs text-ink-muted">
                               {formatThaiDateTime(session.createdAt)}
                             </span>
                             {isHost && (
                               <span className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                                คุณเป็น Host
+                                Host
                               </span>
                             )}
                           </div>
@@ -324,20 +324,20 @@ export function OrderHistoryClient({
 
                           <div className="flex flex-wrap items-center gap-3 font-mono text-xs tabular-nums text-ink-secondary">
                             <span>
-                              รวม <strong className="text-ink">{summary.totalItemsCount}</strong>{' '}
-                              จาน
+                              {t.session.sumLabel} <strong className="text-ink">{summary.totalItemsCount}</strong>{' '}
+                              {t.common.dishes}
                             </span>
                             <span>•</span>
                             <span>
-                              ยอดรวม{' '}
+                              {t.session.sumLabel}{' '}
                               <strong className="text-ink">
                                 {summary.grandTotalAmount.toLocaleString('th-TH')}
                               </strong>{' '}
-                              ฿
+                              {t.common.baht}
                             </span>
                             <span>•</span>
                             <span className={myTotal > 0 ? 'text-chili font-semibold' : 'text-ink-muted'}>
-                              ยอดของคุณ: {myTotal.toLocaleString('th-TH')} ฿
+                              {t.session.yourTotal}: {myTotal.toLocaleString('th-TH')} {t.common.baht}
                             </span>
                           </div>
                         </div>
@@ -348,7 +348,7 @@ export function OrderHistoryClient({
                             href={`/order/${session.id}`}
                             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-theme border border-hairline bg-canvas px-3.5 py-2 text-xs font-semibold text-ink shadow-xs hover:bg-subtle"
                           >
-                            ดูรายการ
+                            {t.common.items}
                             <ExternalLink className="h-3.5 w-3.5 text-ink-muted" />
                           </Link>
                           <Link
@@ -356,7 +356,7 @@ export function OrderHistoryClient({
                             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-surface border border-hairline px-3.5 py-2 text-xs font-semibold text-ink hover:bg-subtle"
                           >
                             <Printer className="h-3.5 w-3.5 text-chili" />
-                            ใบเสร็จ
+                            {t.receipt.title}
                           </Link>
                           <DeleteSessionButton
                             sessionId={session.id}
@@ -367,7 +367,7 @@ export function OrderHistoryClient({
                             className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition"
                             onSuccess={async () => {
                               await queryClient.invalidateQueries({ queryKey: ['session-history'] });
-                              showToast('ลบบิลเรียบร้อยแล้ว');
+                              showToast(t.session.deletedSuccess);
                             }}
                             onError={(err) => showToast(err)}
                           />

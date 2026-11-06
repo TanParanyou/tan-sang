@@ -42,7 +42,7 @@ export function DropdownMenu({
   align = 'right',
   className,
   menuClassName,
-  ariaLabel = 'เมนูตัวเลือก',
+  ariaLabel = 'Menu options',
 }: DropdownMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

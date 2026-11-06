@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface ThemeToggleProps {
   className?: string;
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
+  const { t } = useI18n();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +62,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     return (
       <button
         type="button"
-        aria-label="เปลี่ยนธีม (สว่าง / มืด)"
+        aria-label={t.common.themeToggle}
         className={cn(
           'inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-2xs opacity-70',
           className,
@@ -72,13 +74,14 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   }
 
   const isDark = theme === 'dark';
+  const label = isDark ? t.common.switchToLight : t.common.switchToDark;
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={isDark ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
-      title={isDark ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
+      aria-label={label}
+      title={label}
       className={cn(
         'inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs',
         className,

@@ -30,6 +30,10 @@ export const en: TranslationKeys = {
     error: 'Error',
     serverConnectionError: 'Server connection error',
     pleaseWait: 'Processing...',
+    themeToggle: 'Toggle theme (Light / Dark)',
+    switchToLight: 'Switch to light mode',
+    switchToDark: 'Switch to dark mode',
+    switchLanguage: 'Switch language / เปลี่ยนภาษา',
   },
   nav: {
     home: 'Home',
