@@ -141,5 +141,14 @@ export function constructMetadata({
     },
     icons,
     manifest: '/site.webmanifest',
+    applicationName: siteConfig.shortName,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: siteConfig.shortName,
+    },
+    formatDetection: {
+      telephone: false,
+    },
   };
 }

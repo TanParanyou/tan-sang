@@ -190,6 +190,13 @@ export const th = {
     deleting: 'กำลังลบ...',
     wrongPin: 'รหัสยืนยันไม่ถูกต้อง (โปรดระบุ 4 ตัวท้ายของ Host ID)',
   },
+  offline: {
+    title: 'ไม่มีสัญญาณอินเทอร์เน็ต',
+    description: 'สัญญาณขาดหายชั่วคราว กรุณาตรวจสอบการเชื่อมต่อเครือข่ายแล้วลองใหม่อีกครั้ง',
+    retry: 'ลองใหม่อีกครั้ง',
+    backHome: 'กลับหน้าหลัก',
+    statusBadge: 'ออฟไลน์',
+  },
 };
 
 export type TranslationKeys = typeof th;

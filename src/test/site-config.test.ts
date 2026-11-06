@@ -27,6 +27,12 @@ describe('siteConfig & constructMetadata', () => {
       follow: true,
     });
     expect(meta.manifest).toBe('/site.webmanifest');
+    expect(meta.applicationName).toBe(siteConfig.shortName);
+    expect(meta.appleWebApp).toMatchObject({
+      capable: true,
+      statusBarStyle: 'default',
+      title: siteConfig.shortName,
+    });
   });
 
   it('customizes metadata with page-specific overrides', () => {

@@ -192,4 +192,11 @@ export const en: TranslationKeys = {
     deleting: 'Deleting...',
     wrongPin: 'Invalid PIN (Please enter the last 4 characters of Host ID)',
   },
+  offline: {
+    title: 'No Internet Connection',
+    description: 'Connection lost temporarily. Please check your network and try again.',
+    retry: 'Retry',
+    backHome: 'Back to Home',
+    statusBadge: 'Offline',
+  },
 };

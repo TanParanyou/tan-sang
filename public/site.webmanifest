@@ -1,11 +1,14 @@
 {
+  "id": "/",
   "name": "Tan-Sang (ตาลสั่ง) — ระบบเปิดบิลสั่งอาหารกลุ่มผ่าน LINE",
   "short_name": "ตาลสั่ง",
   "description": "สั่งอาหารกลุ่มในแชท LINE เลือกเมนู ท็อปปิ้ง แยกบิลรายคน และคัดลอกข้อความส่งร้านในคลิกเดียว",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#FAFAFA",
-  "theme_color": "#FAFAFA",
+  "orientation": "portrait",
+  "background_color": "#FAF6F0",
+  "theme_color": "#FAF6F0",
   "icons": [
     {
       "src": "/favicon.ico",
@@ -15,12 +18,15 @@
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["food", "utilities"]
 }
