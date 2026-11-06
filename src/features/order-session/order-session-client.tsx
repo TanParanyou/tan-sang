@@ -44,6 +44,7 @@ import type {
 } from '@/features/store-catalog/store-catalog.schema';
 import { getRandomDish } from '@/features/food-randomizer/random-dishes';
 import { getLocalizedText, type SupportedLocale } from '@/lib/utils/i18n.schema';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import {
   calculateOrderItemTotals,
   formatOrderItemTitle,
@@ -75,6 +76,7 @@ export function OrderSessionClient({
   sessionId: string;
   initialData: SessionDetailPayload;
 }) {
+  const { t, locale, setLocale } = useI18n();
   const {
     profile,
     updateProfileName,
@@ -93,7 +95,6 @@ export function OrderSessionClient({
   const [copiedMerchant, setCopiedMerchant] = useState(false);
   const [copiedKhunThong, setCopiedKhunThong] = useState(false);
   const [catalogViewMode, setCatalogViewMode] = useState<'LIST' | 'GRID'>('LIST');
-  const [locale, setLocale] = useState<SupportedLocale>('th');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
@@ -191,10 +192,10 @@ export function OrderSessionClient({
       };
       if (json.ok) {
         await queryClient.invalidateQueries({ queryKey: ['order-session', sessionId] });
-        showToast('บันทึกการโหวตแบนแล้ว (ครบ 3 โหวตจะงดสั่งอัตโนมัติ)');
+        showToast(t.session.voteBanSuccess);
       }
     } catch {
-      showToast('ไม่สามารถโหวตแบนเมนูได้');
+      showToast(t.session.voteBanFailed);
     }
   };
 
@@ -204,7 +205,7 @@ export function OrderSessionClient({
       const res = await fetch(`/api/v1/sessions/${sessionId}`);
       const json = (await res.json()) as { ok: boolean; data: SessionDetailPayload };
       if (!json.ok) {
-        throw new Error('ไม่สามารถดึงข้อมูลห้องสั่งอาหารได้');
+        throw new Error(t.session.loadSessionFailed);
       }
       return json.data;
     },
@@ -379,7 +380,7 @@ export function OrderSessionClient({
           error?: { message: string };
         };
         if (!json.ok || !json.data) {
-          throw new Error(json.error?.message ?? 'ไม่สามารถแก้ไขรายการอาหารได้');
+          throw new Error(json.error?.message ?? t.session.updateOrderFailed);
         }
         return { updated: json.data, isEdit: true };
       }
@@ -395,7 +396,7 @@ export function OrderSessionClient({
         error?: { message: string };
       };
       if (!json.ok || !json.data) {
-        throw new Error(json.error?.message ?? 'ไม่สามารถเพิ่มรายการอาหารได้');
+        throw new Error(json.error?.message ?? t.session.addOrderFailed);
       }
       return { updated: json.data, isEdit: false };
     },
@@ -403,7 +404,7 @@ export function OrderSessionClient({
       queryClient.setQueryData(['order-session', sessionId], updated);
       closeDrawer();
       setActiveTab('TRAY');
-      showToast(isEdit ? 'บันทึกการแก้ไขรายการแล้ว' : 'เพิ่มรายการลงในบิลกลุ่มแล้ว');
+      showToast(isEdit ? t.session.updatedSuccess : t.session.addedSuccess);
     },
     onError: (err: Error) => {
       showToast(err.message);
@@ -426,13 +427,13 @@ export function OrderSessionClient({
         error?: { message: string };
       };
       if (!json.ok || !json.data) {
-        throw new Error(json.error?.message ?? 'ไม่สามารถลบรายการได้');
+        throw new Error(json.error?.message ?? t.session.deleteOrderFailed);
       }
       return json.data;
     },
     onSuccess: (updated) => {
       queryClient.setQueryData(['order-session', sessionId], updated);
-      showToast('ลบรายการอาหารเรียบร้อยแล้ว');
+      showToast(t.session.deletedSuccess);
     },
     onError: (err: Error) => {
       showToast(err.message);
@@ -457,7 +458,7 @@ export function OrderSessionClient({
         error?: { message: string };
       };
       if (!json.ok || !json.data) {
-        throw new Error(json.error?.message ?? 'ไม่สามารถเปลี่ยนสถานะได้');
+        throw new Error(json.error?.message ?? t.session.toggleStatusFailed);
       }
       return json.data;
     },
@@ -485,13 +486,13 @@ export function OrderSessionClient({
         error?: { message: string };
       };
       if (!json.ok || !json.data) {
-        throw new Error(json.error?.message ?? 'ไม่สามารถปิดบิลได้');
+        throw new Error(json.error?.message ?? t.session.confirmCloseTitle);
       }
       return json.data;
     },
     onSuccess: (updated) => {
       queryClient.setQueryData(['order-session', sessionId], updated);
-      showToast('ล็อกและปิดรับออเดอร์แล้ว');
+      showToast(t.session.statusClosed);
     },
     onError: (err: Error) => {
       showToast(err.message);
@@ -503,7 +504,7 @@ export function OrderSessionClient({
       await navigator.clipboard.writeText(summary.merchantCopyText);
       setCopiedMerchant(true);
       setTimeout(() => setCopiedMerchant(false), 2000);
-      showToast('คัดลอกข้อความสำหรับส่งให้ร้านค้าแล้ว!');
+      showToast(t.receipt.copiedStoreSuccess);
     }
   };
 
@@ -512,7 +513,7 @@ export function OrderSessionClient({
       await navigator.clipboard.writeText(summary.khunThongCopyText);
       setCopiedKhunThong(true);
       setTimeout(() => setCopiedKhunThong(false), 2000);
-      showToast('คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทอง/กลุ่มแล้ว!');
+      showToast(t.receipt.copiedKhunThongSuccess);
     }
   };
 
@@ -526,7 +527,7 @@ export function OrderSessionClient({
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      showToast('คัดลอกลิงก์ห้องสั่งอาหาร (LIFF) แล้ว นำไปแปะในกลุ่มแชทได้เลย!');
+      showToast(t.common.copied);
     }
   };
 
@@ -537,7 +538,7 @@ export function OrderSessionClient({
 
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      showToast('คัดลอกลิงก์ตรง (ไม่ผ่าน LIFF) แล้ว เปิดในเบราว์เซอร์ได้เลย!');
+      showToast(t.common.copied);
     }
   };
 
@@ -614,24 +615,24 @@ export function OrderSessionClient({
       {/* Unified App Header */}
       <AppNavbar
         backHref="/history"
-        backLabel="ประวัติ"
+        backLabel={t.nav.orderHistory}
         title={catalog ? getLocalizedText(catalog.store.name, locale) : summary.storeDisplayName}
         subtitle={
           <div className="flex items-center gap-1.5 leading-tight">
             {isOpen ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                เปิดรับ
+                {t.history.statusOpen}
               </span>
             ) : (
               <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-amber-600">
                 <Lock className="h-2.5 w-2.5 mr-0.5 inline" />
-                ปิดรับ
+                {t.history.statusClosed}
               </span>
             )}
             <span className="text-ink-muted">•</span>
             <span className="font-mono text-[11px] text-ink-muted tabular-nums">
-              {summary.totalItemsCount} จาน
+              {summary.totalItemsCount} {t.common.dishes}
               {formatGrandTotal(summary.grandTotalAmount)
                 ? ` • ${formatGrandTotal(summary.grandTotalAmount)}`
                 : ''}
@@ -644,7 +645,7 @@ export function OrderSessionClient({
               type="button"
               onClick={() => setIsNameModalOpen(true)}
               className="inline-flex min-h-[34px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-2xs transition hover:bg-subtle"
-              title="แตะเพื่อเปลี่ยนชื่อผู้สั่ง"
+              title={t.session.tapToChangeName}
             >
               <span className="max-w-[80px] sm:max-w-[110px] truncate font-semibold">{profile.displayName}</span>
               <Pencil className="h-3 w-3 text-ink-muted shrink-0" />
@@ -652,12 +653,12 @@ export function OrderSessionClient({
 
             <DropdownMenu
               align="right"
-              ariaLabel="เมนูตัวเลือกเพิ่มเติม"
+              ariaLabel={t.common.viewOptions}
               trigger={
                 <button
                   type="button"
-                  aria-label="เมนูตัวเลือกเพิ่มเติม"
-                  title="เมนูตัวเลือกเพิ่มเติม"
+                  aria-label={t.common.viewOptions}
+                  title={t.common.viewOptions}
                   className="inline-flex min-h-[34px] min-w-[34px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary shadow-2xs transition hover:bg-subtle hover:text-ink cursor-pointer"
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -665,18 +666,18 @@ export function OrderSessionClient({
               }
               items={[
                 {
-                  label: 'พิมพ์ใบเสร็จ (80mm / A4)',
+                  label: t.session.openPrintSlip,
                   icon: <Printer className="h-4 w-4" />,
                   href: `/receipt/${session.id}`,
                 },
                 {
-                  label: locale === 'th' ? 'เปลี่ยนภาษาเป็น English' : 'เปลี่ยนภาษาเป็น ภาษาไทย',
+                  label: locale === 'th' ? 'English' : 'Thai',
                   icon: <Globe className="h-4 w-4" />,
-                  description: `ภาษาปัจจุบัน: ${locale.toUpperCase()}`,
+                  description: `${locale.toUpperCase()}`,
                   onClick: () => setLocale(locale === 'th' ? 'en' : 'th'),
                 },
                 {
-                  label: 'คัดลอกลิงก์ตรง (เปิดในเว็บ)',
+                  label: t.receipt.copyBillLink,
                   icon: <Copy className="h-4 w-4" />,
                   onClick: handleCopyDirectLink,
                 },
@@ -689,7 +690,7 @@ export function OrderSessionClient({
                       currentUserId={profile.userId}
                       storeDisplayName={summary.storeDisplayName}
                       variant="menu-item"
-                      buttonText="ลบห้องสั่งอาหาร"
+                      buttonText={t.deleteModal.title}
                       onSuccess={() => {
                         router.push('/history');
                       }}
@@ -710,10 +711,10 @@ export function OrderSessionClient({
         <div className="mb-3 flex items-center justify-between gap-2 rounded-theme border border-hairline bg-surface px-3 py-2 text-xs shadow-2xs">
           <div className="flex items-center gap-1.5 text-ink-secondary overflow-x-auto scrollbar-none">
             <span className="shrink-0 font-medium text-ink-muted">
-              เลือกเสร็จแล้ว ({session.readyUsers.length}):
+              {t.session.readyButton} ({session.readyUsers.length}):
             </span>
             {session.readyUsers.length === 0 ? (
-              <span className="text-ink-muted">ยังไม่มีใครกดยืนยัน</span>
+              <span className="text-ink-muted">{t.common.none}</span>
             ) : (
               session.readyUsers.map((u) => (
                 <span
@@ -730,9 +731,9 @@ export function OrderSessionClient({
         {isOpen && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-theme border border-emerald-200 bg-emerald-50/70 p-2.5 text-xs shadow-2xs">
             <div className="flex items-center gap-1.5 text-emerald-950 min-w-0">
-              <span className="font-semibold truncate">ชวนเพื่อนเข้าตี้:</span>
+              <span className="font-semibold truncate">{t.session.shareToLineGroup}:</span>
               <span className="hidden sm:inline text-[11px] text-emerald-700 shrink-0">
-                (ใช้ร่วมกับขุนทองได้)
+                
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -742,32 +743,32 @@ export function OrderSessionClient({
                 size="sm"
                 onClick={handleShareInviteToLine}
                 className="h-7 bg-emerald-600 text-[11px] text-white hover:bg-emerald-700 px-2.5"
-                title="แชร์การ์ดสั่งอาหารเข้ากลุ่ม LINE (ใช้ร่วมกับกลุ่มที่มีขุนทองได้)"
+                title={t.session.shareBillTitle}
               >
                 <Share2 className="h-3 w-3 mr-1" />
-                <span>แชร์เข้า LINE</span>
+                <span>{t.session.shareToLineGroup}</span>
               </Button>
               <DropdownMenu
                 align="right"
-                ariaLabel="ตัวเลือกลิงก์สั่งอาหาร"
+                ariaLabel={t.receipt.copyBillLink}
                 trigger={
                   <button
                     type="button"
                     className="inline-flex h-7 items-center gap-1 rounded-theme border border-emerald-500/30 bg-emerald-500/10 px-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 shadow-2xs transition cursor-pointer"
-                    title="คัดลอกลิงก์ห้องสั่งอาหาร"
+                    title={t.receipt.copyBillLink}
                   >
                     <Copy className="h-3 w-3" />
-                    <span>ลิงก์</span>
+                    <span>{t.receipt.copyBillLink}</span>
                   </button>
                 }
                 items={[
                   {
-                    label: 'คัดลอกลิงก์ LIFF (เปิดใน LINE)',
+                    label: t.receipt.copyBillLink,
                     icon: <Copy className="h-4 w-4" />,
                     onClick: handleCopyOrderLink,
                   },
                   {
-                    label: 'คัดลอกลิงก์ตรง (เปิดในเว็บทั่วไป)',
+                    label: t.receipt.copyBillLink,
                     icon: <Globe className="h-4 w-4" />,
                     onClick: handleCopyDirectLink,
                   },
@@ -781,7 +782,7 @@ export function OrderSessionClient({
             {/* Segmented Tab Switcher (Catalog vs Group Tray) */}
             <div
               role="tablist"
-              aria-label="มุมมองการสั่งอาหาร"
+              aria-label={t.receipt.displayMode}
               className="grid grid-cols-2 gap-1 rounded-theme bg-subtle p-1 border border-hairline"
             >
               <Chip
@@ -791,7 +792,7 @@ export function OrderSessionClient({
                 onClick={() => setActiveTab('CATALOG')}
                 className="w-full text-center"
               >
-                เลือกเมนูอาหาร
+                {t.session.title}
               </Chip>
               <Chip
                 role="tab"
@@ -800,12 +801,12 @@ export function OrderSessionClient({
                 onClick={() => setActiveTab('TRAY')}
                 className="w-full text-center"
               >
-                รายการในห้อง ({summary.totalItemsCount})
+                {t.session.orderSummary} ({summary.totalItemsCount})
               </Chip>
             </div>
 
             {activeTab === 'CATALOG' ? (
-              <section className="mt-4 space-y-3" aria-label="รายการเมนูร้านค้า">
+              <section className="mt-4 space-y-3" aria-label={t.storeAdmin.menuCatalog}>
                 {/* Search & Custom Dish Action */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -814,14 +815,14 @@ export function OrderSessionClient({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="ค้นหาเมนู เช่น กะเพรา, ข้าวผัด..."
+                      placeholder={t.session.searchMenuPlaceholder}
                       className="min-h-[44px] h-[44px] w-full rounded-theme border border-hairline bg-surface pl-9 pr-9 text-[15px] text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink transition"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        aria-label="ล้างคำค้นหา"
+                        aria-label={t.common.reset}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-muted transition hover:bg-subtle hover:text-ink"
                       >
                         <X className="h-4 w-4" />
@@ -836,8 +837,8 @@ export function OrderSessionClient({
                     className="shrink-0"
                   >
                     <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">พิมพ์เมนูเอง</span>
-                    <span className="sm:hidden">พิมพ์เอง</span>
+                    <span className="hidden sm:inline">{t.session.addCustomDishShort}</span>
+                    <span className="sm:hidden">{t.session.addCustomDishShort}</span>
                   </Button>
                 </div>
 
@@ -847,11 +848,11 @@ export function OrderSessionClient({
                     <span className="truncate pr-2">
                       {searchQuery ? (
                         <>
-                          พบ <span className="font-semibold text-ink">{filteredMenus.length}</span> เมนู
+                          <span className="font-semibold text-ink">{filteredMenus.length}</span> {t.common.items}
                         </>
                       ) : (
                         <>
-                          เมนูทั้งหมด <span className="font-semibold text-ink">{filteredMenus.length}</span> รายการ
+                          {t.common.all} <span className="font-semibold text-ink">{filteredMenus.length}</span>
                         </>
                       )}
                     </span>
@@ -859,15 +860,15 @@ export function OrderSessionClient({
                     {/* View Switcher */}
                     <div
                       role="group"
-                      aria-label="รูปแบบมุมมองเมนู"
+                      aria-label={t.receipt.displayMode}
                       className="inline-flex shrink-0 items-center rounded-theme border border-hairline bg-subtle p-0.5"
                     >
                       <button
                         type="button"
                         onClick={() => handleCatalogViewModeChange('LIST')}
-                        aria-label="มุมมองรายการ"
+                        aria-label={t.session.listView}
                         aria-pressed={catalogViewMode === 'LIST'}
-                        title="มุมมองรายการ (List)"
+                        title={t.session.listView}
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-theme transition ${
                           catalogViewMode === 'LIST'
                             ? 'bg-surface text-ink shadow-2xs font-bold'
@@ -879,9 +880,9 @@ export function OrderSessionClient({
                       <button
                         type="button"
                         onClick={() => handleCatalogViewModeChange('GRID')}
-                        aria-label="มุมมองตาราง"
+                        aria-label={t.session.gridView}
                         aria-pressed={catalogViewMode === 'GRID'}
-                        title="มุมมองตาราง (Grid)"
+                        title={t.session.gridView}
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-theme transition ${
                           catalogViewMode === 'GRID'
                             ? 'bg-surface text-ink shadow-2xs font-bold'
@@ -905,8 +906,8 @@ export function OrderSessionClient({
                         const maxVariant = menu.variants[menu.variants.length - 1];
                         const priceLabel =
                           defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
-                            ? `${defaultVariant.price}–${maxVariant.price} ฿`
-                            : `${defaultVariant?.price ?? 0} ฿`;
+                            ? `${defaultVariant.price}–${maxVariant.price} ${t.common.baht}`
+                            : `${defaultVariant?.price ?? 0} ${t.common.baht}`;
 
                         const subtitle =
                           locale === 'th' ? menu.name.en : menu.name.th;
@@ -934,17 +935,17 @@ export function OrderSessionClient({
                                 <div className="flex flex-wrap gap-1">
                                   {menu.status === 'OUT_OF_STOCK' && (
                                     <Badge variant="muted" className="text-[10px] py-0.5 px-1.5">
-                                      หมดชั่วคราว
+                                      {t.storeAdmin.outOfStock}
                                     </Badge>
                                   )}
                                   {menu.status === 'BANNED' && (
                                     <Badge variant="warning" className="text-[10px] py-0.5 px-1.5">
-                                      งดสั่ง
+                                      {t.storeAdmin.banned}
                                     </Badge>
                                   )}
                                   {menu.variants.length > 1 && (
                                     <span className="inline-flex items-center rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
-                                      {menu.variants.length} ขนาด
+                                      {menu.variants.length} {t.session.variants}
                                     </span>
                                   )}
                                 </div>
@@ -984,8 +985,8 @@ export function OrderSessionClient({
                         const maxVariant = menu.variants[menu.variants.length - 1];
                         const priceLabel =
                           defaultVariant && maxVariant && defaultVariant.price !== maxVariant.price
-                            ? `${defaultVariant.price}–${maxVariant.price} ฿`
-                            : `${defaultVariant?.price ?? 0} ฿`;
+                            ? `${defaultVariant.price}–${maxVariant.price} ${t.common.baht}`
+                            : `${defaultVariant?.price ?? 0} ${t.common.baht}`;
 
                         const subtitle =
                           locale === 'th' ? menu.name.en : menu.name.th;
@@ -1015,17 +1016,17 @@ export function OrderSessionClient({
                                 </span>
                                 {menu.status === 'OUT_OF_STOCK' && (
                                   <Badge variant="muted" className="text-[10px] py-0.5">
-                                    หมดชั่วคราว
+                                    {t.storeAdmin.outOfStock}
                                   </Badge>
                                 )}
                                 {menu.status === 'BANNED' && (
                                   <Badge variant="warning" className="text-[10px] py-0.5">
-                                    งดสั่ง (Banned)
+                                    {t.storeAdmin.banned}
                                   </Badge>
                                 )}
                                 {menu.variants.length > 1 && (
                                   <span className="inline-flex items-center rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
-                                    {menu.variants.length} ขนาด
+                                    {menu.variants.length} {t.session.variants}
                                   </span>
                                 )}
                               </div>
@@ -1048,7 +1049,7 @@ export function OrderSessionClient({
                               {isAvailable && (
                                 <button
                                   type="button"
-                                  aria-label={`เลือกเมนู ${getLocalizedText(menu.name, locale)}`}
+                                  aria-label={getLocalizedText(menu.name, locale)}
                                   onClick={() => openMenuDrawer(menu)}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-ink bg-ink text-surface transition hover:opacity-90 active:scale-90 transition-transform duration-150"
                                 >
@@ -1064,15 +1065,15 @@ export function OrderSessionClient({
                 ) : (
                   <Card className="p-8 text-center flex flex-col items-center justify-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-2xs mb-2">
-                      <img src="/brand-mascot.png" alt="น้องตาล" className="h-7 w-7 object-contain animate-mascot-breathe" />
+                      <img src="/brand-mascot.png" alt={t.common.brandName} className="h-7 w-7 object-contain animate-mascot-breathe" />
                     </div>
                     <h3 className="text-base font-semibold text-ink">
-                      {searchQuery ? 'ไม่พบเมนูที่ค้นหา' : 'โหมดพิมพ์สั่งอาหารตามใจชอบ'}
+                      searchQuery ? t.common.none : t.session.addCustomDish
                     </h3>
                     <p className="mt-1 text-sm text-ink-secondary">
                       {searchQuery
-                        ? 'สามารถแตะปุ่มด้านล่างเพื่อพิมพ์เมนูนี้เอง หรือล้างคำค้นหา'
-                        : 'แตะปุ่มด้านล่างเพื่อพิมพ์ชื่อเมนู ขนาด ท็อปปิ้ง และราคาได้ทันที'}
+                        ? '{t.session.emptyTrayHint}'
+                        : '{t.session.emptyTrayHint}'}
                     </p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
                       {searchQuery && (
@@ -1082,7 +1083,7 @@ export function OrderSessionClient({
                           size="md"
                           onClick={() => setSearchQuery('')}
                         >
-                          ล้างคำค้นหา
+                          {t.common.reset}
                         </Button>
                       )}
                       <Button
@@ -1092,7 +1093,7 @@ export function OrderSessionClient({
                         onClick={openCustomItemDrawer}
                       >
                         <Plus className="h-4 w-4" />
-                        พิมพ์สั่งอาหารเลย
+                        {t.session.addCustomDish}
                       </Button>
                     </div>
                   </Card>
@@ -1100,14 +1101,14 @@ export function OrderSessionClient({
               </section>
             ) : (
               /* Group Tray Tab (while OPEN) */
-              <section className="mt-4 space-y-3" aria-label="รายการอาหารในห้อง">
+              <section className="mt-4 space-y-3" aria-label={t.session.orderSummary}>
                 {session.items.length === 0 ? (
                   <Card className="p-8 text-center flex flex-col items-center justify-center gap-3">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-subtle border border-hairline animate-mascot-float shadow-xs">
-                      <img src="/brand-mascot.png" alt="น้องตาล" className="h-9 w-9 object-contain animate-mascot-breathe" />
+                      <img src="/brand-mascot.png" alt={t.common.brandName} className="h-9 w-9 object-contain animate-mascot-breathe" />
                     </div>
                     <p className="text-sm text-ink-secondary">
-                      ยังไม่มีรายการอาหารในห้องนี้ กดเลือกเมนูจากแท็บแรกได้เลย
+                      {t.session.emptyTrayHint}
                     </p>
                   </Card>
                 ) : (
@@ -1141,12 +1142,12 @@ export function OrderSessionClient({
                                 return isItemUserReady ? (
                                   <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
                                     <Check className="h-2.5 w-2.5 text-emerald-600" />
-                                    พร้อม
+                                    {t.session.readyShort}
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.2 text-[10px] font-medium text-amber-700">
                                     <Clock className="h-2.5 w-2.5 text-amber-500" />
-                                    กำลังเลือก
+                                    {t.session.selectingShort}
                                   </span>
                                 );
                               })()}
@@ -1157,20 +1158,20 @@ export function OrderSessionClient({
                             <p className="mt-1 text-[15px] font-medium text-ink">{title}</p>
                             {item.note && (
                               <p className="mt-0.5 text-xs text-ink-secondary">
-                                หมายเหตุ: {item.note}
+                                {t.session.note}: {item.note}
                               </p>
                             )}
                           </div>
 
                           <div className="flex shrink-0 items-center gap-1.5">
                             <span className="mr-1 font-mono text-sm font-semibold text-ink tabular-nums">
-                              {lineTotal.toLocaleString('th-TH')} ฿
+                              {lineTotal.toLocaleString('th-TH')} {t.common.baht}
                             </span>
                             {canMutate && (
                               <>
                                 <button
                                   type="button"
-                                  aria-label={`แก้ไขรายการ ${title}`}
+                                  aria-label={`${t.common.edit}: ${title}`}
                                   onClick={() => openEditItemDrawer(item)}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline text-ink-secondary transition hover:bg-subtle hover:text-ink"
                                 >
@@ -1178,13 +1179,13 @@ export function OrderSessionClient({
                                 </button>
                                 <button
                                   type="button"
-                                  aria-label={`ลบรายการ ${title}`}
+                                  aria-label={`${t.common.delete}: ${title}`}
                                   onClick={() => {
                                     setConfirmDialog({
                                       isOpen: true,
-                                      title: 'ลบรายการอาหาร',
-                                      description: `คุณต้องการลบรายการ "${title}" ใช่หรือไม่?`,
-                                      confirmText: 'ลบรายการ',
+                                      title: t.session.deleteOrderTitle,
+                                      description: t.session.deleteOrderDesc,
+                                      confirmText: t.common.delete,
                                       variant: 'danger',
                                       onConfirm: () => {
                                         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
@@ -1211,7 +1212,7 @@ export function OrderSessionClient({
           /* ==================================================================
              CLOSED STATE: Merchant Export & Split Bill Breakdown
              ================================================================== */
-          <section className="space-y-4" aria-label="สรุปยอดหลังปิดบิล">
+          <section className="space-y-4" aria-label={t.session.postCloseSummary}>
             {/* Primary Action Bar: LINE Share + Quick Export Menu */}
             <div className="flex items-center gap-2">
               <Button
@@ -1222,12 +1223,12 @@ export function OrderSessionClient({
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700"
               >
                 <Share2 className="h-4 w-4 mr-1.5" />
-                แชร์สรุปบิลเข้ากลุ่ม LINE
+                {t.session.shareBillTitle}
               </Button>
 
               <DropdownMenu
                 align="right"
-                ariaLabel="ตัวเลือกคัดลอกข้อความด่วน"
+                ariaLabel={t.session.quickCopyOptions}
                 trigger={
                   <Button
                     type="button"
@@ -1236,23 +1237,23 @@ export function OrderSessionClient({
                     className="shrink-0 gap-1.5 px-3"
                   >
                     <Copy className="h-4 w-4" />
-                    <span>คัดลอกด่วน</span>
+                    <span>{t.session.quickCopy}</span>
                   </Button>
                 }
                 items={[
                   {
-                    label: 'คัดลอกข้อความส่งร้านค้า',
+                    label: t.session.copyStoreText,
                     icon: <UtensilsCrossed className="h-4 w-4" />,
                     onClick: handleCopyForMerchant,
                   },
                   {
-                    label: 'คัดลอกยอดส่งขุนทอง / เรียกเก็บเงิน',
+                    label: t.session.copyKhunThongText,
                     icon: <Coins className="h-4 w-4 text-amber-600" />,
                     onClick: handleCopyKhunThong,
                   },
                   { type: 'separator' },
                   {
-                    label: 'เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4)',
+                    label: t.session.openPrintSlip,
                     icon: <Printer className="h-4 w-4" />,
                     href: `/receipt/${session.id}`,
                   },
@@ -1264,7 +1265,7 @@ export function OrderSessionClient({
             <div className="flex items-center justify-between text-xs text-ink-secondary px-1">
               <span className="flex items-center gap-1.5 font-mono">
                 <Clock className="h-3.5 w-3.5 text-ink-muted" />
-                <span>วัน-เวลา: {formatThaiDateTime(session.closedAt ?? session.createdAt)}</span>
+                <span>{t.session.dateTime}: {formatThaiDateTime(session.closedAt ?? session.createdAt)}</span>
               </span>
               <span className="font-mono text-[11px] text-ink-muted">#{session.id.slice(0, 8).toUpperCase()}</span>
             </div>
@@ -1276,14 +1277,14 @@ export function OrderSessionClient({
                 onClick={() => setClosedViewMode('GROUPED')}
                 className="w-full text-center"
               >
-                รวมตามเมนู ({summary.groupedItems.length})
+                {t.session.groupByMenu} ({summary.groupedItems.length})
               </Chip>
               <Chip
                 selected={closedViewMode === 'INDIVIDUAL'}
                 onClick={() => setClosedViewMode('INDIVIDUAL')}
                 className="w-full text-center"
               >
-                แยกตามรายชื่อ ({summary.recipientBreakdowns.length})
+                {t.session.groupByRecipient} ({summary.recipientBreakdowns.length})
               </Chip>
             </div>
 
@@ -1309,11 +1310,11 @@ export function OrderSessionClient({
                         </p>
                         {group.note && (
                           <p className="mt-0.5 text-xs font-medium text-ink">
-                            หมายเหตุ: {group.note}
+                            {t.session.note}: {group.note}
                           </p>
                         )}
                         <p className="mt-1 text-xs text-ink-secondary">
-                          คนสั่ง:{' '}
+                          {t.session.orderedBy}:{' '}
                           {group.recipients
                             .map((r) =>
                               r.quantity > 1
@@ -1329,7 +1330,7 @@ export function OrderSessionClient({
                         </span>
                         {group.totalPrice > 0 && (
                           <p className="mt-1 text-xs text-ink-secondary">
-                            {group.totalPrice.toLocaleString('th-TH')} ฿
+                            {group.totalPrice.toLocaleString('th-TH')} {t.common.baht}
                           </p>
                         )}
                       </div>
@@ -1378,7 +1379,7 @@ export function OrderSessionClient({
             {/* Quick Copy Hub (Merchant & KhunThong with Tabs) */}
             <Card className="p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-2.5">
-                <span className="text-xs font-semibold text-ink">ข้อความพร้อมส่งต่อ</span>
+                <span className="text-xs font-semibold text-ink">{t.session.readyToSendText}</span>
 
                 {/* Tab Switcher: Merchant vs KhunThong */}
                 <div className="inline-flex rounded-theme border border-hairline bg-subtle p-0.5 text-xs font-medium">
@@ -1393,7 +1394,7 @@ export function OrderSessionClient({
                     )}
                   >
                     <UtensilsCrossed className="h-3 w-3" />
-                    <span>ส่งร้านค้า</span>
+                    <span>{t.session.sendToMerchant}</span>
                   </button>
                   <button
                     type="button"
@@ -1406,7 +1407,7 @@ export function OrderSessionClient({
                     )}
                   >
                     <Coins className="h-3 w-3 text-amber-600" />
-                    <span>ขุนทอง / เรียกเก็บ</span>
+                    <span>{t.session.sendToKhunThong}</span>
                   </button>
                 </div>
               </div>
@@ -1448,23 +1449,23 @@ export function OrderSessionClient({
                     copiedMerchant ? (
                       <>
                         <Check className="h-3.5 w-3.5 text-emerald-600 mr-1.5" />
-                        <span>คัดลอกข้อความร้านแล้ว!</span>
+                        <span>{t.session.copiedStoreText}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="h-3.5 w-3.5 mr-1.5" />
-                        <span>คัดลอกข้อความส่งร้าน</span>
+                        <span>{t.session.copyForMerchant}</span>
                       </>
                     )
                   ) : copiedKhunThong ? (
                     <>
                       <Check className="h-3.5 w-3.5 text-emerald-600 mr-1.5" />
-                      <span>คัดลอกยอดขุนทองแล้ว!</span>
+                      <span>{t.session.copiedKhunThongText}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="h-3.5 w-3.5 mr-1.5" />
-                      <span>คัดลอกยอดส่งขุนทอง</span>
+                      <span>{t.session.copyKhunThongText}</span>
                     </>
                   )}
                 </Button>
@@ -1472,10 +1473,10 @@ export function OrderSessionClient({
                 <Link
                   href={`/receipt/${session.id}`}
                   className="inline-flex min-h-[32px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-medium text-ink-secondary hover:text-ink hover:bg-subtle transition shadow-2xs shrink-0"
-                  title="เปิดหน้าพิมพ์ใบเสร็จ (80mm / A4)"
+                  title={t.session.openPrintSlip}
                 >
                   <Printer className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">พิมพ์ใบเสร็จ</span>
+                  <span className="hidden sm:inline">{t.session.printReceipt}</span>
                 </Link>
               </div>
             </Card>
@@ -1490,7 +1491,7 @@ export function OrderSessionClient({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="เลือกรายละเอียดเมนูอาหาร"
+          aria-label={t.session.addDishModalSub}
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
         >
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-theme border border-hairline bg-surface p-5 shadow-theme animate-paper-slide">
@@ -1498,18 +1499,18 @@ export function OrderSessionClient({
               <div>
                 <h2 className="text-base font-bold text-ink">
                   {editingItem
-                    ? `แก้ไข: ${selectedMenu ? getLocalizedText(selectedMenu.name, locale) : customMenuName}`
+                    ? t.session.editItemDialogTitle.replace('{name}', selectedMenu ? getLocalizedText(selectedMenu.name, locale) : customMenuName)
                     : selectedMenu
                       ? getLocalizedText(selectedMenu.name, locale)
-                      : 'สั่งเมนูพิเศษนอกรายการ'}
+                      : t.session.addCustomDish}
                 </h2>
                 <p className="text-xs text-ink-secondary">
-                  เลือกขนาด ท็อปปิ้ง และระบุชื่อคนรับอาหาร
+                  {t.session.addDishModalSub}
                 </p>
               </div>
               <button
                 type="button"
-                aria-label="ปิดหน้าต่างเลือกเมนู"
+                aria-label={t.common.close}
                 onClick={closeDrawer}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-hairline bg-subtle text-ink-secondary hover:text-ink"
               >
@@ -1525,34 +1526,34 @@ export function OrderSessionClient({
                     <div className="w-full flex flex-col gap-1">
                       <div className="flex items-center justify-between text-xs font-semibold text-ink">
                         <span>
-                          ชื่อเมนูอาหาร <span className="text-red-500 font-bold">*</span>
+                          {t.session.dishNameLabel} <span className="text-red-500 font-bold">*</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => {
                             const dish = getRandomDish(customMenuName);
                             setCustomMenuName(dish.nameTh);
-                            showToast(`🎲 สุ่มได้: ${dish.nameTh}`);
+                            showToast(`${t.session.dishRandomized}: ${dish.nameTh}`);
                           }}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-chili hover:text-chili-hover transition active:scale-95"
-                          title="สุ่มชื่อเมนูอาหาร"
+                          title={t.session.randomDish}
                         >
                           <Dices className="h-3.5 w-3.5" />
-                          <span>สุ่มเมนู</span>
+                          <span>{t.session.randomDish}</span>
                         </button>
                       </div>
                       <input
                         required
                         value={customMenuName}
                         onChange={(e) => setCustomMenuName(e.target.value)}
-                        placeholder="เช่น ข้าวผัดแหนม"
+                        placeholder={t.session.dishNamePlaceholder}
                         className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline hover:border-ink-secondary rounded-theme transition-colors placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ink focus:border-ink"
                       />
                     </div>
                   </div>
                   <div>
                     <Input
-                      label="ราคา (บาท)"
+                      label={t.session.priceLabel}
                       type="number"
                       min={0}
                       value={customUnitPrice}
@@ -1566,7 +1567,7 @@ export function OrderSessionClient({
               {/* Variants Radio Pills */}
               {selectedMenu && selectedMenu.variants.length > 0 && (
                 <div>
-                  <span className="block text-xs font-semibold text-ink">เลือกขนาด / ราคา</span>
+                  <span className="block text-xs font-semibold text-ink">{t.session.selectVariant}</span>
                   <div className="mt-1.5 grid grid-cols-2 gap-2">
                     {selectedMenu.variants.map((variant) => {
                       const active = variant.id === selectedVariantId;
@@ -1583,7 +1584,7 @@ export function OrderSessionClient({
                         >
                           <span>{getLocalizedText(variant.name, locale)}</span>
                           <span className="font-mono font-semibold tabular-nums">
-                            {variant.price} ฿
+                            {variant.price} {t.common.baht}
                           </span>
                         </button>
                       );
@@ -1596,7 +1597,7 @@ export function OrderSessionClient({
               {availableOptions.length > 0 && (
                 <div>
                   <span className="block text-xs font-semibold text-ink">
-                    เพิ่มเติม / ท็อปปิ้ง (เลือกได้หลายข้อ)
+                    {t.session.optionsMultiple}
                   </span>
                   <div className="mt-1.5 divide-y divide-hairline rounded-theme border border-hairline bg-surface">
                     {availableOptions.map((opt) => {
@@ -1624,7 +1625,7 @@ export function OrderSessionClient({
                             {getLocalizedText(opt.name, locale)}
                           </span>
                           <span className="font-mono text-xs font-semibold text-ink-secondary tabular-nums">
-                            +{opt.price} ฿
+                            +{opt.price} {t.common.baht}
                           </span>
                         </label>
                       );
@@ -1636,7 +1637,7 @@ export function OrderSessionClient({
               {/* Recipient Name Toggle & Quantity */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-ink">จำนวนจาน</label>
+                  <label className="block text-xs font-semibold text-ink">{t.session.quantityDishes}</label>
                   <QuantityStepper
                     value={quantity}
                     onChange={setQuantity}
@@ -1647,7 +1648,7 @@ export function OrderSessionClient({
                 {!showCustomRecipient ? (
                   <div className="flex items-center justify-between rounded-lg border border-hairline bg-subtle/50 px-3.5 py-2.5 text-xs">
                     <span className="text-ink-secondary">
-                      สั่งในชื่อ:{' '}
+                      {t.session.orderUnderName}:{' '}
                       <strong className="text-ink font-semibold">
                         {recipientName.trim() || profile.displayName}
                       </strong>
@@ -1657,14 +1658,14 @@ export function OrderSessionClient({
                       onClick={() => setShowCustomRecipient(true)}
                       className="font-semibold text-chili hover:underline"
                     >
-                      + สั่งให้คนอื่น (ฝากสั่ง)
+                      {t.session.orderForOthers}
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-2 rounded-lg border border-hairline bg-subtle/40 p-3">
                     <div className="flex items-center justify-between">
                       <label className="block text-xs font-semibold text-ink">
-                        สั่งให้ใคร (ระบุชื่อผู้รับ)
+                        {t.session.orderForWhom}
                       </label>
                       <button
                         type="button"
@@ -1674,12 +1675,12 @@ export function OrderSessionClient({
                         }}
                         className="text-[11px] font-medium text-ink-muted hover:text-ink hover:underline"
                       >
-                        ใช้ชื่อฉันเอง ({profile.displayName})
+                        {t.session.useMyName} ({profile.displayName})
                       </button>
                     </div>
                     <Input
                       autoFocus
-                      placeholder="ระบุชื่อเพื่อนที่ฝากสั่ง..."
+                      placeholder={t.session.orderForOthersPlaceholder}
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       required
@@ -1691,10 +1692,10 @@ export function OrderSessionClient({
               {/* Special Note */}
               <div>
                 <Input
-                  label="หมายเหตุถึงร้าน (ถ้ามี)"
+                  label={t.session.noteToStore}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="เช่น เผ็ดน้อย, ไม่ใส่กระเทียม, แยกน้ำ"
+                  placeholder={t.session.noteToStorePlaceholder}
                 />
               </div>
 
@@ -1710,9 +1711,9 @@ export function OrderSessionClient({
                 onClick={() => upsertItemMutation.mutate()}
                 className="w-full justify-between"
               >
-                <span>{editingItem ? 'บันทึกการแก้ไข' : 'เพิ่มลงในบิลกลุ่ม'}</span>
+                <span>{editingItem ? t.session.saveEditButton : t.session.addToGroupBill}</span>
                 <span className="font-mono font-bold tabular-nums">
-                  {drawerPreviewTotal.toLocaleString('th-TH')} ฿
+                  {drawerPreviewTotal.toLocaleString('th-TH')} {t.common.baht}
                 </span>
               </Button>
             </div>
@@ -1729,35 +1730,35 @@ export function OrderSessionClient({
             {/* Top row: Summary info & user readiness */}
             <div className="flex items-center justify-between gap-3 min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                <span className="text-xs text-ink-muted shrink-0">ของ</span>
+                <span className="text-xs text-ink-muted shrink-0">{t.session.totalOfPerson}</span>
                 <button
                   type="button"
                   onClick={() => setIsNameModalOpen(true)}
                   className="inline-flex items-center gap-1 font-bold text-xs text-ink underline decoration-dotted decoration-ink/40 hover:text-chili transition cursor-pointer min-w-0"
-                  title="แตะเพื่อเปลี่ยนชื่อของคุณ"
+                  title={t.session.tapToChangeName}
                 >
                   <span className="max-w-[120px] sm:max-w-[160px] truncate">{profile.displayName}</span>
                   <Pencil className="h-2.5 w-2.5 text-ink-muted shrink-0" />
                 </button>
-                <span className="text-xs text-ink-secondary shrink-0">({myItems.length} รายการ)</span>
+                <span className="text-xs text-ink-secondary shrink-0">({myItems.length} {t.common.items})</span>
                 {isCurrentUserReady ? (
                   <span className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shrink-0 animate-soft-pulse">
                     <Check className="h-2.5 w-2.5 text-emerald-600" />
-                    พร้อม
+                    {t.session.readyShort}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shrink-0">
-                    กำลังเลือก
+                    {t.session.selectingShort}
                   </span>
                 )}
               </div>
 
               <div className="flex items-baseline gap-1.5 shrink-0 text-right">
-                <span className="text-[11px] text-ink-muted">รวม</span>
+                <span className="text-[11px] text-ink-muted">{t.session.sumLabel}</span>
                 <span className="font-mono text-base font-bold text-ink tabular-nums">
                   {formatPrice(myTotalAmount, {
                     isGrandTotalZero: summary.grandTotalAmount === 0,
-                    zeroFallback: '0 ฿',
+                    zeroFallback: `0 ${t.common.baht}`,
                   })}
                 </span>
               </div>
@@ -1775,7 +1776,7 @@ export function OrderSessionClient({
                 className="flex-1"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                {isCurrentUserReady ? 'ยกเลิก' : 'พร้อม'}
+                {isCurrentUserReady ? t.common.cancel : t.session.readyShort}
               </Button>
 
               {isHost && (
@@ -1788,9 +1789,9 @@ export function OrderSessionClient({
                   onClick={() => {
                     setConfirmDialog({
                       isOpen: true,
-                      title: 'ยืนยันการปิดบิล',
-                      description: `ต้องการปิดรับออเดอร์ร้าน "${summary.storeDisplayName}" ใช่หรือไม่?\n\nเมื่อปิดแล้ว สมาชิกจะไม่สามารถสั่งหรือแก้ไขรายการอาหารเพิ่มได้ และระบบจะสรุปยอดบิลทันที`,
-                      confirmText: 'ปิดบิล',
+                      title: t.session.confirmCloseTitle,
+                      description: t.session.confirmCloseDesc.replace("{store}", summary.storeDisplayName),
+                      confirmText: t.session.closeBillButton,
                       variant: 'danger',
                       onConfirm: () => {
                         setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
@@ -1801,7 +1802,7 @@ export function OrderSessionClient({
                   className="shrink-0"
                 >
                   <Lock className="h-3.5 w-3.5" />
-                  ปิดบิล
+                  {t.session.closeBillButton}
                 </Button>
               )}
             </div>
@@ -1824,7 +1825,7 @@ export function OrderSessionClient({
         onClose={() => setIsNameModalOpen(false)}
         onSave={(newName) => {
           updateProfileName(newName);
-          showToast(`บันทึกชื่อ "${newName}" เรียบร้อย`);
+          showToast(t.session.nameUpdatedToast.replace("{name}", newName));
         }}
         currentName={profile.displayName}
         canClose={true}
