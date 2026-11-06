@@ -35,6 +35,7 @@
 
 ## 6. Multi-Language & i18n Standards (มาตรฐานระบบสองภาษา TH/EN)
 - **Static UI Strings:** ข้อความแสดงผลบนหน้าจอ (ปุ่ม, ป้ายกำกับ, สถานะ, หัวข้อ) ต้องเรียกใช้ผ่าน `useI18n()` (`t.*`) จาก `@/lib/i18n/i18n-context` เสมอ หลีกเลี่ยงการ Hardcode ข้อความภาษาไทยหรืออังกฤษลงใน JSX โดยตรง
+- **Shared i18n State (No Fragmented State):** ห้ามประกาศ `useState('th')` สำหรับจัดการภาษาแยกราย component ให้เรียกใช้ `{ locale, setLocale, t }` จาก `useI18n()` เสมอ เพื่อให้การเปลี่ยนภาษามีผลทั่วทั้งแอปแบบ Real-time
 - **Strict Translation Pair:** เมื่อเพิ่มหรือแก้ไขข้อความใน `src/messages/th.ts` ต้องเพิ่มคู่เทียบใน `src/messages/en.ts` ให้ครบถ้วนเสมอ โดยมี Unit Test (`src/test/i18n.test.ts`) คอยตรวจสอบความตรงกันของคีย์ 100%
 - **Dynamic Database Content:** สำหรับข้อมูลจากฐานข้อมูลที่เป็น JSONB สองภาษา (ชื่อร้าน, ชื่อเมนู, ตัวเลือกท็อปปิ้ง) ต้องใช้ฟังก์ชันกลาง `getLocalizedText(entity.name, locale)` จาก `@/lib/utils/i18n.schema` เพื่อจัดการการแสดงผลพร้อมระบบ Fallback สู่ภาษาไทยอัตโนมัติ
 
@@ -42,3 +43,6 @@
 ก่อนที่จะยืนยันว่างานเสร็จสิ้น ต้องรันคำสั่งตรวจสอบเหล่านี้และต้องผ่าน 100%:
 1. `npx vitest run` — ผ่านทุก Test Suite ครบถ้วน
 2. `npx tsc --noEmit` — ไม่มีข้อผิดพลาด Type ใดๆ
+
+## 8. Commit & Push Workflows
+- เมื่อผู้ใช้สั่งให้ "เสร็จแล้ว commit push" หรือระบุให้ push โดยตรง: ให้ stage ไฟล์ที่เกี่ยวข้อง สร้าง Conventional Commit message ที่สื่อความหมายชัดเจน และ push ขึ้น branch ปัจจุบันทันทีโดยไม่ต้องถามยืนยันซ้ำ
