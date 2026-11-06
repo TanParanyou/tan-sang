@@ -126,6 +126,7 @@ export class OrderSessionService {
           {
             userId: input.userId,
             displayName: input.displayName,
+            pictureUrl: input.pictureUrl ?? null,
             readyAt: new Date().toISOString(),
           },
         ]

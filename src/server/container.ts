@@ -439,6 +439,7 @@ class FallbackOrderSessionRepository implements IOrderSessionRepository {
       sessionId: input.sessionId,
       orderedByUserId: input.orderedByUserId,
       recipientName: input.recipientName,
+      pictureUrl: input.pictureUrl ?? null,
       menuId: input.menuId ?? null,
       menuName: input.menuName,
       variantName: input.variantName ?? null,
@@ -469,6 +470,9 @@ class FallbackOrderSessionRepository implements IOrderSessionRepository {
     }
 
     target.recipientName = input.recipientName;
+    if (input.pictureUrl !== undefined) {
+      target.pictureUrl = input.pictureUrl ?? null;
+    }
     target.menuId = input.menuId ?? null;
     target.menuName = input.menuName;
     target.variantName = input.variantName ?? null;

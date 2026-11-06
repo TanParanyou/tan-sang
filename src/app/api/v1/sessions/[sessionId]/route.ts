@@ -8,6 +8,7 @@ const PatchSessionPayloadSchema = z.discriminatedUnion('action', [
     action: z.literal('TOGGLE_READY'),
     userId: z.string().trim().min(1).max(64),
     displayName: z.string().trim().min(1).max(100),
+    pictureUrl: z.string().url().nullable().optional(),
     isReady: z.boolean(),
   }),
   z.object({
@@ -50,6 +51,7 @@ export async function PATCH(
         sessionId,
         userId: payload.userId,
         displayName: payload.displayName,
+        pictureUrl: payload.pictureUrl,
         isReady: payload.isReady,
       });
     } else {

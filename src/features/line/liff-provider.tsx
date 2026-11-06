@@ -14,20 +14,24 @@ import {
 const DEFAULT_PROFILE: LiffUserProfile = {
   userId: 'U_MEMBER_ME',
   displayName: 'ฉัน (ผู้สั่งอาหาร)',
+  pictureUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80',
 };
 
 const DEV_PERSONAS: LiffUserProfile[] = [
   {
     userId: 'U_HOST_1',
     displayName: 'หัวห้อง (Host)',
+    pictureUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
   },
   {
     userId: 'U_MEMBER_2',
     displayName: 'เพื่อน 1',
+    pictureUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80',
   },
   {
     userId: 'U_MEMBER_3',
     displayName: 'เพื่อน 2',
+    pictureUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80',
   },
 ];
 

@@ -3,6 +3,7 @@ import type { LocalizedName } from '@/lib/utils/i18n.schema';
 export interface ReadyParticipantRecord {
   userId: string;
   displayName: string;
+  pictureUrl?: string | null;
   readyAt: string;
 }
 
@@ -150,6 +151,7 @@ export type Database = {
           session_id: string;
           ordered_by_user_id: string;
           recipient_name: string;
+          picture_url: string | null;
           menu_id: string | null;
           menu_name: string;
           variant_name: string | null;
@@ -163,6 +165,7 @@ export type Database = {
           session_id: string;
           ordered_by_user_id: string;
           recipient_name: string;
+          picture_url?: string | null;
           menu_id?: string | null;
           menu_name: string;
           variant_name?: string | null;
@@ -176,6 +179,7 @@ export type Database = {
           session_id?: string;
           ordered_by_user_id?: string;
           recipient_name?: string;
+          picture_url?: string | null;
           menu_id?: string | null;
           menu_name?: string;
           variant_name?: string | null;

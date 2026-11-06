@@ -71,6 +71,7 @@ class InMemoryOrderSessionRepository implements IOrderSessionRepository {
       sessionId: input.sessionId,
       orderedByUserId: input.orderedByUserId,
       recipientName: input.recipientName,
+      pictureUrl: input.pictureUrl ?? null,
       menuId: input.menuId ?? null,
       menuName: input.menuName,
       variantName: input.variantName ?? null,
@@ -98,6 +99,7 @@ class InMemoryOrderSessionRepository implements IOrderSessionRepository {
     if (!target) throw new Error('Item not found');
 
     target.recipientName = input.recipientName;
+    if (input.pictureUrl !== undefined) target.pictureUrl = input.pictureUrl ?? null;
     target.menuName = input.menuName;
     target.variantName = input.variantName ?? null;
     target.unitPrice = input.unitPrice;
@@ -592,5 +594,51 @@ describe('Tan-Sang Core Business Logic', () => {
 
     expect(textFreeItem).toContain('1. ตาล: 50 บาท (ข้าวมันไก่ x1)');
     expect(textFreeItem).toContain('2. บอย: ฟรี (น้ำซุปฟรี x1)');
+  });
+
+  it('preserves participant pictureUrl/avatar in order items, ready users, and recipient breakdowns', async () => {
+    const repo = new InMemoryOrderSessionRepository();
+    const service = new OrderSessionService(repo);
+
+    const session = await service.createSession({
+      lineGroupId: 'G_AVATAR_TEST',
+      hostUserId: 'U_HOST_1',
+      storeId: 'S1',
+    });
+
+    const avatarUrl = 'https://profile.line-scdn.net/sample-avatar-123';
+
+    // 1. Ready participant with avatar
+    const updatedSession = await service.toggleParticipantReady({
+      sessionId: session.id,
+      userId: 'U_MEMBER_1',
+      displayName: 'สมชาย',
+      pictureUrl: avatarUrl,
+      isReady: true,
+    });
+    expect(updatedSession.readyUsers).toHaveLength(1);
+    expect(updatedSession.readyUsers[0]!.pictureUrl).toBe(avatarUrl);
+
+    // 2. Order item with avatar
+    const item = await service.addOrderItem({
+      sessionId: session.id,
+      orderedByUserId: 'U_MEMBER_1',
+      recipientName: 'สมชาย',
+      pictureUrl: avatarUrl,
+      menuName: 'กะเพราหมูสับ',
+      unitPrice: 60,
+      quantity: 1,
+      options: [],
+    });
+    expect(item.pictureUrl).toBe(avatarUrl);
+
+    // 3. Breakdown summarization contains avatar
+    const breakdowns = groupOrderItemsByRecipient([item]);
+    expect(breakdowns).toHaveLength(1);
+    expect(breakdowns[0]!.pictureUrl).toBe(avatarUrl);
+
+    const grouped = groupOrderItemsForMerchant([item]);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]!.recipients[0]!.pictureUrl).toBe(avatarUrl);
   });
 });

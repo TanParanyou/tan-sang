@@ -22,7 +22,7 @@ import { formatOrderItemTitle } from '@/server/services/order-calculator.service
 import { buildReceiptShareText } from '@/server/services/line-flex.service';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
-import { Button, Toast } from '@/components/ui';
+import { Button, Toast, Avatar } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
@@ -337,7 +337,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                 {summary.recipientBreakdowns.map((rec) => (
                   <div key={rec.recipientName} className="border-t border-dotted border-hairline pt-2">
                     <div className="flex items-center justify-between font-bold text-ink">
-                      <span>{rec.recipientName}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar name={rec.recipientName} src={rec.pictureUrl} size="xs" />
+                        <span>{rec.recipientName}</span>
+                      </div>
                       <span className="font-mono tabular-nums">
                         {formatPrice(rec.totalAmount, {
                           isGrandTotalZero: summary.grandTotalAmount === 0,

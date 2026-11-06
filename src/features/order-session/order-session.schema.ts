@@ -6,6 +6,7 @@ export type OrderSessionStatus = z.infer<typeof OrderSessionStatusSchema>;
 export const ReadyParticipantSchema = z.object({
   userId: z.string().trim().min(1).max(64),
   displayName: z.string().trim().min(1).max(100),
+  pictureUrl: z.string().url().nullable().optional(),
   readyAt: z.string().datetime(),
 });
 export type ReadyParticipant = z.infer<typeof ReadyParticipantSchema>;
@@ -24,6 +25,7 @@ export const OrderItemSchema = z.object({
   sessionId: z.string().uuid(),
   orderedByUserId: z.string().trim().min(1).max(64),
   recipientName: z.string().trim().min(1).max(100),
+  pictureUrl: z.string().url().nullable().optional(),
   menuId: z.string().uuid().nullable(),
   menuName: z.string().trim().min(1).max(255),
   variantName: z.string().trim().max(100).nullable(),
@@ -82,6 +84,7 @@ export const AddOrderItemInputSchema = z.object({
   sessionId: z.string().uuid(),
   orderedByUserId: z.string().trim().min(1).max(64),
   recipientName: z.string().trim().min(1, 'กรุณาระบุชื่อผู้รับอาหาร').max(100),
+  pictureUrl: z.string().url().nullable().optional(),
   menuId: z.string().uuid().nullable().optional(),
   menuName: z.string().trim().min(1, 'กรุณาระบุชื่อเมนูอาหาร').max(255),
   variantName: z.string().trim().max(100).nullable().optional(),
@@ -109,6 +112,7 @@ export const ToggleParticipantReadyInputSchema = z.object({
   sessionId: z.string().uuid(),
   userId: z.string().trim().min(1).max(64),
   displayName: z.string().trim().min(1).max(100),
+  pictureUrl: z.string().url().nullable().optional(),
   isReady: z.boolean(),
 });
 export type ToggleParticipantReadyInput = z.infer<typeof ToggleParticipantReadyInputSchema>;
@@ -142,11 +146,13 @@ export interface GroupedOrderItemSummary {
   recipients: Array<{
     recipientName: string;
     quantity: number;
+    pictureUrl?: string | null;
   }>;
 }
 
 export interface RecipientOrderBreakdown {
   recipientName: string;
+  pictureUrl?: string | null;
   totalQuantity: number;
   totalAmount: number;
   items: Array<{

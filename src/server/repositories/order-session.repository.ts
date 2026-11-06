@@ -112,6 +112,7 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
         session_id: input.sessionId,
         ordered_by_user_id: input.orderedByUserId,
         recipient_name: input.recipientName,
+        picture_url: input.pictureUrl ?? null,
         menu_id: input.menuId ?? null,
         menu_name: input.menuName,
         variant_name: input.variantName ?? null,
@@ -154,6 +155,7 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
       .from('order_items')
       .update({
         recipient_name: input.recipientName,
+        picture_url: input.pictureUrl ?? null,
         menu_id: input.menuId ?? null,
         menu_name: input.menuName,
         variant_name: input.variantName ?? null,
@@ -317,6 +319,7 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
       sessionId: row.session_id,
       orderedByUserId: row.ordered_by_user_id,
       recipientName: row.recipient_name,
+      pictureUrl: row.picture_url ?? null,
       menuId: row.menu_id,
       menuName: row.menu_name,
       variantName: row.variant_name,

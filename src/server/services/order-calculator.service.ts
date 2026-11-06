@@ -96,6 +96,7 @@ export function groupOrderItemsForMerchant(items: OrderItem[]): GroupedOrderItem
           {
             recipientName: item.recipientName.trim(),
             quantity: item.quantity,
+            pictureUrl: item.pictureUrl ?? null,
           },
         ],
       });
@@ -109,10 +110,14 @@ export function groupOrderItemsForMerchant(items: OrderItem[]): GroupedOrderItem
       );
       if (existingRecipient) {
         existingRecipient.quantity += item.quantity;
+        if (!existingRecipient.pictureUrl && item.pictureUrl) {
+          existingRecipient.pictureUrl = item.pictureUrl;
+        }
       } else {
         existing.recipients.push({
           recipientName: cleanRecipient,
           quantity: item.quantity,
+          pictureUrl: item.pictureUrl ?? null,
         });
       }
     }
@@ -153,6 +158,7 @@ export function groupOrderItemsByRecipient(items: OrderItem[]): RecipientOrderBr
     if (!existing) {
       recipientMap.set(key, {
         recipientName: cleanRecipient,
+        pictureUrl: item.pictureUrl ?? null,
         totalQuantity: item.quantity,
         totalAmount: lineTotal,
         items: [itemEntry],
@@ -160,6 +166,9 @@ export function groupOrderItemsByRecipient(items: OrderItem[]): RecipientOrderBr
     } else {
       existing.totalQuantity += item.quantity;
       existing.totalAmount = fromSatang(toSatang(existing.totalAmount) + toSatang(lineTotal));
+      if (!existing.pictureUrl && item.pictureUrl) {
+        existing.pictureUrl = item.pictureUrl;
+      }
       existing.items.push(itemEntry);
     }
   }

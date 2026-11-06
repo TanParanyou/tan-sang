@@ -57,6 +57,7 @@ import {
   Card,
   Badge,
   Chip,
+  Avatar,
   QuantityStepper,
   ConfirmDialog,
   DropdownMenu,
@@ -333,6 +334,11 @@ export function OrderSessionClient({
         }));
 
       let payload: Record<string, unknown>;
+      const effectiveRecipient = recipientName.trim() || profile.displayName;
+      const isSelf = effectiveRecipient === profile.displayName || !showCustomRecipient;
+      const itemPictureUrl = isSelf
+        ? (profile.pictureUrl ?? null)
+        : (editingItem && editingItem.recipientName === effectiveRecipient ? editingItem.pictureUrl ?? null : null);
 
       if (selectedMenu) {
         const chosenVariant =
@@ -340,7 +346,8 @@ export function OrderSessionClient({
           selectedMenu.variants[0];
         payload = {
           orderedByUserId: editingItem?.orderedByUserId ?? profile.userId,
-          recipientName: recipientName.trim() || profile.displayName,
+          recipientName: effectiveRecipient,
+          pictureUrl: itemPictureUrl,
           menuId: selectedMenu.id,
           menuName: getLocalizedText(selectedMenu.name, locale),
           variantName: chosenVariant ? getLocalizedText(chosenVariant.name, locale) : null,
@@ -353,7 +360,8 @@ export function OrderSessionClient({
         const parsedPrice = Number(customUnitPrice);
         payload = {
           orderedByUserId: editingItem?.orderedByUserId ?? profile.userId,
-          recipientName: recipientName.trim() || profile.displayName,
+          recipientName: effectiveRecipient,
+          pictureUrl: itemPictureUrl,
           menuId: null,
           menuName: customMenuName.trim(),
           variantName: null,
@@ -449,6 +457,7 @@ export function OrderSessionClient({
           action: 'TOGGLE_READY',
           userId: profile.userId,
           displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl,
           isReady: nextReadyState,
         }),
       });
@@ -719,10 +728,11 @@ export function OrderSessionClient({
               session.readyUsers.map((u) => (
                 <span
                   key={u.userId}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-theme border border-hairline bg-subtle px-2 py-0.5 text-xs font-medium text-ink"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-hairline bg-subtle py-0.5 pl-0.5 pr-2 text-xs font-medium text-ink"
                 >
+                  <Avatar name={u.displayName} src={u.pictureUrl} size="xs" />
                   <Check className="h-3 w-3 text-emerald-600" />
-                  {u.displayName}
+                  <span>{u.displayName}</span>
                 </span>
               ))
             )}
@@ -1130,9 +1140,10 @@ export function OrderSessionClient({
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <Badge variant="muted" className="text-[11px] py-0.5">
-                                {item.recipientName}
-                              </Badge>
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-subtle py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-ink">
+                                <Avatar name={item.recipientName} src={item.pictureUrl} size="xs" />
+                                <span>{item.recipientName}</span>
+                              </span>
                               {(() => {
                                 const isItemUserReady = session.readyUsers.some(
                                   (u) =>
@@ -1313,16 +1324,22 @@ export function OrderSessionClient({
                             {t.session.note}: {group.note}
                           </p>
                         )}
-                        <p className="mt-1 text-xs text-ink-secondary">
-                          {t.session.orderedBy}:{' '}
-                          {group.recipients
-                            .map((r) =>
-                              r.quantity > 1
-                                ? `${r.recipientName} (${r.quantity})`
-                                : r.recipientName,
-                            )
-                            .join(', ')}
-                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-secondary">
+                          <span className="font-medium text-ink-muted">{t.session.orderedBy}:</span>
+                          {group.recipients.map((r, rIdx) => (
+                            <span
+                              key={`${r.recipientName}-${rIdx}`}
+                              className="inline-flex items-center gap-1 rounded-full border border-hairline bg-subtle py-0.5 pl-0.5 pr-2 text-[11px] text-ink"
+                            >
+                              <Avatar name={r.recipientName} src={r.pictureUrl} size="xs" />
+                              <span>
+                                {r.quantity > 1
+                                  ? `${r.recipientName} (${r.quantity})`
+                                  : r.recipientName}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <div className="shrink-0 text-right font-mono tabular-nums">
                         <span className="inline-block border border-hairline rounded-theme bg-subtle px-2 py-0.5 text-xs font-bold text-ink">
@@ -1343,9 +1360,12 @@ export function OrderSessionClient({
                 {summary.recipientBreakdowns.map((person) => (
                   <div key={person.recipientName} className="px-4 py-3.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-ink">
-                        {person.recipientName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <Avatar name={person.recipientName} src={person.pictureUrl} size="sm" />
+                        <span className="text-sm font-semibold text-ink">
+                          {person.recipientName}
+                        </span>
+                      </div>
                       <span className="font-mono text-sm font-bold text-ink tabular-nums">
                         {formatPrice(person.totalAmount, {
                           isGrandTotalZero: summary.grandTotalAmount === 0,
@@ -1647,12 +1667,19 @@ export function OrderSessionClient({
 
                 {!showCustomRecipient ? (
                   <div className="flex items-center justify-between rounded-lg border border-hairline bg-subtle/50 px-3.5 py-2.5 text-xs">
-                    <span className="text-ink-secondary">
-                      {t.session.orderUnderName}:{' '}
-                      <strong className="text-ink font-semibold">
-                        {recipientName.trim() || profile.displayName}
-                      </strong>
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Avatar
+                        name={recipientName.trim() || profile.displayName}
+                        src={profile.pictureUrl}
+                        size="xs"
+                      />
+                      <span className="text-ink-secondary truncate">
+                        {t.session.orderUnderName}:{' '}
+                        <strong className="text-ink font-semibold">
+                          {recipientName.trim() || profile.displayName}
+                        </strong>
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setShowCustomRecipient(true)}
