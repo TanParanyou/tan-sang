@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Calculator, History } from 'lucide-react';
+import { ArrowRight, Calculator } from 'lucide-react';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { QuickStartSessionForm } from '@/features/order-session/quick-start-session-form';
@@ -53,26 +53,7 @@ export default async function PublicLandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <DevPersonaBar />
-      <AppNavbar
-        actions={
-          <div className="flex items-center gap-1.5">
-            <Link
-              href="/harn"
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-chili/30 bg-chili/5 px-3 py-1.5 text-xs font-semibold text-chili shadow-2xs transition hover:bg-chili/10"
-            >
-              <Calculator className="h-3.5 w-3.5 text-chili" />
-              <span>ตาลหาร</span>
-            </Link>
-            <Link
-              href="/history"
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-subtle"
-            >
-              <History className="h-3.5 w-3.5 text-ink-muted" />
-              <span>ประวัติบิล</span>
-            </Link>
-          </div>
-        }
-      />
+      <AppNavbar />
 
       <main className="mx-auto max-w-xl px-4 py-8 space-y-6">
         {/* Tan-Harn Standalone Feature Card */}

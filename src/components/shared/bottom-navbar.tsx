@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Store } from 'lucide-react';
+import { Calculator, History, Home, Store } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useI18n } from '@/lib/i18n/i18n-context';
 
@@ -13,6 +13,8 @@ export function BottomNavbar() {
 
   const navItems = [
     { href: '/', label: t.nav.home, icon: Home },
+    { href: '/harn', label: t.nav.splitBill, icon: Calculator },
+    { href: '/history', label: t.nav.orderHistory, icon: History },
     { href: '/admin/stores', label: t.nav.manageStores, icon: Store },
   ];
 
