@@ -19,6 +19,7 @@ import { useClipboardCopy } from '@/lib/hooks/use-clipboard-copy';
 import { useDragReorder } from '@/lib/hooks/use-drag-reorder';
 import { parsePromptPayTarget } from '@/lib/utils/promptpay';
 import { siteConfig } from '@/config/site';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { BillInfoSection } from './components/bill-info-section';
 import { BillLedgerSection } from './components/bill-ledger-section';
 import { MemberItemRow } from './components/member-item-row';
@@ -51,6 +52,7 @@ const INITIAL_BLANK_ITEMS: Array<{ id: string; name: string; price: number | '' 
 ];
 
 export function SplitCalculatorClient() {
+  const { t } = useI18n();
   const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>('');
   const [discountInput, setDiscountInput] = useState<string>('');
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('PROPORTIONAL');
@@ -74,7 +76,6 @@ export function SplitCalculatorClient() {
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,
-    moveItem,
   } = useDragReorder({
     onReorder: (from, to) => setItems((prev) => reorderArray(prev, from, to)),
   });
@@ -106,7 +107,7 @@ export function SplitCalculatorClient() {
     const discount = parseFloat(discountInput) || 0;
     const sanitizedItems: SplitItem[] = items.map((it, idx) => ({
       id: it.id,
-      name: it.name.trim() || `คนที่ ${idx + 1}`,
+      name: it.name.trim() || `${t.split.memberPlaceholder} ${idx + 1}`,
       price: typeof it.price === 'number' ? it.price : 0,
     }));
 
@@ -117,7 +118,7 @@ export function SplitCalculatorClient() {
       splitMethod,
       roundToInteger: true,
     });
-  }, [deliveryFeeInput, discountInput, items, splitMethod]);
+  }, [deliveryFeeInput, discountInput, items, splitMethod, t.split.memberPlaceholder]);
 
   const parsedPromptPay = useMemo(() => {
     return parsePromptPayTarget(promptPayAccount);
@@ -127,7 +128,7 @@ export function SplitCalculatorClient() {
     const newId = Date.now().toString();
     setItems((prev) => [
       ...prev,
-      { id: newId, name: `คนที่ ${prev.length + 1}`, price: '' },
+      { id: newId, name: `${t.split.memberPlaceholder} ${prev.length + 1}`, price: '' },
     ]);
     setTimeout(() => {
       document.getElementById(`price-input-${newId}`)?.focus();
@@ -136,7 +137,7 @@ export function SplitCalculatorClient() {
 
   const handleRemoveItem = (id: string) => {
     if (items.length <= 1) {
-      notify('ต้องมีคนสั่งอย่างน้อย 1 คน');
+      notify(t.common.error);
       return;
     }
     setItems((prev) => prev.filter((it) => it.id !== id));
@@ -157,9 +158,9 @@ export function SplitCalculatorClient() {
 
   const handleSort = (type: 'PRICE_DESC' | 'PRICE_ASC' | 'NAME_ASC') => {
     setItems((prev) => sortSplitItems(prev, type));
-    if (type === 'PRICE_DESC') notify('จัดอันดับตามยอดเงิน (มาก ➔ น้อย) แล้ว');
-    if (type === 'PRICE_ASC') notify('จัดอันดับตามยอดเงิน (น้อย ➔ มาก) แล้ว');
-    if (type === 'NAME_ASC') notify('จัดอันดับตามชื่อ (ก-ฮ) แล้ว');
+    if (type === 'PRICE_DESC') notify(t.split.sortHighest);
+    if (type === 'PRICE_ASC') notify(t.split.sortLowest);
+    if (type === 'NAME_ASC') notify(t.split.sortByPrice);
   };
 
   const handleReset = () => {
@@ -171,7 +172,7 @@ export function SplitCalculatorClient() {
       { id: '1', name: '', price: '' },
       { id: '2', name: '', price: '' },
     ]);
-    notify('ล้างข้อมูลเรียบร้อยแล้ว');
+    notify(t.common.reset);
   };
 
   const handleLoadDemo = () => {
@@ -180,7 +181,7 @@ export function SplitCalculatorClient() {
     setSplitMethod('PROPORTIONAL');
     setItems(SAMPLE_DEMO_ITEMS);
     setPromptPayAccount('0812345678');
-    notify('โหลดข้อมูลตัวอย่างจากชีตแล้ว');
+    notify(t.split.demoSampleBtn);
   };
 
   const handleImportQuickPaste = (parsed: Array<{ name: string; price: number }>) => {
@@ -190,19 +191,18 @@ export function SplitCalculatorClient() {
       price: p.price,
     }));
     setItems(newItems);
-    notify(`นำเข้ารายชื่อสำเร็จ ${newItems.length} คน!`);
+    notify(`${t.common.save} (${newItems.length})`);
   };
 
   const handleCopyText = async () => {
     const text = formatSplitBillCopyText(calculationResult, {
       promptPayAccount: promptPayAccount.trim() || undefined,
     });
-    await copyToClipboard(text, 'คัดลอกสรุปยอดส่ง LINE / ขุนทอง แล้ว!');
+    await copyToClipboard(text, t.split.copiedResult);
   };
 
   const getBaseShareUrl = (): string => {
     if (typeof window === 'undefined') return siteConfig.url;
-    // Always use production URL when on localhost so that links shared to other devices/LINE can be opened
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return siteConfig.url || window.location.origin;
     }
@@ -231,43 +231,39 @@ export function SplitCalculatorClient() {
       const baseUrl = getBaseShareUrl();
       const shareUrl = `${baseUrl}/harn?d=${encoded}`;
 
-      // 1. Try Native Web Share API first (on mobile iOS / Android)
+      // 1. Try Native Web Share API first
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
           await navigator.share({
-            title: 'บิลหารค่าข้าว | ตาลหาร (Tan-Harn)',
-            text: `สรุปยอดบิลหารค่าอาหาร ${calculationResult.members.length} คน ยอดสุทธิ ${calculationResult.grandTotal} บาท เปิดดูบิลและพร้อมเพย์ได้ที่นี่:`,
+            title: t.split.sharePromptTitle,
+            text: `${t.split.calculatedResult} (${calculationResult.members.length}): ${calculationResult.grandTotal} ${t.common.baht}`,
             url: shareUrl,
           });
           setIsLinkCopied(true);
-          notify('แชร์ลิงก์บิลสำเร็จแล้ว!');
+          notify(t.split.sharedSuccess);
           setTimeout(() => setIsLinkCopied(false), 2000);
           return;
         } catch (shareErr: unknown) {
           if (shareErr instanceof Error && shareErr.name === 'AbortError') {
             return;
           }
-          // If native share fails or is blocked, gracefully fall through to clipboard copy
         }
       }
 
-      // 2. Fallback to robust Clipboard Copy (with textarea fallback for LINE In-App Browser)
-      const success = await copyToClipboard(
-        shareUrl,
-        'คัดลอกลิงก์แชร์บิลนี้แล้ว! ส่งต่อให้เพื่อนเปิดดูได้เลย',
-      );
+      // 2. Fallback to Clipboard Copy
+      const success = await copyToClipboard(shareUrl, t.split.copiedShareLink);
       if (success) {
         setIsLinkCopied(true);
         setTimeout(() => setIsLinkCopied(false), 2000);
       }
     } catch {
-      notify('ไม่สามารถแชร์หรือคัดลอกลิงก์ได้');
+      notify(t.split.sharedFailed);
     }
   };
 
   const handleOpenQrModal = () => {
     if (!parsedPromptPay) {
-      notify('กรุณาระบุเบอร์พร้อมเพย์ (10 หลัก) หรือเลขบัตร ปชช. (13 หลัก)');
+      notify(t.split.promptPayInputPlaceholder);
       document.getElementById('promptpay-input')?.focus();
       return;
     }
@@ -287,10 +283,10 @@ export function SplitCalculatorClient() {
     <div className="min-h-screen bg-canvas pb-28">
       <DevPersonaBar />
       <AppNavbar
-        title="ตาลหาร (Tan-Harn)"
-        subtitle="เครื่องคิดเลขหารค่าข้าว & ปันส่วนลด"
+        title={t.landing.harnCardTitle}
+        subtitle={t.split.subtitle}
         backHref="/"
-        backLabel="หน้าหลัก"
+        backLabel={t.nav.home}
         actions={
           <div className="flex items-center gap-1.5">
             <button
@@ -299,7 +295,7 @@ export function SplitCalculatorClient() {
               className="inline-flex min-h-[36px] items-center gap-1 rounded-theme px-2.5 text-xs font-medium text-ink-secondary hover:bg-subtle hover:text-ink transition-colors"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">รีเซ็ต</span>
+              <span className="hidden sm:inline">{t.common.reset}</span>
             </button>
             <button
               type="button"
@@ -307,7 +303,7 @@ export function SplitCalculatorClient() {
               className="inline-flex min-h-[36px] items-center gap-1 rounded-theme px-2.5 text-xs font-semibold text-chili bg-chili/10 hover:bg-chili/15 transition-colors"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span>ตัวอย่าง</span>
+              <span>{t.split.demoSampleBtn}</span>
             </button>
           </div>
         }
@@ -316,7 +312,7 @@ export function SplitCalculatorClient() {
       <main className="mx-auto max-w-lg px-2.5 sm:px-4 pt-4 space-y-4 w-full box-border overflow-x-hidden">
         {/* Unified Calculation Paper Sheet */}
         <div className="rounded-xl border border-hairline bg-surface shadow-xs divide-y divide-hairline overflow-hidden w-full">
-          {/* Section 1: ข้อมูลบิลส่วนกลาง (ค่าส่ง, ส่วนลด) */}
+          {/* Section 1: Bill Info (Delivery, Discount) */}
           <BillInfoSection
             deliveryFeeInput={deliveryFeeInput}
             onDeliveryFeeChange={setDeliveryFeeInput}
@@ -327,15 +323,15 @@ export function SplitCalculatorClient() {
             netDiscount={calculationResult.netDiscount}
           />
 
-          {/* Section 2: รายชื่อคนสั่ง (Member List) */}
+          {/* Section 2: Member List */}
           <section aria-labelledby="members-heading" className="p-3 sm:p-5 space-y-3 w-full box-border">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <h2 id="members-heading" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-                  2. รายชื่อคนสั่งอาหาร
+                  {t.split.memberListSection}
                 </h2>
                 <p className="text-sm font-semibold text-ink">
-                  {items.length} คน
+                  {items.length} {t.split.peopleCount}
                 </p>
               </div>
 
@@ -343,7 +339,7 @@ export function SplitCalculatorClient() {
               <div className="flex items-center gap-1.5">
                 <div className="relative inline-flex items-center">
                   <select
-                    aria-label="จัดอันดับรายชื่อ"
+                    aria-label={t.split.sortByPrice}
                     onChange={(e) => {
                       if (e.target.value) {
                         handleSort(e.target.value as 'PRICE_DESC' | 'PRICE_ASC' | 'NAME_ASC');
@@ -354,11 +350,10 @@ export function SplitCalculatorClient() {
                     defaultValue=""
                   >
                     <option value="" disabled>
-                      จัดเรียง
+                      {t.split.sortByPrice}
                     </option>
-                    <option value="PRICE_DESC">ยอดมาก ➔ น้อย</option>
-                    <option value="PRICE_ASC">ยอดน้อย ➔ มาก</option>
-                    <option value="NAME_ASC">ตามชื่อ (ก-ฮ)</option>
+                    <option value="PRICE_DESC">{t.split.sortHighest}</option>
+                    <option value="PRICE_ASC">{t.split.sortLowest}</option>
                   </select>
                   <ArrowUpDown className="absolute right-2 h-3.5 w-3.5 text-ink-muted pointer-events-none" />
                 </div>
@@ -369,16 +364,16 @@ export function SplitCalculatorClient() {
                   className="inline-flex h-[34px] items-center gap-1 rounded-theme px-2.5 text-xs font-semibold text-chili border border-chili/30 bg-chili/5 hover:bg-chili/10 transition-colors shrink-0 box-border"
                 >
                   <Clipboard className="h-3.5 w-3.5" />
-                  <span>วางด่วน</span>
+                  <span>{t.split.quickPasteBtn}</span>
                 </button>
               </div>
             </div>
 
-            {/* Table Header: Legible ledger columns aligned with row inputs */}
+            {/* Table Header */}
             <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-0.5 sm:px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full">
               <span className="w-7 text-center shrink-0">#</span>
-              <span className="flex-1 min-w-0 pl-1">ชื่อผู้สั่ง</span>
-              <span className="w-[80px] sm:w-[92px] text-right pr-4 shrink-0">ยอดเดิม</span>
+              <span className="flex-1 min-w-0 pl-1">{t.split.memberPlaceholder}</span>
+              <span className="w-[80px] sm:w-[92px] text-right pr-4 shrink-0">{t.split.pricePlaceholder}</span>
               <span className="w-7 shrink-0" aria-hidden="true" />
             </div>
 
@@ -422,15 +417,15 @@ export function SplitCalculatorClient() {
                 className="w-full min-h-[40px] border-dashed border-hairline text-xs font-semibold text-ink-secondary hover:text-ink hover:border-ink hover:bg-subtle"
               >
                 <Plus className="h-4 w-4 mr-1 text-ink-muted" />
-                เพิ่มคนสั่งอาหาร
+                {t.split.addMember}
               </Button>
             </div>
           </section>
 
-          {/* Section 3: สรุปยอดเงินทั้งบิล (Receipt Ledger) */}
+          {/* Section 3: Ledger Summary */}
           <BillLedgerSection result={calculationResult} />
 
-          {/* Section 4: พร้อมเพย์ และปุ่มสร้าง QR Code */}
+          {/* Section 4: PromptPay QR */}
           <PromptPaySection
             promptPayAccount={promptPayAccount}
             onPromptPayAccountChange={setPromptPayAccount}
@@ -439,7 +434,7 @@ export function SplitCalculatorClient() {
           />
         </div>
 
-        {/* Clean Primary Actions Block (Right under the ticket - No dual-dock crowding) */}
+        {/* Clean Primary Actions Block */}
         <div className="flex flex-col sm:flex-row gap-2 pt-1 w-full">
           <Button
             type="button"
@@ -451,12 +446,12 @@ export function SplitCalculatorClient() {
             {isCopied ? (
               <span className="inline-flex items-center gap-2 text-white font-bold">
                 <Check className="h-4 w-4 text-white" />
-                <span>คัดลอกเรียบร้อยแล้ว!</span>
+                <span>{t.common.copied}</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-2 text-white font-bold">
                 <Copy className="h-4 w-4 text-white" />
-                <span>คัดลอกสรุปยอดส่ง LINE / ขุนทอง</span>
+                <span>{t.split.copyResult}</span>
               </span>
             )}
           </Button>
@@ -471,12 +466,12 @@ export function SplitCalculatorClient() {
             {isLinkCopied ? (
               <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold">
                 <Check className="h-4 w-4 text-emerald-600" />
-                <span>คัดลอกลิงก์แล้ว</span>
+                <span>{t.split.copiedShareLink}</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-ink">
                 <Share2 className="h-4 w-4 text-ink-muted" />
-                <span>แชร์ลิงก์บิลนี้</span>
+                <span>{t.split.shareLink}</span>
               </span>
             )}
           </Button>

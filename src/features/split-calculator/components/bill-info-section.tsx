@@ -4,6 +4,7 @@ import React from 'react';
 import { BadgePercent, Info, Sparkles, TrendingDown, TrendingUp, Truck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { SplitMethod } from '../split-calculator.schema';
 
 interface BillInfoSectionProps {
@@ -25,15 +26,17 @@ export function BillInfoSection({
   onSplitMethodChange,
   netDiscount,
 }: BillInfoSectionProps) {
+  const { t } = useI18n();
+
   return (
     <div className="p-4 sm:p-5 space-y-4">
       {/* Section Title & Mode Switcher */}
       <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-            1. ข้อมูลบิลส่วนกลาง
+            {t.split.billInfoSection}
           </h2>
-          <p className="text-sm font-semibold text-ink">ค่าส่งและส่วนลด</p>
+          <p className="text-sm font-semibold text-ink">{t.split.deliveryAndDiscount}</p>
         </div>
 
         {/* Segmented Mode Control */}
@@ -48,7 +51,7 @@ export function BillInfoSection({
                 : 'text-ink-secondary hover:text-ink',
             )}
           >
-            ตามสัดส่วน %
+            {t.split.methodProportionalShort}
           </button>
           <button
             type="button"
@@ -60,7 +63,7 @@ export function BillInfoSection({
                 : 'text-ink-secondary hover:text-ink',
             )}
           >
-            หารเท่ากัน
+            {t.split.methodEqualShort}
           </button>
         </div>
       </div>
@@ -70,7 +73,7 @@ export function BillInfoSection({
         <div className="min-w-0 w-full">
           <label htmlFor="delivery-fee-input" className="block text-xs font-medium text-ink-secondary mb-1">
             <Truck className="inline h-3.5 w-3.5 mr-1 text-ink-muted" />
-            ค่าส่ง (บาท)
+            {t.split.deliveryFeeLabel}
           </label>
           <Input
             id="delivery-fee-input"
@@ -89,7 +92,7 @@ export function BillInfoSection({
         <div className="min-w-0 w-full">
           <label htmlFor="discount-input" className="block text-xs font-medium text-ink-secondary mb-1">
             <BadgePercent className="inline h-3.5 w-3.5 mr-1 text-chili" />
-            ส่วนลดรวม (บาท)
+            {t.split.discountLabel}
           </label>
           <Input
             id="discount-input"
@@ -112,11 +115,11 @@ export function BillInfoSection({
         <span className="text-ink-secondary flex items-center gap-1.5">
           <Info className="h-3.5 w-3.5 text-ink-muted shrink-0" />
           {netDiscount > 0 ? (
-            <span>เหลือส่วนลดสุทธิสำหรับเฉลี่ยคืน:</span>
+            <span>{t.split.discountSubtotal}:</span>
           ) : netDiscount < 0 ? (
-            <span>ค่าส่งส่วนเกินที่ต้องช่วยกันจ่ายเพิ่ม:</span>
+            <span>{t.split.deliverySubtotal}:</span>
           ) : (
-            <span>ค่าส่งและส่วนลดหักล้างกันพอดี</span>
+            <span>{t.common.none}</span>
           )}
         </span>
         <span
@@ -131,7 +134,7 @@ export function BillInfoSection({
         >
           {netDiscount > 0 && <TrendingDown className="h-3.5 w-3.5 mr-0.5 inline" />}
           {netDiscount < 0 && <TrendingUp className="h-3.5 w-3.5 mr-0.5 inline" />}
-          {Math.abs(netDiscount)} ฿
+          {Math.abs(netDiscount)} {t.common.baht}
         </span>
       </div>
     </div>

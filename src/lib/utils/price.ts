@@ -8,7 +8,7 @@ export interface FormatPriceOptions {
   /** Indicates if the entire session has no pricing (grand total is 0) */
   isGrandTotalZero?: boolean;
   /** Currency symbol or unit suffix (defaults to '฿') */
-  unit?: '฿' | 'บาท' | '';
+  unit?: '฿' | 'บาท' | '' | string;
   /** Fallback string when amount is 0 and isGrandTotalZero is true */
   unpricedFallback?: string;
   /** Fallback string when amount is 0 and isGrandTotalZero is false (an item is free) */
@@ -42,7 +42,7 @@ export function formatPrice(
  */
 export function formatGrandTotal(
   amount: number,
-  unit: '฿' | 'บาท' = '฿',
+  unit: '฿' | 'บาท' | string = '฿',
 ): string | null {
   if (amount > 0) {
     return `${amount.toLocaleString('th-TH')} ${unit}`;

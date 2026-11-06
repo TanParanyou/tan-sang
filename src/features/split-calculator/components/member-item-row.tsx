@@ -3,6 +3,7 @@
 import React from 'react';
 import { GripVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import type { SplitMemberResult } from '../split-calculator.schema';
 
 interface MemberItemRowProps {
@@ -44,6 +45,13 @@ export function MemberItemRow({
   onTouchMove,
   onTouchEnd,
 }: MemberItemRowProps) {
+  const { t } = useI18n();
+
+  const personNum = index + 1;
+  const personNameLabel = `${t.split.memberPlaceholder} ${personNum}`;
+  const dragAria = t.split.dragPersonAria.replace('{index}', String(personNum));
+  const deleteAria = t.split.deletePersonAria.replace('{index}', String(personNum));
+
   return (
     <div
       data-member-row-index={index}
@@ -67,23 +75,23 @@ export function MemberItemRow({
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
           className="flex h-9 w-7 shrink-0 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink cursor-grab active:cursor-grabbing touch-none p-0"
-          title="แตะค้างหรือลากเพื่อสลับอันดับ"
-          aria-label={`ลากสลับอันดับคนที่ ${index + 1}`}
+          title={t.split.dragToReorder}
+          aria-label={dragAria}
         >
           <GripVertical className="h-3 w-3 mr-0.5 opacity-60 shrink-0" />
-          <span className="font-mono text-xs font-bold text-ink-secondary">{index + 1}</span>
+          <span className="font-mono text-xs font-bold text-ink-secondary">{personNum}</span>
         </button>
 
         {/* Member Name */}
         <input
           id={`name-input-${member.id}`}
           type="text"
-          aria-label={`ชื่อคนที่ ${index + 1}`}
+          aria-label={personNameLabel}
           value={rawName}
           onChange={(e) => onNameChange(e.target.value)}
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.currentTarget.select()}
-          placeholder={`ชื่อคนที่ ${index + 1}`}
+          placeholder={personNameLabel}
           className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/80 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
         />
 
@@ -94,7 +102,7 @@ export function MemberItemRow({
             type="number"
             min="0"
             step="any"
-            aria-label={`ยอดเงินคนที่ ${index + 1}`}
+            aria-label={`${t.split.pricePlaceholder} ${personNum}`}
             value={rawPrice}
             onChange={(e) => onPriceChange(e.target.value)}
             onFocus={(e) => e.target.select()}
@@ -103,7 +111,7 @@ export function MemberItemRow({
             className="w-full min-w-0 min-h-[40px] pl-2 pr-5 bg-canvas/80 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
           />
           <span className="absolute right-1.5 top-2.5 text-xs text-ink-muted pointer-events-none">
-            ฿
+            {t.common.baht}
           </span>
         </div>
 
@@ -113,8 +121,8 @@ export function MemberItemRow({
           onClick={onRemove}
           disabled={totalMembers <= 1}
           className="flex h-9 w-7 shrink-0 items-center justify-center text-ink-muted hover:text-red-600 disabled:opacity-20 transition-colors rounded-theme p-0"
-          aria-label={`ลบคนที่ ${index + 1}`}
-          title="ลบแถวนี้"
+          aria-label={deleteAria}
+          title={t.split.deleteRowTitle}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -125,7 +133,7 @@ export function MemberItemRow({
         <div
           onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
           className="mt-1 flex items-center justify-between pl-8 sm:pl-9 pr-8 sm:pr-9 text-xs cursor-pointer group"
-          title="คลิกเพื่อแก้ไขยอดเงิน"
+          title={t.split.clickToEditPrice}
         >
           <div className="flex items-center gap-1.5 text-ink-secondary font-mono text-[11px] truncate">
             <span>{member.percentShare.toFixed(1)}%</span>
@@ -137,16 +145,16 @@ export function MemberItemRow({
                 )}
               >
                 {member.discountAmount > 0
-                  ? `(ลด -${member.discountAmount} ฿)`
-                  : `(เพิ่ม +${Math.abs(member.discountAmount)} ฿)`}
+                  ? `(${t.split.discountPill.replace('{amount}', String(member.discountAmount))})`
+                  : `(${t.split.surchargePill.replace('{amount}', String(Math.abs(member.discountAmount)))})`}
               </span>
             )}
           </div>
 
           <div className="flex items-baseline gap-1 font-mono shrink-0 pl-2">
-            <span className="text-[11px] text-ink-muted">จ่ายจริง:</span>
+            <span className="text-[11px] text-ink-muted">{t.session.yourTotal}:</span>
             <span className="text-xs sm:text-sm font-bold text-ink tabular-nums group-hover:text-chili transition-colors">
-              {member.finalPrice} ฿
+              {member.finalPrice} {t.common.baht}
             </span>
           </div>
         </div>

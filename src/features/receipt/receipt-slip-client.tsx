@@ -24,6 +24,7 @@ import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
 import { formatThaiDateTime, formatThaiTime } from '@/lib/utils/date';
 import { Button, Toast } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface ReceiptSlipClientProps {
   session: OrderSession;
@@ -31,6 +32,7 @@ export interface ReceiptSlipClientProps {
 }
 
 export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) {
+  const { t } = useI18n();
   const { shareBillToLine } = useLiff();
   const receiptRef = useRef<HTMLElement>(null);
 
@@ -85,11 +87,11 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `ใบเสร็จ ${summary.storeDisplayName} | ตาลสั่ง`,
+          title: t.receipt.receiptOf.replace('{store}', summary.storeDisplayName),
           text: shareText,
           url: slipUrl,
         });
-        notify('แชร์สลิปใบเสร็จแล้ว!');
+        notify(t.receipt.sharedSlipSuccess);
         return;
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
@@ -102,10 +104,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
       try {
         await navigator.clipboard.writeText(slipUrl);
         setIsLinkCopied(true);
-        notify('คัดลอกลิงก์สลิปใบเสร็จแล้ว!');
+        notify(t.receipt.copiedSlipLinkSuccess);
         setTimeout(() => setIsLinkCopied(false), 2000);
       } catch {
-        notify('ไม่สามารถคัดลอกลิงก์ได้');
+        notify(t.receipt.copyLinkFailed);
       }
     }
   };
@@ -147,10 +149,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
       document.body.removeChild(link);
 
       setPreviewImageUrl(dataUrl);
-      notify('สร้างรูปภาพใบเสร็จเรียบร้อยแล้ว!');
+      notify(t.receipt.imageSavedSuccess);
     } catch (err) {
       console.error('Download receipt image failed:', err);
-      notify('ไม่สามารถสร้างรูปภาพใบเสร็จได้ กรุณาลองใหม่อีกครั้ง');
+      notify(t.receipt.imageSaveFailed);
     } finally {
       setIsDownloadingImage(false);
     }
@@ -169,11 +171,11 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
           <div className="flex items-center gap-2 min-w-0">
             <img
               src="/logo.png"
-              alt="ตาลสั่ง"
+              alt={t.common.brandName}
               className="h-7 w-7 shrink-0 object-contain"
             />
             <div className="min-w-0">
-              <h1 className="text-xs font-bold text-ink leading-tight">ตาลสั่ง • สลิปใบเสร็จ</h1>
+              <h1 className="text-xs font-bold text-ink leading-tight">{t.receipt.slipTitle}</h1>
               <p className="text-[11px] text-ink-muted leading-tight truncate max-w-[170px] sm:max-w-xs">
                 {summary.storeDisplayName}
               </p>
@@ -188,10 +190,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               onClick={handleDownloadImage}
               loading={isDownloadingImage}
               className="h-8 px-2.5 text-xs font-medium text-sky-700 hover:border-sky-300"
-              title="บันทึกรูปภาพใบเสร็จลงอุปกรณ์"
+              title={t.receipt.saveImageTooltip}
             >
               <Download className="mr-1 h-3.5 w-3.5 text-sky-600" />
-              <span>โหลดรูป</span>
+              <span>{t.receipt.saveSlipImageButton}</span>
             </Button>
 
             <Button
@@ -200,17 +202,17 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               size="sm"
               onClick={handleShareLink}
               className="h-8 px-2.5 text-xs font-medium"
-              title="แชร์ลิงก์ใบเสร็จ"
+              title={t.receipt.shareLinkTooltip}
             >
               {isLinkCopied ? (
                 <>
                   <Check className="mr-1 h-3.5 w-3.5 text-emerald-600" />
-                  <span>คัดลอกแล้ว</span>
+                  <span>{t.receipt.copiedLink}</span>
                 </>
               ) : (
                 <>
                   <Share2 className="mr-1 h-3.5 w-3.5 text-ink-muted" />
-                  <span>แชร์</span>
+                  <span>{t.receipt.shareSlipButton}</span>
                 </>
               )}
             </Button>
@@ -218,11 +220,11 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
         </div>
       </header>
 
-      {/* Mode Selector Toolbar: ให้เลือกโหมดการแสดงผล (ทั้งหมด / รวมเมนู / แยกรายคน) */}
+      {/* Mode Selector Toolbar: Display mode selector */}
       <div className="border-b border-hairline/80 bg-surface px-4 py-2 print:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2">
           <span className="text-[11px] font-medium text-ink-muted shrink-0">
-            การแสดงผล
+            {t.receipt.displayMode}
           </span>
           <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
             <button
@@ -236,7 +238,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               )}
             >
               <LayoutList className="h-3.5 w-3.5" />
-              <span>ทั้งหมด</span>
+              <span>{t.receipt.viewAll}</span>
             </button>
             <button
               type="button"
@@ -249,7 +251,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               )}
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>รวมเมนู</span>
+              <span>{t.receipt.viewGrouped}</span>
             </button>
             <button
               type="button"
@@ -262,7 +264,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               )}
             >
               <Users className="h-3.5 w-3.5" />
-              <span>แยกรายคน</span>
+              <span>{t.receipt.viewByPerson}</span>
             </button>
           </div>
         </div>
@@ -281,10 +283,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
             </p>
             <h2 className="mt-1 text-lg font-bold text-ink font-sans">{summary.storeDisplayName}</h2>
             <div className="mt-1 space-y-0.5 font-mono text-[11px] text-ink-secondary">
-              <p>วัน-เวลา: {formattedDate}</p>
+              <p>{t.receipt.dateLabel}: {formattedDate}</p>
               {session.closedAt && (
                 <p className="text-[10px] text-ink-muted">
-                  (เปิดรับ: {formatThaiTime(session.createdAt)} • ปิดรับ: {formatThaiTime(session.closedAt)})
+                  ({t.receipt.openAt}: {formatThaiTime(session.createdAt)} • {t.receipt.closedAt}: {formatThaiTime(session.closedAt)})
                 </p>
               )}
             </div>
@@ -297,7 +299,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
           {(viewMode === 'GROUPED' || viewMode === 'ALL') && (
             <div className="py-3">
               <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-                สรุปรายการอาหาร ({summary.totalItemsCount} จาน)
+                {t.receipt.foodSummaryTitle} ({summary.totalItemsCount} {t.common.dishes})
               </h3>
               <div className="mt-2 space-y-2">
                 {summary.groupedItems.map((g, idx) => (
@@ -307,7 +309,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                         {formatOrderItemTitle(g.menuName, g.variantName, g.optionNames)}
                       </p>
                       <p className="text-[11px] text-ink-secondary">
-                        สั่งโดย: {g.recipients.map((r) => r.recipientName).join(', ')}
+                        {t.session.orderedBy}: {g.recipients.map((r) => r.recipientName).join(', ')}
                       </p>
                     </div>
                     <span className="shrink-0 font-mono font-bold tabular-nums text-ink">
@@ -328,7 +330,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
               )}
             >
               <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-                ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
+                {t.receipt.splitByPersonTitle} ({summary.recipientBreakdowns.length} {t.split.peopleCount})
               </h3>
 
               <div className="mt-2 space-y-3 font-sans">
@@ -367,23 +369,23 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
           {/* Grand Total */}
           <div className="border-t-2 border-ink pt-3 font-mono">
             <div className="flex items-center justify-between text-base font-bold text-ink">
-              <span>ยอดรวมทั้งหมด ({summary.totalItemsCount} จาน)</span>
+              <span>{t.receipt.totalWithCount} ({summary.totalItemsCount} {t.common.dishes})</span>
               {formatGrandTotal(summary.grandTotalAmount) ? (
                 <span className="text-lg tabular-nums">
                   {formatGrandTotal(summary.grandTotalAmount)}
                 </span>
               ) : (
-                <span className="text-sm font-normal text-ink-secondary">รอร้านคิดเงิน</span>
+                <span className="text-sm font-normal text-ink-secondary">{t.receipt.waitingForStorePrice}</span>
               )}
             </div>
             <p className="mt-2 text-center text-[10px] text-ink-muted">
-              *** ขอบคุณที่ใช้บริการทันสั่ง (Tan-Sang) ***
+              *** {t.common.brandName} (Tan-Sang) ***
             </p>
           </div>
         </article>
       </main>
 
-      {/* Floating Bottom Dock: Simple and focused on downloading/printing */}
+      {/* Floating Bottom Dock */}
       <footer className="fixed bottom-0 left-0 right-0 z-30 transform-gpu translate-z-0 will-change-transform border-t border-hairline bg-surface/95 px-4 py-2.5 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] backdrop-blur shadow-theme print:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           <Button
@@ -392,10 +394,10 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
             onClick={handleDownloadImage}
             loading={isDownloadingImage}
             className="flex-1 min-h-[42px] text-xs font-semibold shadow-sm"
-            title="บันทึกรูปภาพใบเสร็จลงอุปกรณ์"
+            title={t.receipt.saveImageTooltip}
           >
             <Download className="mr-1.5 h-4 w-4" />
-            <span>บันทึกรูปภาพใบเสร็จ</span>
+            <span>{t.receipt.saveSlipImageLong}</span>
           </Button>
           <Button
             type="button"
@@ -403,25 +405,25 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
             onClick={handleShareLine}
             loading={isSharing}
             className="min-h-[42px] px-3 text-xs font-medium hover:border-emerald-300 hover:text-emerald-700"
-            title="แชร์สรุปบิลเข้าห้องแชท LINE"
+            title={t.receipt.shareLineTooltip}
           >
             <Share2 className="h-4 w-4 text-line sm:mr-1" />
-            <span className="hidden sm:inline">แชร์ LINE</span>
+            <span className="hidden sm:inline">{t.receipt.shareToLine}</span>
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={() => window.print()}
             className="min-h-[42px] px-3 text-xs font-medium"
-            title="สั่งพิมพ์หรือบันทึกเป็น PDF"
+            title={t.receipt.printTooltip}
           >
             <Printer className="h-4 w-4" />
-            <span className="hidden sm:inline ml-1">พิมพ์</span>
+            <span className="hidden sm:inline ml-1">{t.receipt.print}</span>
           </Button>
         </div>
       </footer>
 
-      {/* Image Preview Modal with uncropped display and mobile guidance */}
+      {/* Image Preview Modal */}
       {previewImageUrl && (
         <div
           role="dialog"
@@ -436,27 +438,23 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
             <div className="flex items-center justify-between pb-3 border-b border-hairline shrink-0">
               <div className="flex items-center gap-2">
                 <Download className="h-4 w-4 text-chili" />
-                <h3 className="text-sm font-bold text-ink">รูปภาพใบเสร็จ</h3>
+                <h3 className="text-sm font-bold text-ink">{t.receipt.saveSlipImageLong}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewImageUrl(null)}
                 className="rounded-full p-1 text-ink-muted hover:bg-subtle hover:text-ink focus-visible:outline-none"
-                aria-label="ปิด"
+                aria-label={t.common.close}
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
-
-            <div className="my-2.5 rounded-lg border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-900 leading-relaxed shrink-0">
-              💡 <strong>สำหรับผู้ใช้มือถือ & LINE:</strong> แตะค้างที่รูปภาพด้านล่างเพื่อเลือก &quot;บันทึกรูปภาพ&quot; (Save Image) ลงในอัลบั้มรูปได้เลยครับ
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-hairline/80 bg-subtle p-3 text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewImageUrl}
-                alt="รูปภาพใบเสร็จ"
+                alt="Receipt Slip Image"
                 className="mx-auto block h-auto w-full max-w-[340px] rounded border border-hairline bg-white shadow-md"
               />
             </div>
@@ -472,11 +470,11 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                   link.download = `receipt-${session.id.slice(0, 8)}.png`;
                   link.href = previewImageUrl;
                   link.click();
-                  notify('ดาวน์โหลดรูปภาพแล้ว');
+                  notify(t.receipt.imageSavedSuccess);
                 }}
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
-                ดาวน์โหลดอีกครั้ง
+                {t.receipt.saveSlipImageButton}
               </Button>
               {typeof navigator !== 'undefined' && 'share' in navigator && (
                 <Button
@@ -496,7 +494,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                       if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
                           files: [file],
-                          title: `ใบเสร็จ-${summary.storeDisplayName}`,
+                          title: t.receipt.receiptOf.replace('{store}', summary.storeDisplayName),
                         });
                         return;
                       }
@@ -506,7 +504,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                   }}
                 >
                   <Share2 className="mr-1.5 h-3.5 w-3.5 text-ink-muted" />
-                  แชร์รูปภาพ
+                  {t.receipt.shareSlipButton}
                 </Button>
               )}
               <Button
@@ -516,7 +514,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                 className="text-xs"
                 onClick={() => setPreviewImageUrl(null)}
               >
-                ปิด
+                {t.common.close}
               </Button>
             </div>
           </div>

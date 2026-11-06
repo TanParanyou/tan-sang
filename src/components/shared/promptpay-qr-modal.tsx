@@ -5,6 +5,7 @@ import { X, Download, QrCode, Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { generatePromptPayQrDataUrl, parsePromptPayTarget } from '@/lib/utils/promptpay';
 import { formatGrandTotal, formatPrice } from '@/lib/utils/price';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface PromptPayQrItemOption {
   id: string;
@@ -27,12 +28,14 @@ export function PromptPayQrModal({
   promptPayId,
   totalAmount,
   items = [],
-  modalTitle = 'Thai QR Payment / พร้อมเพย์',
+  modalTitle,
 }: PromptPayQrModalProps) {
+  const { t } = useI18n();
   const [selectedItemId, setSelectedItemId] = useState<string>('TOTAL'); // 'TOTAL' | 'NONE' | item.id
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
+  const resolvedTitle = modalTitle ?? t.promptPayModal.title;
   const parsedTarget = parsePromptPayTarget(promptPayId);
 
   // Calculate targeted amount
@@ -45,9 +48,9 @@ export function PromptPayQrModal({
 
   const selectedItemName =
     selectedItemId === 'TOTAL'
-      ? 'ยอดรวมทั้งบิล'
+      ? t.split.grandTotal
       : selectedItemId === 'NONE'
-      ? 'ไม่ระบุยอด (ใส่ยอดเอง)'
+      ? t.promptPayModal.unspecifiedAmount
       : items.find((m) => m.id === selectedItemId)?.name ?? '';
 
   useEffect(() => {
@@ -104,16 +107,16 @@ export function PromptPayQrModal({
             </div>
             <div>
               <h2 id="promptpay-qr-title" className="text-sm font-bold text-ink">
-                {modalTitle}
+                {resolvedTitle}
               </h2>
-              <p className="text-[11px] text-ink-secondary">สแกนจ่ายเงินผ่านแอปธนาคารได้ทุกธนาคาร</p>
+              <p className="text-[11px] text-ink-secondary">{t.promptPayModal.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-theme p-1 text-ink-muted hover:bg-subtle hover:text-ink transition-colors"
-            aria-label="ปิดหน้าต่าง"
+            aria-label={t.promptPayModal.closeAria}
           >
             <X className="h-5 w-5" />
           </button>
@@ -124,7 +127,7 @@ export function PromptPayQrModal({
           <div className="w-full max-w-[260px] rounded-theme border-2 border-[#003d6b] bg-white p-3 shadow-sm flex flex-col items-center">
             {/* PromptPay Top Brand Header */}
             <div className="w-full bg-[#003d6b] text-white py-1.5 px-3 rounded-xs text-center font-bold text-xs tracking-wider mb-2">
-              PROMPTPAY · พร้อมเพย์
+              {t.promptPayModal.brandBadge}
             </div>
 
             {/* QR Image */}
@@ -136,7 +139,7 @@ export function PromptPayQrModal({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="text-xs text-ink-muted animate-pulse">กำลังสร้าง QR Code...</div>
+                <div className="text-xs text-ink-muted animate-pulse">{t.promptPayModal.generating}</div>
               )}
             </div>
 
@@ -146,7 +149,7 @@ export function PromptPayQrModal({
                 type="button"
                 onClick={handleCopyPromptPayNumber}
                 className="group inline-flex items-center gap-1 text-xs font-mono font-bold text-[#003d6b] hover:underline"
-                title="คลิกเพื่อคัดลอกเบอร์พร้อมเพย์"
+                title={t.promptPayModal.copyNumberTitle}
               >
                 <span>{parsedTarget?.formatted}</span>
                 {isCopied ? (
@@ -157,7 +160,7 @@ export function PromptPayQrModal({
               </button>
               {selectedAmount !== null && selectedAmount > 0 && (
                 <div className="mt-0.5 text-sm font-bold text-chili font-mono tabular-nums">
-                  {formatGrandTotal(selectedAmount, 'บาท')}
+                  {formatGrandTotal(selectedAmount, t.common.baht)}
                 </div>
               )}
             </div>
@@ -167,7 +170,7 @@ export function PromptPayQrModal({
           {(items.length > 0 || (totalAmount !== null && totalAmount !== undefined && totalAmount > 0)) && (
             <div className="w-full mt-4 space-y-2">
               <label htmlFor="qr-amount-select" className="block text-xs font-semibold text-ink">
-                เลือกยอดที่ต้องการระบุใน QR:
+                {t.promptPayModal.selectAmountLabel}
               </label>
               <select
                 id="qr-amount-select"
@@ -176,23 +179,27 @@ export function PromptPayQrModal({
                 className="w-full min-h-[40px] px-3 bg-surface text-ink text-xs border border-hairline rounded-theme focus:outline-none focus:ring-1 focus:ring-ink font-medium"
               >
                 {totalAmount !== null && totalAmount !== undefined && (
-                  <option value="TOTAL">ยอดรวมทั้งบิล ({formatPrice(totalAmount, { unit: '฿' })})</option>
+                  <option value="TOTAL">
+                    {t.promptPayModal.totalAmountOption.replace('{amount}', formatPrice(totalAmount, { unit: t.common.baht }))}
+                  </option>
                 )}
-                <option value="NONE">ไม่ระบุยอด (ให้เพื่อนกรอกยอดเอง)</option>
+                <option value="NONE">{t.promptPayModal.noAmountOption}</option>
                 {items.length > 0 && (
-                  <optgroup label="ยอดเฉพาะรายคน">
+                  <optgroup label={t.promptPayModal.individualGroupLabel}>
                     {items
                       .filter((m) => m.amount > 0)
                       .map((m) => (
                         <option key={m.id} value={m.id}>
-                          {m.name}: {m.amount} ฿
+                          {m.name}: {m.amount} {t.common.baht}
                         </option>
                       ))}
                   </optgroup>
                 )}
               </select>
               <p className="text-[11px] text-ink-muted text-center">
-                💡 {selectedItemName} ({selectedAmount !== null ? `${selectedAmount} บาท` : 'ไม่ระบุยอด'})
+                {t.promptPayModal.amountSummaryHint
+                  .replace('{name}', selectedItemName)
+                  .replace('{amount}', selectedAmount !== null ? `${selectedAmount} ${t.common.baht}` : t.promptPayModal.unspecifiedAmount)}
               </p>
             </div>
           )}
@@ -207,7 +214,7 @@ export function PromptPayQrModal({
             onClick={onClose}
             className="flex-1 text-xs"
           >
-            ปิด
+            {t.common.close}
           </Button>
           <Button
             type="button"
@@ -218,7 +225,7 @@ export function PromptPayQrModal({
             className="flex-1 bg-[#003d6b] hover:bg-[#002f52] border-[#003d6b] text-white text-xs font-bold"
           >
             <Download className="h-4 w-4 mr-1.5" />
-            บันทึกรูป QR
+            {t.promptPayModal.saveQrImage}
           </Button>
         </div>
       </div>

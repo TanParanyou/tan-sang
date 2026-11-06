@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Clipboard, ArrowDownRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { Textarea } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/i18n-context';
 import { parseQuickPasteText } from '../split-calculator.service';
 
 interface QuickPasteModalProps {
@@ -13,6 +14,7 @@ interface QuickPasteModalProps {
 }
 
 export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalProps) {
+  const { t } = useI18n();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -20,13 +22,13 @@ export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalPr
 
   const handleImport = () => {
     if (!text.trim()) {
-      setError('กรุณาวางข้อความก่อนกดยืนยัน');
+      setError(t.split.emptyPasteError);
       return;
     }
 
     const parsed = parseQuickPasteText(text);
     if (parsed.length === 0) {
-      setError('ไม่พบข้อมูลชื่อและราคาที่ถูกต้อง กรุณาตรวจสอบรูปแบบข้อความ');
+      setError(t.split.invalidPasteError);
       return;
     }
 
@@ -37,7 +39,7 @@ export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalPr
   };
 
   const handlePasteExample = () => {
-    setText(`1. กัส 79.5\n2. ตาล 79.5\n3. เอฟ 79.5\n4. บอส 79.5\n5. โก 59.5`);
+    setText(`1. Tan 79.5\n2. Boss 79.5\n3. Gus 79.5\n4. Fim 59.5\n5. Mean 59.5`);
     setError(null);
   };
 
@@ -56,10 +58,10 @@ export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalPr
             </div>
             <div>
               <h2 id="quick-paste-title" className="text-base font-bold text-ink">
-                วางข้อความด่วน (Quick Paste)
+                {t.split.quickPasteModalTitle}
               </h2>
               <p className="text-xs text-ink-secondary">
-                คัดลอกจาก Excel, Google Sheets หรือแชท LINE มาวางได้เลย
+                {t.split.quickPasteModalDesc}
               </p>
             </div>
           </div>
@@ -67,7 +69,7 @@ export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalPr
             type="button"
             onClick={onClose}
             className="rounded-theme p-1 text-ink-muted hover:bg-subtle hover:text-ink transition-colors"
-            aria-label="ปิดหน้าต่าง"
+            aria-label={t.common.close}
           >
             <X className="h-5 w-5" />
           </button>
@@ -81,32 +83,36 @@ export function QuickPasteModal({ isOpen, onClose, onImport }: QuickPasteModalPr
               setText(e.target.value);
               if (error) setError(null);
             }}
-            placeholder={`กัส 79.5\nตาล 79.5\nโก 59.5\nหรือคัดลอกทั้งคอลัมน์จาก Google Sheets มาวางได้ทันที`}
-            className="font-mono text-sm"
+            placeholder={t.split.quickPastePlaceholder}
+            className="font-mono text-xs leading-relaxed"
           />
 
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && (
+            <p className="text-xs text-red-600 font-medium animate-shake">
+              {error}
+            </p>
+          )}
 
           <div className="flex items-center justify-between text-xs text-ink-muted">
-            <span>รองรับทั้ง: ชื่อ ราคา หรือ ชื่อ, ราคา หรือจากตาราง Excel</span>
+            <span>{t.split.quickPasteFormatHint}</span>
             <button
               type="button"
               onClick={handlePasteExample}
-              className="inline-flex items-center gap-1 text-chili hover:underline font-medium"
+              className="inline-flex items-center text-chili hover:underline font-semibold"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              ลองใส่ตัวอย่าง
+              <Sparkles className="h-3 w-3 mr-1" />
+              {t.split.trySample}
             </button>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-hairline">
           <Button variant="secondary" size="md" onClick={onClose}>
-            ยกเลิก
+            {t.common.cancel}
           </Button>
-          <Button variant="primary" size="md" onClick={handleImport} className="bg-chili hover:bg-chili/90 text-white border-chili">
-            <ArrowDownRight className="h-4 w-4 mr-1" />
-            นำเข้าข้อมูล
+          <Button variant="primary" size="md" onClick={handleImport}>
+            <ArrowDownRight className="h-4 w-4 mr-1.5" />
+            {t.split.confirmPasteBtn}
           </Button>
         </div>
       </div>

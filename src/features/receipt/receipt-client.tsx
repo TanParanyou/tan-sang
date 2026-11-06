@@ -68,10 +68,10 @@ export function ReceiptClient({
       try {
         await navigator.clipboard.writeText(summary.merchantCopyText);
         setIsCopied(true);
-        notify('คัดลอกข้อความส่งร้านค้าแล้ว!');
+        notify(t.receipt.copiedStoreSuccess);
         setTimeout(() => setIsCopied(false), 2000);
       } catch {
-        notify('ไม่สามารถคัดลอกข้อความได้');
+        notify(t.receipt.copyFailed);
       }
     }
   };
@@ -81,10 +81,10 @@ export function ReceiptClient({
       try {
         await navigator.clipboard.writeText(summary.khunThongCopyText);
         setIsKhunThongCopied(true);
-        notify('คัดลอกยอดแยกรายคนส่งให้ขุนทองแล้ว!');
+        notify(t.receipt.copiedKhunThongSuccess);
         setTimeout(() => setIsKhunThongCopied(false), 2000);
       } catch {
-        notify('ไม่สามารถคัดลอกข้อความได้');
+        notify(t.receipt.copyFailed);
       }
     }
   };
@@ -128,11 +128,11 @@ export function ReceiptClient({
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `ใบเสร็จ ${summary.storeDisplayName} | ตาลสั่ง`,
+          title: t.receipt.receiptOf.replace('{store}', summary.storeDisplayName),
           text: shareText,
           url: slipUrl,
         });
-        notify('แชร์สลิปใบเสร็จแล้ว!');
+        notify(t.receipt.sharedSlipSuccess);
         return;
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
@@ -145,10 +145,10 @@ export function ReceiptClient({
       try {
         await navigator.clipboard.writeText(slipUrl);
         setIsLinkCopied(true);
-        notify('คัดลอกลิงก์สลิปใบเสร็จแล้ว!');
+        notify(t.receipt.copiedSlipLinkSuccess);
         setTimeout(() => setIsLinkCopied(false), 2000);
       } catch {
-        notify('ไม่สามารถคัดลอกลิงก์ได้');
+        notify(t.receipt.copyLinkFailed);
       }
     }
   };
@@ -190,10 +190,10 @@ export function ReceiptClient({
       document.body.removeChild(link);
 
       setPreviewImageUrl(dataUrl);
-      notify('สร้างรูปภาพใบเสร็จเรียบร้อยแล้ว!');
+      notify(t.receipt.imageSavedSuccess);
     } catch (err) {
       console.error('Download receipt image failed:', err);
-      notify('ไม่สามารถสร้างรูปภาพใบเสร็จได้ กรุณาลองใหม่อีกครั้ง');
+      notify(t.receipt.imageSaveFailed);
     } finally {
       setIsDownloadingImage(false);
     }
@@ -252,7 +252,7 @@ export function ReceiptClient({
                 title={t.nav.orderHistory}
               >
                 <History className="h-3.5 w-3.5 text-ink-muted" />
-                <span className="hidden sm:inline">ประวัติบิล</span>
+                <span className="hidden sm:inline">{t.nav.orderHistory}</span>
               </Link>
             </div>
           }
@@ -267,7 +267,7 @@ export function ReceiptClient({
           {/* Format selection */}
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
-              ขนาดกระดาษ
+              {t.receipt.thermalSlip}
             </span>
             <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
               <button
@@ -281,7 +281,7 @@ export function ReceiptClient({
                 )}
               >
                 <Receipt className="h-3.5 w-3.5" />
-                <span>สลิป 80mm</span>
+                <span>{t.receipt.thermalSlip}</span>
               </button>
               <button
                 type="button"
@@ -294,7 +294,7 @@ export function ReceiptClient({
                 )}
               >
                 <FileText className="h-3.5 w-3.5" />
-                <span>กระดาษ A4</span>
+                <span>{t.receipt.a4Summary}</span>
               </button>
             </div>
           </div>
@@ -302,7 +302,7 @@ export function ReceiptClient({
           {/* View mode selection */}
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
-              การแสดงผล
+              {t.receipt.displayMode}
             </span>
             <div className="inline-flex rounded-lg border border-hairline bg-subtle/80 p-0.5">
               <button
@@ -316,7 +316,7 @@ export function ReceiptClient({
                 )}
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>รวมเมนู</span>
+                <span>{t.receipt.viewGrouped}</span>
               </button>
               <button
                 type="button"
@@ -329,7 +329,7 @@ export function ReceiptClient({
                 )}
               >
                 <Users className="h-3.5 w-3.5" />
-                <span>แยกรายคน</span>
+                <span>{t.receipt.viewByPerson}</span>
               </button>
               <button
                 type="button"
@@ -342,7 +342,7 @@ export function ReceiptClient({
                 )}
               >
                 <LayoutList className="h-3.5 w-3.5" />
-                <span>ทั้งหมด</span>
+                <span>{t.receipt.viewAll}</span>
               </button>
             </div>
           </div>
@@ -366,10 +366,10 @@ export function ReceiptClient({
             </p>
             <h1 className="mt-1 text-lg font-bold text-ink">{summary.storeDisplayName}</h1>
             <div className="mt-1 space-y-0.5 font-mono text-[11px] text-ink-secondary">
-              <p>วัน-เวลา: {formattedDate}</p>
+              <p>{t.receipt.dateLabel}: {formattedDate}</p>
               {session.closedAt && (
                 <p className="text-[10px] text-ink-muted">
-                  (เปิดรับ: {formatThaiTime(session.createdAt)} • ปิดรับ: {formatThaiTime(session.closedAt)})
+                  ({t.receipt.openAt}: {formatThaiTime(session.createdAt)} • {t.receipt.closedAt}: {formatThaiTime(session.closedAt)})
                 </p>
               )}
             </div>
@@ -382,7 +382,7 @@ export function ReceiptClient({
           {(viewMode === 'GROUPED' || viewMode === 'ALL') && (
             <div className="py-3">
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-                สรุปรายการอาหารส่งร้าน ({summary.totalItemsCount} จาน)
+                {t.receipt.foodSummaryTitle} ({summary.totalItemsCount} {t.common.dishes})
               </h2>
               <div className="mt-2 space-y-2">
                 {summary.groupedItems.map((g, idx) => (
@@ -392,7 +392,7 @@ export function ReceiptClient({
                         {formatOrderItemTitle(g.menuName, g.variantName, g.optionNames)}
                       </p>
                       <p className="text-[11px] text-ink-secondary">
-                        สั่งโดย: {g.recipients.map((r) => r.recipientName).join(', ')}
+                        {t.session.orderedBy}: {g.recipients.map((r) => r.recipientName).join(', ')}
                       </p>
                     </div>
                     <span className="shrink-0 font-mono font-bold tabular-nums text-ink">
@@ -413,7 +413,7 @@ export function ReceiptClient({
               )}
             >
               <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
-                ยอดแยกตามรายคน ({summary.recipientBreakdowns.length} คน)
+                {t.receipt.splitByPersonTitle} ({summary.recipientBreakdowns.length} {t.split.peopleCount})
               </h2>
 
               <div className="mt-2 space-y-3">
@@ -452,17 +452,17 @@ export function ReceiptClient({
           {/* Grand Total Summary */}
           <div className="border-t-2 border-ink pt-3 font-mono">
             <div className="flex items-center justify-between text-base font-bold text-ink">
-              <span>ยอดรวมทั้งหมด ({summary.totalItemsCount} จาน)</span>
+              <span>{t.receipt.totalWithCount} ({summary.totalItemsCount} {t.common.dishes})</span>
               {formatGrandTotal(summary.grandTotalAmount) ? (
                 <span className="text-lg tabular-nums">
                   {formatGrandTotal(summary.grandTotalAmount)}
                 </span>
               ) : (
-                <span className="text-sm font-normal text-ink-secondary">รอร้านคิดเงิน</span>
+                <span className="text-sm font-normal text-ink-secondary">{t.receipt.waitingForStorePrice}</span>
               )}
             </div>
             <p className="mt-2 text-center text-[10px] text-ink-muted">
-              *** ขอบคุณที่ใช้บริการทันสั่ง (Tan-Sang) ***
+              *** {t.common.brandName} (Tan-Sang) ***
             </p>
           </div>
         </article>
@@ -472,7 +472,7 @@ export function ReceiptClient({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 font-bold text-amber-900">
               <Coins className="h-4 w-4 text-amber-600" />
-              <span>ส่งต่อยอดเงินให้บอท "ขุนทอง" ช่วยหารหรือทวงเงิน:</span>
+              <span>{t.session.sendToKhunThong}:</span>
             </div>
             <Button
               type="button"
@@ -487,12 +487,12 @@ export function ReceiptClient({
               {isKhunThongCopied ? (
                 <>
                   <Check className="h-3 w-3 text-emerald-600 mr-1" />
-                  <span>คัดลอกยอดแล้ว!</span>
+                  <span>{t.receipt.copiedKhunThongSuccess}</span>
                 </>
               ) : (
                 <>
                   <Copy className="h-3 w-3 mr-1" />
-                  <span>คัดลอกยอดแยกรายคน</span>
+                  <span>{t.receipt.copyKhunThongButton}</span>
                 </>
               )}
             </Button>
@@ -515,18 +515,18 @@ export function ReceiptClient({
               'flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium transition-all',
               isCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
             )}
-            title="คัดลอกสรุปรายการอาหารสำหรับส่งร้านค้า"
+            title={t.session.copyStoreText}
           >
             {isCopied ? (
               <>
                 <Check className="h-4 w-4 shrink-0 text-emerald-600 sm:mr-1" />
-                <span>คัดลอกแล้ว</span>
+                <span>{t.common.copied}</span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4 shrink-0 text-ink-muted sm:mr-1" />
-                <span className="hidden sm:inline">คัดลอกส่งร้าน</span>
-                <span className="sm:hidden leading-none mt-0.5">ส่งร้าน</span>
+                <span className="hidden sm:inline">{t.session.copyForMerchant}</span>
+                <span className="sm:hidden leading-none mt-0.5">{t.session.sendToMerchant}</span>
               </>
             )}
           </Button>
@@ -540,18 +540,18 @@ export function ReceiptClient({
               'flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium transition-all border-amber-300 bg-amber-50/70 text-amber-900 hover:bg-amber-100',
               isKhunThongCopied && 'border-emerald-300 bg-emerald-50 text-emerald-800',
             )}
-            title="คัดลอกยอดแยกรายคนสำหรับส่งให้ขุนทองช่วยหารบิล"
+            title={t.session.copyKhunThongText}
           >
             {isKhunThongCopied ? (
               <>
                 <Check className="h-4 w-4 shrink-0 text-emerald-600 sm:mr-1" />
-                <span>คัดลอกแล้ว</span>
+                <span>{t.common.copied}</span>
               </>
             ) : (
               <>
                 <Coins className="h-4 w-4 shrink-0 text-amber-600 sm:mr-1" />
-                <span className="hidden sm:inline">คัดลอกส่งขุนทอง</span>
-                <span className="sm:hidden leading-none mt-0.5">ขุนทอง</span>
+                <span className="hidden sm:inline">{t.receipt.copyKhunThongButton}</span>
+                <span className="sm:hidden leading-none mt-0.5">{t.session.sendToKhunThong}</span>
               </>
             )}
           </Button>
@@ -563,11 +563,11 @@ export function ReceiptClient({
             onClick={handleDownloadImage}
             loading={isDownloadingImage}
             className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium hover:border-sky-300 hover:text-sky-700"
-            title="บันทึกรูปภาพใบเสร็จลงอุปกรณ์"
+            title={t.receipt.saveImageTooltip}
           >
             <Download className="h-4 w-4 shrink-0 text-sky-600 sm:mr-1" />
-            <span className="hidden sm:inline">โหลดภาพ</span>
-            <span className="sm:hidden leading-none mt-0.5">โหลดรูป</span>
+            <span className="hidden sm:inline">{t.receipt.saveSlipImageButton}</span>
+            <span className="sm:hidden leading-none mt-0.5">{t.receipt.saveSlipImageButton}</span>
           </Button>
 
           {/* ปุ่มแชร์เข้า LINE */}
@@ -577,11 +577,11 @@ export function ReceiptClient({
             onClick={handleShareLine}
             loading={isSharing}
             className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium hover:border-emerald-300 hover:text-emerald-700"
-            title="แชร์สรุปบิลเข้าห้องแชท LINE"
+            title={t.receipt.shareLineTooltip}
           >
             <Share2 className="h-4 w-4 shrink-0 text-line sm:mr-1" />
-            <span className="hidden sm:inline">แชร์เข้า LINE</span>
-            <span className="sm:hidden leading-none mt-0.5">แชร์ LINE</span>
+            <span className="hidden sm:inline">{t.receipt.shareToLine}</span>
+            <span className="sm:hidden leading-none mt-0.5">{t.receipt.shareToLine}</span>
           </Button>
 
           {/* ปุ่มหลักพิมพ์ใบเสร็จ */}
@@ -590,11 +590,11 @@ export function ReceiptClient({
             variant="primary"
             onClick={() => window.print()}
             className="flex-1 flex-col sm:flex-row items-center justify-center min-h-[46px] sm:min-h-[42px] px-1 sm:px-3 py-1 text-[10px] sm:text-xs font-medium shadow-sm transition-all"
-            title="พิมพ์ใบเสร็จหรือบันทึกเป็น PDF"
+            title={t.receipt.printTooltip}
           >
             <Printer className="h-4 w-4 shrink-0 sm:mr-1" />
-            <span className="hidden sm:inline">พิมพ์บิล</span>
-            <span className="sm:hidden leading-none mt-0.5">พิมพ์</span>
+            <span className="hidden sm:inline">{t.receipt.print}</span>
+            <span className="sm:hidden leading-none mt-0.5">{t.receipt.print}</span>
           </Button>
         </div>
       </div>

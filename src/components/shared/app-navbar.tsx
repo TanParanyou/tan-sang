@@ -6,6 +6,7 @@ import { ArrowLeft, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { ThemeToggle } from './theme-toggle';
 import { LocaleToggle } from './locale-toggle';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 export interface AppNavbarProps {
   /** Page or context title */
@@ -47,7 +48,9 @@ export function AppNavbar({
   maxWidthClassName = 'max-w-4xl',
   className,
 }: AppNavbarProps) {
+  const { t } = useI18n();
   const hasBack = Boolean(backHref || onBack);
+  const resolvedBackLabel = backLabel ?? t.common.back;
 
   return (
     <header
@@ -68,8 +71,8 @@ export function AppNavbar({
             backHref ? (
               <Link
                 href={backHref}
-                aria-label={backLabel ?? 'ย้อนกลับ'}
-                title={backLabel ?? 'ย้อนกลับ'}
+                aria-label={resolvedBackLabel}
+                title={resolvedBackLabel}
                 className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -78,8 +81,8 @@ export function AppNavbar({
               <button
                 type="button"
                 onClick={onBack}
-                aria-label={backLabel ?? 'ย้อนกลับ'}
-                title={backLabel ?? 'ย้อนกลับ'}
+                aria-label={resolvedBackLabel}
+                title={resolvedBackLabel}
                 className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-theme border border-hairline bg-surface text-ink-secondary transition hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili shadow-2xs"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -88,20 +91,25 @@ export function AppNavbar({
           ) : (
             <Link
               href="/"
-              className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili rounded-theme"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                  window.dispatchEvent(new CustomEvent('tan_sang_replay_splash'));
+                }
+              }}
+              className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chili rounded-theme group"
             >
               <img
                 src="/logo.png"
-                alt="ตาลสั่ง"
-                className="h-8 w-8 shrink-0 object-contain"
+                alt={t.common.brandName}
+                className="h-8 w-8 shrink-0 object-contain transition-transform group-hover:scale-105 active:scale-95"
               />
               {!title && (
                 <div className="flex flex-col">
                   <span className="font-bold tracking-tight text-ink text-sm sm:text-base leading-none">
-                    ตาลสั่ง <span className="text-xs font-mono font-medium text-ink-muted">(Tan-Sang)</span>
+                    {t.common.brandName} <span className="text-xs font-mono font-medium text-ink-muted">(Tan-Sang)</span>
                   </span>
                   <span className="text-[10px] text-ink-secondary leading-tight hidden sm:inline">
-                    LINE Group Food Ordering
+                    {t.common.brandSubtitle}
                   </span>
                 </div>
               )}

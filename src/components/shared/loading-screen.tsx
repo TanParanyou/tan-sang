@@ -3,6 +3,7 @@
 import React from 'react';
 import { Loader2, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useI18n } from '@/lib/i18n/i18n-context';
 
 interface LoadingScreenProps {
   message?: string;
@@ -11,10 +12,13 @@ interface LoadingScreenProps {
 }
 
 export function LoadingScreen({
-  message = 'กำลังโหลดข้อมูล...',
+  message,
   className,
   fullScreen = false,
 }: LoadingScreenProps) {
+  const { t } = useI18n();
+  const displayMessage = message ?? t.common.loadingData;
+
   return (
     <div
       className={cn(
@@ -29,7 +33,7 @@ export function LoadingScreen({
         <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-subtle border border-hairline shadow-xs animate-mascot-float">
           <img
             src="/brand-mascot.png"
-            alt="ตาลสั่ง"
+            alt={t.common.brandName}
             className="h-10 w-10 object-contain animate-mascot-breathe drop-shadow-xs"
           />
           <div className="absolute -inset-1.5 rounded-full border border-chili/25 animate-soft-pulse pointer-events-none" />
@@ -37,8 +41,8 @@ export function LoadingScreen({
         <div className="mt-2.5 h-1.5 w-10 rounded-full bg-ink/10 blur-[1px] animate-soft-pulse" />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-ink">{message}</p>
-        <p className="text-xs text-ink-muted">กรุณารอสักครู่ ระบบกำลังดึงข้อมูลล่าสุด</p>
+        <p className="text-sm font-semibold text-ink">{displayMessage}</p>
+        <p className="text-xs text-ink-muted">{t.common.loadingHint}</p>
       </div>
     </div>
   );
