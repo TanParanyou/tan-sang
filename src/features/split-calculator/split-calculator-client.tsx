@@ -430,24 +430,24 @@ export function SplitCalculatorClient() {
 
           {/* Section 3: Member List */}
           <section aria-labelledby="members-heading" className="p-3 sm:p-5 space-y-3 w-full box-border">
-            <div className="flex items-center justify-between gap-2">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
                 <h2 id="members-heading" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                   {t.split.memberListSection}
                 </h2>
-                <p className="text-sm font-semibold text-ink">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-chili/10 text-chili">
                   {items.length} {t.split.peopleCount}
-                </p>
+                </span>
               </div>
 
               {/* Action Toolbar */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                 {/* Toggle All Details (ดูข้อมูลทุกคน) */}
                 <button
                   type="button"
                   onClick={() => setShowAllDetails((prev) => !prev)}
                   className={cn(
-                    'inline-flex h-[34px] items-center gap-1 rounded-theme px-2.5 text-xs font-medium border transition-colors shrink-0 box-border',
+                    'inline-flex h-[32px] items-center gap-1 rounded-theme px-2 text-xs font-medium border transition-colors shrink-0 box-border',
                     showAllDetails
                       ? 'bg-ink text-surface border-ink'
                       : 'bg-subtle hover:bg-hairline text-ink-secondary border-hairline',
@@ -469,7 +469,7 @@ export function SplitCalculatorClient() {
                         e.target.value = '';
                       }
                     }}
-                    className="appearance-none h-[34px] pl-2.5 pr-7 text-xs font-semibold text-ink bg-subtle hover:bg-hairline border border-hairline rounded-theme focus:outline-none cursor-pointer leading-[32px] box-border"
+                    className="appearance-none h-[32px] pl-2 pr-6 text-xs font-semibold text-ink bg-subtle hover:bg-hairline border border-hairline rounded-theme focus:outline-none cursor-pointer leading-[30px] box-border"
                     defaultValue=""
                   >
                     <option value="" disabled>
@@ -478,13 +478,13 @@ export function SplitCalculatorClient() {
                     <option value="PRICE_DESC">{t.split.sortHighest}</option>
                     <option value="PRICE_ASC">{t.split.sortLowest}</option>
                   </select>
-                  <ArrowUpDown className="absolute right-2 h-3.5 w-3.5 text-ink-muted pointer-events-none" />
+                  <ArrowUpDown className="absolute right-1.5 h-3.5 w-3.5 text-ink-muted pointer-events-none" />
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsQuickPasteOpen(true)}
-                  className="inline-flex h-[34px] items-center gap-1 rounded-theme px-2.5 text-xs font-semibold text-chili border border-chili/30 bg-chili/5 hover:bg-chili/10 transition-colors shrink-0 box-border"
+                  className="inline-flex h-[32px] items-center gap-1 rounded-theme px-2 text-xs font-semibold text-chili border border-chili/30 bg-chili/5 hover:bg-chili/10 transition-colors shrink-0 box-border"
                 >
                   <Clipboard className="h-3.5 w-3.5" />
                   <span>{t.split.quickPasteBtn}</span>
@@ -492,12 +492,11 @@ export function SplitCalculatorClient() {
               </div>
             </div>
 
-            {/* Table Header: Tabular alignment with MemberItemRow */}
-            <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full select-none">
+            {/* Table Header: Only 2 main input columns on Line 1 so name has maximum breathing space */}
+            <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-1 pt-1 border-b border-hairline pb-1.5 gap-1.5 sm:gap-2 w-full select-none">
               <span className="w-6 sm:w-7 text-center shrink-0">#</span>
               <span className="flex-1 min-w-0 pl-1">{t.split.memberPlaceholder}</span>
-              <span className="w-[76px] sm:w-[90px] text-right pr-2 shrink-0">{t.split.rawPriceLabel}</span>
-              <span className="w-[64px] sm:w-[76px] text-center shrink-0 text-chili">{t.split.netToPay}</span>
+              <span className="w-[84px] sm:w-[96px] text-right pr-4 shrink-0">{t.split.pricePlaceholder}</span>
               <span className="w-6 sm:w-7 shrink-0" aria-hidden="true" />
             </div>
 

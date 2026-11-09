@@ -121,16 +121,16 @@ export function MemberItemRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={cn(
-        'py-2 px-1 transition-all rounded-theme select-none w-full max-w-full overflow-hidden box-border',
+        'py-2.5 px-1 transition-all rounded-theme select-none w-full max-w-full overflow-hidden box-border',
         isBeingDragged && 'opacity-30 bg-subtle border-dashed border-ink/40 scale-[0.98]',
         isDragTarget && 'border-t-2 border-t-chili bg-chili/5',
-        !isBeingDragged && !isDragTarget && 'hover:bg-subtle/40',
+        !isBeingDragged && !isDragTarget && 'hover:bg-subtle/30',
         isPaid && 'bg-emerald-500/5',
       )}
     >
-      {/* Single Clean Flat Row */}
-      <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
-        {/* Drag Handle with Index (Touch & Mouse) */}
+      {/* Line 1: Main Inputs with Wide, Uncramped Breathing Room */}
+      <div className="flex items-center gap-1.5 sm:gap-2 w-full min-w-0">
+        {/* Drag Handle with Index */}
         <button
           type="button"
           onTouchStart={onTouchStart}
@@ -144,7 +144,7 @@ export function MemberItemRow({
           <span className="font-mono text-xs font-bold text-ink-secondary">{personNum}</span>
         </button>
 
-        {/* Member Name */}
+        {/* Member Name (Flex-1: Takes ALL available space so it never squashes) */}
         <input
           id={`name-input-${member.id}`}
           type="text"
@@ -154,11 +154,11 @@ export function MemberItemRow({
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.currentTarget.select()}
           placeholder={personNameLabel}
-          className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/70 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+          className="min-w-0 flex-1 min-h-[42px] px-3 bg-canvas/70 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
         />
 
-        {/* Original Price / Inline Math Input */}
-        <div className="relative w-[76px] sm:w-[90px] shrink-0">
+        {/* Original Price / Math Input */}
+        <div className="relative w-[84px] sm:w-[96px] shrink-0">
           <input
             id={`price-input-${member.id}`}
             type="text"
@@ -187,43 +187,12 @@ export function MemberItemRow({
             }}
             placeholder="0"
             title={t.split.inlineMathHint}
-            className="w-full min-w-0 min-h-[40px] pl-1.5 pr-4 bg-canvas/70 text-ink font-mono tabular-nums text-xs sm:text-sm font-semibold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+            className="w-full min-w-0 min-h-[42px] pl-2 pr-5 bg-canvas/70 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
           />
-          <span className="absolute right-1 top-2.5 text-xs text-ink-muted pointer-events-none">
+          <span className="absolute right-1.5 top-3 text-xs text-ink-muted pointer-events-none">
             {t.common.baht}
           </span>
         </div>
-
-        {/* Net Payable Badge (Interactive: Click to expand details) */}
-        {member.totalBeforeDiscount > 0 ? (
-          <button
-            type="button"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            className={cn(
-              'min-h-[40px] px-2 sm:px-2.5 rounded-theme border flex items-center justify-center gap-1 shrink-0 font-mono tabular-nums transition-all select-none',
-              isPaid
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                : showDetails
-                ? 'bg-ink text-surface border-ink shadow-2xs'
-                : 'bg-chili/10 text-chili border-chili/30 hover:bg-chili/20',
-            )}
-            title={showDetails ? t.split.collapseDetails : t.split.expandDetails}
-          >
-            <span className={cn('text-xs sm:text-sm font-bold', isPaid && 'line-through opacity-75')}>
-              {member.finalPrice}
-            </span>
-            <span className="text-[10px] opacity-75">{t.common.baht}</span>
-            {showDetails ? (
-              <ChevronUp className="h-3 w-3 opacity-70 shrink-0" />
-            ) : (
-              <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
-            )}
-          </button>
-        ) : (
-          <div className="w-[64px] sm:w-[72px] shrink-0 text-center text-xs font-mono text-ink-muted py-2 select-none">
-            -
-          </div>
-        )}
 
         {/* Delete Row Button */}
         <button
@@ -238,10 +207,65 @@ export function MemberItemRow({
         </button>
       </div>
 
-      {/* Expanded Details Drawer (กดดูข้อมูลได้) */}
+      {/* Line 2: Prominent Net Payable Bar (Under name, spacious, tap to view details) */}
+      {member.totalBeforeDiscount > 0 && (
+        <div className="mt-1.5 ml-7 sm:ml-9 flex items-center justify-between gap-2 pr-1">
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className={cn(
+              'inline-flex items-center gap-1.5 py-1 px-2.5 rounded-theme border font-mono tabular-nums text-xs transition-all select-none',
+              isPaid
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                : showDetails
+                ? 'bg-ink text-surface border-ink shadow-2xs font-bold'
+                : 'bg-chili/10 text-chili border-chili/30 hover:bg-chili/20 font-bold',
+            )}
+            title={showDetails ? t.split.collapseDetails : t.split.expandDetails}
+          >
+            <span className="font-sans font-semibold text-[11px] opacity-80">{t.split.netToPay}:</span>
+            <span className={cn('font-bold text-xs sm:text-sm', isPaid && 'line-through opacity-75')}>
+              {member.finalPrice} {t.common.baht}
+            </span>
+            {showDetails ? (
+              <ChevronUp className="h-3.5 w-3.5 opacity-70 ml-0.5 shrink-0" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5 shrink-0" />
+            )}
+          </button>
+
+          {/* Quick Payment Status Toggle Checkbox */}
+          {onTogglePaid && (
+            <button
+              type="button"
+              onClick={onTogglePaid}
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all shrink-0',
+                isPaid
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                  : 'bg-canvas text-ink-muted border-hairline hover:text-ink hover:bg-subtle',
+              )}
+            >
+              {isPaid ? (
+                <>
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>{t.split.paid}</span>
+                </>
+              ) : (
+                <>
+                  <Circle className="h-3 w-3 opacity-40" />
+                  <span>{t.split.unpaid}</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Expanded Details Drawer (เมื่อกดดูข้อมูล หรือกดดูทุกคน) */}
       {showDetails && member.totalBeforeDiscount > 0 && (
-        <div className="mt-2 ml-7 sm:ml-8 mr-1 p-2.5 rounded-lg bg-subtle/80 border border-hairline space-y-2 text-xs transition-all">
-          {/* Breakdown Info */}
+        <div className="mt-2 ml-7 sm:ml-9 mr-1 p-2.5 rounded-lg bg-subtle/80 border border-hairline space-y-2 text-xs transition-all">
+          {/* Breakdown Math */}
           <div className="flex flex-wrap items-center justify-between gap-1.5 text-ink-secondary font-mono text-[11px] pb-1.5 border-b border-hairline/60">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span>
@@ -270,47 +294,20 @@ export function MemberItemRow({
             </div>
           </div>
 
-          {/* Action Row: Payment Status Toggle + Copy Reminder */}
-          <div className="flex items-center justify-between gap-2 pt-0.5">
-            {/* Paid Status Toggle */}
-            {onTogglePaid && (
-              <button
-                type="button"
-                onClick={onTogglePaid}
-                className={cn(
-                  'inline-flex min-h-[32px] items-center gap-1.5 px-2.5 py-1 rounded-theme text-xs font-bold transition-all border shrink-0',
-                  isPaid
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-surface text-ink-secondary border-hairline hover:text-ink hover:bg-canvas',
-                )}
-              >
-                {isPaid ? (
-                  <>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>{t.split.paid}</span>
-                  </>
-                ) : (
-                  <>
-                    <Circle className="h-3.5 w-3.5 opacity-40" />
-                    <span>{t.split.unpaid}</span>
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Quick Copy Reminder */}
-            {onCopyReminder && (
+          {/* Quick Copy Reminder */}
+          {onCopyReminder && (
+            <div className="flex justify-end pt-0.5">
               <button
                 type="button"
                 onClick={onCopyReminder}
-                className="inline-flex min-h-[32px] items-center gap-1.5 px-2.5 py-1 rounded-theme text-xs font-semibold text-ink-secondary bg-surface border border-hairline hover:text-ink hover:bg-canvas transition-colors ml-auto"
+                className="inline-flex min-h-[30px] items-center gap-1.5 px-2.5 py-1 rounded-theme text-xs font-semibold text-ink-secondary bg-surface border border-hairline hover:text-ink hover:bg-canvas transition-colors"
                 title={t.split.copyIndividualDebt}
               >
                 <Copy className="h-3.5 w-3.5 text-ink-muted" />
                 <span>{t.split.copyIndividualDebt}</span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

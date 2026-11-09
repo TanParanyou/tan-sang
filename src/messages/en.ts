@@ -386,7 +386,7 @@ export const en: TranslationKeys = {
     methodEqualShort: 'Split Equally',
     deliveryFeeLabel: 'Delivery Fee (฿)',
     discountLabel: 'Total Discount (฿)',
-    memberListSection: '2. People & Individual Prices',
+    memberListSection: '2. Members',
     shareLink: 'Share Link',
     copiedShareLink: 'Link copied!',
     copiedResult: 'Result copied!',

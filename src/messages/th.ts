@@ -384,7 +384,7 @@ export const th = {
     methodEqualShort: 'หารเท่ากัน',
     deliveryFeeLabel: 'ค่าส่ง (บาท)',
     discountLabel: 'ส่วนลดรวม (บาท)',
-    memberListSection: '2. รายชื่อและยอดแต่ละคน',
+    memberListSection: '2. รายชื่อเพื่อน',
     shareLink: 'แชร์ลิงก์',
     copiedShareLink: 'คัดลอกลิงก์แล้ว!',
     copiedResult: 'คัดลอกผลลัพธ์แล้ว!',
