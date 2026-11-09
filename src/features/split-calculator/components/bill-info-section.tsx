@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
-import { BadgePercent, Info, Sparkles, TrendingDown, TrendingUp, Truck } from 'lucide-react';
+import React, { useState } from 'react';
+import { BadgePercent, Calculator, Info, Sparkles, TrendingDown, TrendingUp, Truck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import type { SplitMethod } from '../split-calculator.schema';
+import { DiscountCalculatorModal } from './discount-calculator-modal';
 
 interface BillInfoSectionProps {
   deliveryFeeInput: string;
@@ -27,6 +28,7 @@ export function BillInfoSection({
   netDiscount,
 }: BillInfoSectionProps) {
   const { t } = useI18n();
+  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
 
   return (
     <div className="p-4 sm:p-5 space-y-4">
@@ -90,10 +92,21 @@ export function BillInfoSection({
           />
         </div>
         <div className="min-w-0 w-full">
-          <label htmlFor="discount-input" className="block text-xs font-medium text-ink-secondary mb-1">
-            <BadgePercent className="inline h-3.5 w-3.5 mr-1 text-chili" />
-            {t.split.discountLabel}
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label htmlFor="discount-input" className="block text-xs font-medium text-ink-secondary">
+              <BadgePercent className="inline h-3.5 w-3.5 mr-1 text-chili" />
+              {t.split.discountLabel}
+            </label>
+            <button
+              type="button"
+              onClick={() => setIsCalcModalOpen(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-chili hover:text-ink transition-colors px-1.5 py-0.5 rounded-theme hover:bg-chili/10"
+              title={t.split.discountCalcTitle}
+            >
+              <Calculator className="h-3 w-3" />
+              <span>{t.split.discountCalcBtn}</span>
+            </button>
+          </div>
           <Input
             id="discount-input"
             type="number"
@@ -137,6 +150,14 @@ export function BillInfoSection({
           {Math.abs(netDiscount)} {t.common.baht}
         </span>
       </div>
+
+      {/* Discount Calculator Modal */}
+      <DiscountCalculatorModal
+        isOpen={isCalcModalOpen}
+        onClose={() => setIsCalcModalOpen(false)}
+        currentDiscount={discountInput}
+        onApply={(total) => onDiscountChange(total)}
+      />
     </div>
   );
 }
