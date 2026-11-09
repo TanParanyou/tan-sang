@@ -308,5 +308,103 @@ describe('Split Calculator Service (ตาลหาร - Tan-Harn)', () => {
       expect(decoded?.items?.[0]?.name).toBe('ข้าวผัด');
       expect(decoded?.items?.[0]?.price).toBe(65);
     });
+
+    it('encodes and decodes shared items preserving participants', () => {
+      const payload = {
+        deliveryFee: 0,
+        discount: 0,
+        splitMethod: 'PROPORTIONAL' as const,
+        promptPay: '',
+        items: [
+          { id: '1', name: 'กัส', price: 60 },
+          { id: '2', name: 'ตาล', price: 70 },
+        ],
+        sharedItems: [
+          { id: 's1', name: 'ไก่ทอด', price: 80, memberIds: ['1', '2'] },
+        ],
+      };
+
+      const encoded = encodeSplitBillToUrl(payload);
+      const decoded = decodeSplitBillFromUrl(encoded);
+
+      expect(decoded).not.toBeNull();
+      expect(decoded?.sharedItems?.length).toBe(1);
+      expect(decoded?.sharedItems?.[0]?.name).toBe('ไก่ทอด');
+      expect(decoded?.sharedItems?.[0]?.price).toBe(80);
+      expect(decoded?.sharedItems?.[0]?.memberIds).toEqual(['1', '2']);
+    });
+  });
+
+  describe('Shared Dishes & Payment Tracking Features', () => {
+    it('correctly splits shared dishes among all or specific members', () => {
+      const input = {
+        deliveryFee: 0,
+        discount: 0,
+        items: [
+          { id: '1', name: 'กัส', price: 60 },
+          { id: '2', name: 'ตาล', price: 60 },
+          { id: '3', name: 'เอฟ', price: 60 },
+        ],
+        sharedItems: [
+          // 120 shared by all 3 -> 40 each
+          { id: 's1', name: 'ไก่ทอด', price: 120, memberIds: [] },
+          // 20 shared by only member 1 & 2 -> 10 each
+          { id: 's2', name: 'น้ำแข็ง', price: 20, memberIds: ['1', '2'] },
+        ],
+        splitMethod: 'PROPORTIONAL' as const,
+        roundToInteger: true,
+      };
+
+      const result = calculateSplitBill(input);
+
+      expect(result.personalSubtotal).toBe(180);
+      expect(result.sharedSubtotal).toBe(140);
+      expect(result.subtotal).toBe(320);
+      expect(result.grandTotal).toBe(320);
+
+      // Member 1 (กัส): 60 personal + 40 (ไก่) + 10 (น้ำ) = 110
+      const gus = result.members.find((m) => m.id === '1');
+      expect(gus?.originalPrice).toBe(60);
+      expect(gus?.sharedPrice).toBe(50);
+      expect(gus?.totalBeforeDiscount).toBe(110);
+      expect(gus?.finalPrice).toBe(110);
+
+      // Member 2 (ตาล): 60 personal + 40 (ไก่) + 10 (น้ำ) = 110
+      const tan = result.members.find((m) => m.id === '2');
+      expect(tan?.finalPrice).toBe(110);
+
+      // Member 3 (เอฟ): 60 personal + 40 (ไก่) = 100
+      const off = result.members.find((m) => m.id === '3');
+      expect(off?.sharedPrice).toBe(40);
+      expect(off?.finalPrice).toBe(100);
+
+      expect(result.totalCollected).toBe(320);
+    });
+
+    it('formats copy text with shared dishes and paid status', () => {
+      const input = {
+        deliveryFee: 15,
+        discount: 30,
+        items: [
+          { id: '1', name: 'กัส', price: 50 },
+          { id: '2', name: 'ตาล', price: 50 },
+        ],
+        sharedItems: [
+          { id: 's1', name: 'พิซซ่า', price: 100, memberIds: [] },
+        ],
+      };
+
+      const result = calculateSplitBill(input);
+      const copyText = formatSplitBillCopyText(result, {
+        promptPayAccount: '0812345678',
+        paidMemberIds: ['1'],
+      });
+
+      expect(copyText).toContain('รายการส่วนกลาง (Shared)');
+      expect(copyText).toContain('พิซซ่า');
+      expect(copyText).toContain('[✓ โอนแล้ว]');
+      expect(copyText).toContain('สถานะการชำระ: โอนแล้ว 1/2 คน');
+      expect(copyText).toContain('0812345678');
+    });
   });
 });

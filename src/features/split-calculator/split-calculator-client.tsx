@@ -25,10 +25,15 @@ import { BillLedgerSection } from './components/bill-ledger-section';
 import { MemberItemRow } from './components/member-item-row';
 import { PromptPaySection } from './components/promptpay-section';
 import { QuickPasteModal } from './components/quick-paste-modal';
-import type { SplitItem, SplitMethod } from './split-calculator.schema';
+import {
+  SharedDishesSection,
+  type SharedDishDraft,
+} from './components/shared-dishes-section';
+import type { SplitItem, SplitMethod, SplitMemberResult } from './split-calculator.schema';
 import {
   calculateSplitBill,
   formatSplitBillCopyText,
+  formatIndividualPaymentText,
   reorderArray,
   sortSplitItems,
   encodeSplitBillToUrl,
@@ -46,6 +51,15 @@ const SAMPLE_DEMO_ITEMS: SplitItem[] = [
   { id: '8', name: 'มีน', price: 79.5 },
 ];
 
+const SAMPLE_DEMO_SHARED: SharedDishDraft[] = [
+  {
+    id: 'demo-shared-1',
+    name: 'ไก่ทอดเกาหลี (จานกลาง)',
+    price: 120,
+    memberIds: [],
+  },
+];
+
 const INITIAL_BLANK_ITEMS: Array<{ id: string; name: string; price: number | '' }> = [
   { id: '1', name: '', price: '' },
   { id: '2', name: '', price: '' },
@@ -57,7 +71,11 @@ export function SplitCalculatorClient() {
   const [discountInput, setDiscountInput] = useState<string>('');
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('PROPORTIONAL');
   const [promptPayAccount, setPromptPayAccount] = useState<string>('');
-  const [items, setItems] = useState<Array<{ id: string; name: string; price: number | '' }>>(INITIAL_BLANK_ITEMS);
+  const [items, setItems] = useState<Array<{ id: string; name: string; price: number | '' }>>(
+    INITIAL_BLANK_ITEMS,
+  );
+  const [sharedItems, setSharedItems] = useState<SharedDishDraft[]>([]);
+  const [paidMemberIds, setPaidMemberIds] = useState<string[]>([]);
 
   const [isQuickPasteOpen, setIsQuickPasteOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -94,6 +112,9 @@ export function SplitCalculatorClient() {
           setDiscountInput(decoded.discount > 0 ? decoded.discount.toString() : '');
           if (decoded.splitMethod) setSplitMethod(decoded.splitMethod);
           if (decoded.promptPay) setPromptPayAccount(decoded.promptPay);
+          if (decoded.sharedItems && decoded.sharedItems.length > 0) {
+            setSharedItems(decoded.sharedItems);
+          }
         }
       }
     } catch {
@@ -111,14 +132,24 @@ export function SplitCalculatorClient() {
       price: typeof it.price === 'number' ? it.price : 0,
     }));
 
+    const sanitizedSharedItems = sharedItems
+      .filter((si) => typeof si.price === 'number' && si.price > 0)
+      .map((si) => ({
+        id: si.id,
+        name: si.name.trim() || 'ของกินส่วนกลาง',
+        price: typeof si.price === 'number' ? si.price : 0,
+        memberIds: si.memberIds,
+      }));
+
     return calculateSplitBill({
       deliveryFee,
       discount,
       items: sanitizedItems,
+      sharedItems: sanitizedSharedItems,
       splitMethod,
       roundToInteger: true,
     });
-  }, [deliveryFeeInput, discountInput, items, splitMethod, t.split.memberPlaceholder]);
+  }, [deliveryFeeInput, discountInput, items, sharedItems, splitMethod, t.split.memberPlaceholder]);
 
   const parsedPromptPay = useMemo(() => {
     return parsePromptPayTarget(promptPayAccount);
@@ -141,6 +172,7 @@ export function SplitCalculatorClient() {
       return;
     }
     setItems((prev) => prev.filter((it) => it.id !== id));
+    setPaidMemberIds((prev) => prev.filter((mid) => mid !== id));
   };
 
   const handleItemChange = (id: string, field: 'name' | 'price', value: string) => {
@@ -153,6 +185,54 @@ export function SplitCalculatorClient() {
         const numeric = value === '' ? '' : Math.max(0, parseFloat(value) || 0);
         return { ...it, price: numeric };
       }),
+    );
+  };
+
+  // Shared Dishes Handlers
+  const handleAddSharedDish = () => {
+    const newId = `shared-${Date.now()}`;
+    setSharedItems((prev) => [
+      ...prev,
+      { id: newId, name: '', price: '', memberIds: [] },
+    ]);
+  };
+
+  const handleRemoveSharedDish = (id: string) => {
+    setSharedItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const handleUpdateSharedDish = (
+    id: string,
+    field: 'name' | 'price' | 'memberIds',
+    value: string | number | '' | string[],
+  ) => {
+    setSharedItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+    );
+  };
+
+  // Payment Tracking Handlers
+  const handleTogglePaid = (memberId: string) => {
+    setPaidMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId],
+    );
+  };
+
+  const handleMarkAllPaid = () => {
+    setPaidMemberIds(calculationResult.members.map((m) => m.id));
+    notify(t.split.paid);
+  };
+
+  const handleResetPaid = () => {
+    setPaidMemberIds([]);
+    notify(t.split.resetPaid);
+  };
+
+  const handleCopyIndividualReminder = async (member: SplitMemberResult) => {
+    const text = formatIndividualPaymentText(member, promptPayAccount);
+    await copyToClipboard(
+      text,
+      t.split.copiedIndividualDebt.replace('{name}', member.name),
     );
   };
 
@@ -172,6 +252,8 @@ export function SplitCalculatorClient() {
       { id: '1', name: '', price: '' },
       { id: '2', name: '', price: '' },
     ]);
+    setSharedItems([]);
+    setPaidMemberIds([]);
     notify(t.common.reset);
   };
 
@@ -180,6 +262,8 @@ export function SplitCalculatorClient() {
     setDiscountInput('83');
     setSplitMethod('PROPORTIONAL');
     setItems(SAMPLE_DEMO_ITEMS);
+    setSharedItems(SAMPLE_DEMO_SHARED);
+    setPaidMemberIds(['1', '2']);
     setPromptPayAccount('0812345678');
     notify(t.split.demoSampleBtn);
   };
@@ -197,6 +281,7 @@ export function SplitCalculatorClient() {
   const handleCopyText = async () => {
     const text = formatSplitBillCopyText(calculationResult, {
       promptPayAccount: promptPayAccount.trim() || undefined,
+      paidMemberIds,
     });
     await copyToClipboard(text, t.split.copiedResult);
   };
@@ -226,6 +311,7 @@ export function SplitCalculatorClient() {
         splitMethod,
         promptPay: promptPayAccount.trim(),
         items: itemsToShare,
+        sharedItems,
       });
 
       const baseUrl = getBaseShareUrl();
@@ -279,6 +365,13 @@ export function SplitCalculatorClient() {
     }));
   }, [calculationResult.members]);
 
+  const memberSummaryForShared = useMemo(() => {
+    return items.map((it, idx) => ({
+      id: it.id,
+      name: it.name.trim() || `${t.split.memberPlaceholder} ${idx + 1}`,
+    }));
+  }, [items, t.split.memberPlaceholder]);
+
   return (
     <div className="min-h-screen bg-canvas pb-28">
       <DevPersonaBar />
@@ -323,7 +416,16 @@ export function SplitCalculatorClient() {
             netDiscount={calculationResult.netDiscount}
           />
 
-          {/* Section 2: Member List */}
+          {/* Section 2: Shared Dishes (ของกินส่วนกลาง) */}
+          <SharedDishesSection
+            sharedItems={sharedItems}
+            allMembers={memberSummaryForShared}
+            onAddSharedDish={handleAddSharedDish}
+            onRemoveSharedDish={handleRemoveSharedDish}
+            onUpdateSharedDish={handleUpdateSharedDish}
+          />
+
+          {/* Section 3: Member List */}
           <section aria-labelledby="members-heading" className="p-3 sm:p-5 space-y-3 w-full box-border">
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -373,7 +475,7 @@ export function SplitCalculatorClient() {
             <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-0.5 sm:px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full">
               <span className="w-7 text-center shrink-0">#</span>
               <span className="flex-1 min-w-0 pl-1">{t.split.memberPlaceholder}</span>
-              <span className="w-[80px] sm:w-[92px] text-right pr-4 shrink-0">{t.split.pricePlaceholder}</span>
+              <span className="w-[84px] sm:w-[96px] text-right pr-4 shrink-0">{t.split.pricePlaceholder}</span>
               <span className="w-7 shrink-0" aria-hidden="true" />
             </div>
 
@@ -391,6 +493,9 @@ export function SplitCalculatorClient() {
                     member={member}
                     rawPrice={priceVal}
                     rawName={rawItem?.name || ''}
+                    isPaid={paidMemberIds.includes(member.id)}
+                    onTogglePaid={() => handleTogglePaid(member.id)}
+                    onCopyReminder={() => handleCopyIndividualReminder(member)}
                     isBeingDragged={draggedIndex === index}
                     isDragTarget={dragOverIndex === index && draggedIndex !== index}
                     onNameChange={(val) => handleItemChange(member.id, 'name', val)}
@@ -422,10 +527,15 @@ export function SplitCalculatorClient() {
             </div>
           </section>
 
-          {/* Section 3: Ledger Summary */}
-          <BillLedgerSection result={calculationResult} />
+          {/* Section 4: Ledger Summary & Payment Tracking */}
+          <BillLedgerSection
+            result={calculationResult}
+            paidMemberIds={paidMemberIds}
+            onMarkAllPaid={handleMarkAllPaid}
+            onResetPaid={handleResetPaid}
+          />
 
-          {/* Section 4: PromptPay QR */}
+          {/* Section 5: PromptPay QR */}
           <PromptPaySection
             promptPayAccount={promptPayAccount}
             onPromptPayAccountChange={setPromptPayAccount}
@@ -449,9 +559,9 @@ export function SplitCalculatorClient() {
                 <span>{t.common.copied}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-2 text-white font-bold">
-                <Copy className="h-4 w-4 text-white" />
-                <span>{t.split.copyResult}</span>
+              <span className="inline-flex items-center gap-2 font-bold">
+                <Copy className="h-4 w-4" />
+                <span>{t.common.copy}</span>
               </span>
             )}
           </Button>
@@ -461,16 +571,16 @@ export function SplitCalculatorClient() {
             variant="secondary"
             size="lg"
             onClick={handleShareLink}
-            className="min-h-[50px] px-5 text-sm font-semibold text-ink hover:bg-subtle shrink-0"
+            className="flex-1 min-h-[50px] font-bold text-sm bg-surface border-hairline hover:bg-subtle shadow-xs"
           >
             {isLinkCopied ? (
-              <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold">
+              <span className="inline-flex items-center gap-2 text-emerald-600 font-bold">
                 <Check className="h-4 w-4 text-emerald-600" />
                 <span>{t.split.copiedShareLink}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-ink">
-                <Share2 className="h-4 w-4 text-ink-muted" />
+              <span className="inline-flex items-center gap-2 font-bold text-ink">
+                <Share2 className="h-4 w-4 text-chili" />
                 <span>{t.split.shareLink}</span>
               </span>
             )}
@@ -478,22 +588,24 @@ export function SplitCalculatorClient() {
         </div>
       </main>
 
-      {/* Quick Paste Modal */}
+      {/* Modals */}
       <QuickPasteModal
         isOpen={isQuickPasteOpen}
         onClose={() => setIsQuickPasteOpen(false)}
         onImport={handleImportQuickPaste}
       />
 
-      {/* PromptPay QR Code Modal */}
-      <PromptPayQrModal
-        isOpen={isQrModalOpen}
-        onClose={() => setIsQrModalOpen(false)}
-        promptPayId={promptPayAccount}
-        totalAmount={calculationResult.grandTotal}
-        items={qrItemOptions}
-      />
+      {parsedPromptPay && (
+        <PromptPayQrModal
+          isOpen={isQrModalOpen}
+          onClose={() => setIsQrModalOpen(false)}
+          promptPayId={parsedPromptPay.sanitized}
+          totalAmount={calculationResult.grandTotal}
+          items={qrItemOptions}
+        />
+      )}
 
+      {/* Toast Feedback */}
       {toastMessage && <Toast message={toastMessage} />}
     </div>
   );

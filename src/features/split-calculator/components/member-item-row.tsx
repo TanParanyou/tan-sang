@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { GripVertical, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { GripVertical, Trash2, CheckCircle2, Circle, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useI18n } from '@/lib/i18n/i18n-context';
+import { evaluateSimpleMath, hasMathOperators } from '@/lib/utils/math-expression';
 import type { SplitMemberResult } from '../split-calculator.schema';
 
 interface MemberItemRowProps {
@@ -12,6 +13,9 @@ interface MemberItemRowProps {
   member: SplitMemberResult;
   rawPrice: number | '';
   rawName: string;
+  isPaid?: boolean;
+  onTogglePaid?: () => void;
+  onCopyReminder?: () => void;
   isBeingDragged: boolean;
   isDragTarget: boolean;
   onNameChange: (val: string) => void;
@@ -32,6 +36,9 @@ export function MemberItemRow({
   member,
   rawPrice,
   rawName,
+  isPaid = false,
+  onTogglePaid,
+  onCopyReminder,
   isBeingDragged,
   isDragTarget,
   onNameChange,
@@ -52,6 +59,45 @@ export function MemberItemRow({
   const dragAria = t.split.dragPersonAria.replace('{index}', String(personNum));
   const deleteAria = t.split.deletePersonAria.replace('{index}', String(personNum));
 
+  // Local draft state for inline math (e.g. "60+15")
+  const [inputText, setInputText] = useState<string>(
+    rawPrice === '' ? '' : String(rawPrice),
+  );
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setInputText(rawPrice === '' ? '' : String(rawPrice));
+    }
+  }, [rawPrice, isFocused]);
+
+  const handlePriceInputCommit = (valueToCommit: string) => {
+    const trimmed = valueToCommit.trim();
+    if (!trimmed) {
+      setInputText('');
+      onPriceChange('');
+      return;
+    }
+
+    if (hasMathOperators(trimmed)) {
+      const evaluated = evaluateSimpleMath(trimmed);
+      if (evaluated !== null && !isNaN(evaluated)) {
+        setInputText(String(evaluated));
+        onPriceChange(String(evaluated));
+        return;
+      }
+    }
+
+    // Default numeric fallback
+    const numeric = parseFloat(trimmed);
+    if (!isNaN(numeric)) {
+      setInputText(String(numeric));
+      onPriceChange(String(numeric));
+    } else {
+      setInputText(rawPrice === '' ? '' : String(rawPrice));
+    }
+  };
+
   return (
     <div
       data-member-row-index={index}
@@ -65,6 +111,7 @@ export function MemberItemRow({
         isBeingDragged && 'opacity-30 bg-subtle border-dashed border-ink/40 scale-[0.98]',
         isDragTarget && 'border-t-2 border-t-chili bg-chili/5',
         !isBeingDragged && !isDragTarget && 'hover:bg-subtle/50',
+        isPaid && 'bg-emerald-500/5',
       )}
     >
       <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
@@ -95,20 +142,38 @@ export function MemberItemRow({
           className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/80 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
         />
 
-        {/* Original Price */}
-        <div className="relative w-[80px] sm:w-[92px] shrink-0">
+        {/* Original Price / Inline Math Input */}
+        <div className="relative w-[84px] sm:w-[96px] shrink-0">
           <input
             id={`price-input-${member.id}`}
-            type="number"
-            min="0"
-            step="any"
+            type="text"
+            inputMode="decimal"
             aria-label={`${t.split.pricePlaceholder} ${personNum}`}
-            value={rawPrice}
-            onChange={(e) => onPriceChange(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onClick={(e) => e.currentTarget.select()}
+            value={inputText}
+            onChange={(e) => {
+              const val = e.target.value;
+              setInputText(val);
+              // If it's a plain number without operators, update price live
+              if (!hasMathOperators(val)) {
+                onPriceChange(val);
+              }
+            }}
+            onFocus={(e) => {
+              setIsFocused(true);
+              e.target.select();
+            }}
+            onBlur={() => {
+              setIsFocused(false);
+              handlePriceInputCommit(inputText);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
             placeholder="0"
-            className="w-full min-w-0 min-h-[40px] pl-2 pr-5 bg-canvas/80 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+            title={t.split.inlineMathHint}
+            className="w-full min-w-0 min-h-[40px] pl-1.5 pr-5 bg-canvas/80 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
           />
           <span className="absolute right-1.5 top-2.5 text-xs text-ink-muted pointer-events-none">
             {t.common.baht}
@@ -128,15 +193,20 @@ export function MemberItemRow({
         </button>
       </div>
 
-      {/* Member Breakdown Subline: Clean, tabular, clickable */}
-      {member.originalPrice > 0 && (
-        <div
-          onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
-          className="mt-1.5 flex items-center justify-between pl-8 sm:pl-9 pr-1 py-1.5 px-2 rounded-lg bg-subtle/50 hover:bg-subtle border border-hairline/60 cursor-pointer group transition-colors"
-          title={t.split.clickToEditPrice}
-        >
+      {/* Member Breakdown Subline: Clean, tabular, interactive */}
+      {member.totalBeforeDiscount > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1.5 pl-8 sm:pl-9 pr-1 py-1.5 px-2 rounded-lg bg-subtle/50 hover:bg-subtle border border-hairline/60 transition-colors">
           <div className="flex items-center gap-1.5 text-ink-secondary font-mono text-[11px] truncate">
             <span className="font-semibold text-ink-muted">{member.percentShare.toFixed(1)}%</span>
+
+            {/* Shared Breakdown Note */}
+            {member.sharedPrice > 0 && (
+              <span className="text-ink-muted truncate hidden sm:inline">
+                ({t.split.personalShare} {member.originalPrice} + {t.split.sharedPortion} {member.sharedPrice})
+              </span>
+            )}
+
+            {/* Discount / Surcharge Pill */}
             {member.discountAmount !== 0 && (
               <span
                 className={cn(
@@ -151,11 +221,60 @@ export function MemberItemRow({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono shrink-0 pl-2">
-            <span className="text-[11px] font-medium text-ink-secondary">{t.split.finalPayable}:</span>
-            <span className="text-xs sm:text-sm font-bold text-chili tabular-nums bg-surface px-2 py-0.5 rounded-md border border-hairline shadow-2xs group-hover:border-chili/40 transition-colors">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {/* Quick Copy Reminder Button */}
+            {onCopyReminder && member.finalPrice > 0 && (
+              <button
+                type="button"
+                onClick={onCopyReminder}
+                className="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors"
+                title={t.split.copyIndividualDebt}
+                aria-label={t.split.copyIndividualDebt}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {/* Payable Amount Badge */}
+            <span
+              onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
+              className={cn(
+                'text-xs sm:text-sm font-bold font-mono tabular-nums px-2 py-0.5 rounded-md border border-hairline shadow-2xs cursor-pointer transition-colors',
+                isPaid
+                  ? 'text-ink-muted line-through bg-canvas'
+                  : 'text-chili bg-surface hover:border-chili/40',
+              )}
+              title={t.split.clickToEditPrice}
+            >
               {member.finalPrice} {t.common.baht}
             </span>
+
+            {/* Paid Status Toggle Checkbox */}
+            {onTogglePaid && member.finalPrice > 0 && (
+              <button
+                type="button"
+                onClick={onTogglePaid}
+                className={cn(
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all border shrink-0',
+                  isPaid
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                    : 'bg-canvas text-ink-muted border-hairline hover:text-ink hover:bg-subtle',
+                )}
+                title={isPaid ? t.split.paid : t.split.unpaid}
+              >
+                {isPaid ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t.split.paid}</span>
+                  </>
+                ) : (
+                  <>
+                    <Circle className="h-3 w-3 opacity-40" />
+                    <span>{t.split.unpaid}</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}

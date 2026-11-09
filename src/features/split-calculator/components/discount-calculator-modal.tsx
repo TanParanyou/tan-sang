@@ -476,7 +476,7 @@ export function DiscountCalculatorModal({
                       className="text-xs font-mono tabular-nums text-right font-bold text-chili h-9 pr-6 bg-canvas"
                     />
                     <span className="absolute right-2 top-2 text-xs text-ink-muted pointer-events-none">
-                      ฿
+                      {t.common.baht}
                     </span>
                   </div>
                   <button

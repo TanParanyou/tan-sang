@@ -1,4 +1,6 @@
 import type {
+  SharedDishItem,
+  SharedItemResult,
   SplitBillInput,
   SplitBillResult,
   SplitItem,
@@ -18,10 +20,11 @@ function fromSatang(satang: number): number {
 }
 
 /**
- * Calculates bill split allocation based on delivery fees and discounts.
+ * Calculates bill split allocation based on delivery fees, discounts, and optional shared dishes.
  */
 export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
   const items = input.items || [];
+  const sharedItemsInput = input.sharedItems || [];
   const deliveryFee = Math.max(0, input.deliveryFee || 0);
   const discount = Math.max(0, input.discount || 0);
   const roundToInteger = input.roundToInteger ?? true;
@@ -31,21 +34,76 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
   const discountSatang = toSatang(discount);
   const netDiscountSatang = discountSatang - deliveryFeeSatang;
 
-  const subtotalSatang = items.reduce((sum, item) => sum + toSatang(Math.max(0, item.price || 0)), 0);
+  const personalSubtotalSatang = items.reduce(
+    (sum, item) => sum + toSatang(Math.max(0, item.price || 0)),
+    0,
+  );
+
+  // Map to track member shared satang portion
+  const memberSharedSatangMap = new Map<string, number>();
+  items.forEach((it) => memberSharedSatangMap.set(it.id, 0));
+
+  let sharedSubtotalSatang = 0;
+  const processedSharedItems: SharedItemResult[] = [];
+
+  for (const s of sharedItemsInput) {
+    const sPriceSatang = toSatang(Math.max(0, s.price || 0));
+    if (sPriceSatang <= 0) continue;
+
+    // Determine participants
+    let participantIds: string[] = [];
+    if (s.memberIds && s.memberIds.length > 0) {
+      participantIds = s.memberIds.filter((mid) => items.some((it) => it.id === mid));
+    }
+    // If not specified or none matched, fallback to all members
+    if (participantIds.length === 0) {
+      participantIds = items.map((it) => it.id);
+    }
+
+    if (participantIds.length === 0) continue;
+
+    sharedSubtotalSatang += sPriceSatang;
+
+    const basePerMemberSatang = Math.floor(sPriceSatang / participantIds.length);
+    const remainderSatang = sPriceSatang % participantIds.length;
+
+    participantIds.forEach((pid, pIdx) => {
+      const extra = pIdx < remainderSatang ? 1 : 0;
+      const current = memberSharedSatangMap.get(pid) || 0;
+      memberSharedSatangMap.set(pid, current + basePerMemberSatang + extra);
+    });
+
+    processedSharedItems.push({
+      id: s.id,
+      name: s.name.trim() || 'ของกินส่วนกลาง',
+      price: fromSatang(sPriceSatang),
+      memberIds: participantIds,
+      costPerPerson: fromSatang(Math.round(sPriceSatang / participantIds.length)),
+      participantCount: participantIds.length,
+    });
+  }
+
+  const subtotalSatang = personalSubtotalSatang + sharedSubtotalSatang;
   const grandTotalSatang = subtotalSatang + deliveryFeeSatang - discountSatang;
 
-  const validItems = items.filter((item) => (item.price || 0) > 0);
+  const validItems = items.filter(
+    (item) => (item.price || 0) > 0 || (memberSharedSatangMap.get(item.id) || 0) > 0,
+  );
   const activeCount = validItems.length;
 
   const members: SplitMemberResult[] = items.map((item, index) => {
     const originalPriceSatang = toSatang(Math.max(0, item.price || 0));
+    const sharedPriceSatang = memberSharedSatangMap.get(item.id) || 0;
+    const totalBeforeDiscountSatang = originalPriceSatang + sharedPriceSatang;
     const fallbackName = item.name.trim() || `คนที่ ${index + 1}`;
 
-    if (originalPriceSatang === 0 || subtotalSatang === 0) {
+    if (totalBeforeDiscountSatang === 0 || subtotalSatang === 0) {
       return {
         id: item.id,
         name: fallbackName,
         originalPrice: 0,
+        sharedPrice: 0,
+        totalBeforeDiscount: 0,
         percentShare: 0,
         discountAmount: 0,
         finalPrice: 0,
@@ -57,15 +115,15 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
     let percentShare = 0;
 
     if (splitMethod === 'PROPORTIONAL') {
-      percentShare = (originalPriceSatang / subtotalSatang) * 100;
-      exactDiscountSatang = (originalPriceSatang / subtotalSatang) * netDiscountSatang;
+      percentShare = (totalBeforeDiscountSatang / subtotalSatang) * 100;
+      exactDiscountSatang = (totalBeforeDiscountSatang / subtotalSatang) * netDiscountSatang;
     } else {
       // EQUAL split across non-zero members
       percentShare = (1 / (activeCount || 1)) * 100;
       exactDiscountSatang = activeCount > 0 ? netDiscountSatang / activeCount : 0;
     }
 
-    const exactFinalPriceSatang = originalPriceSatang - exactDiscountSatang;
+    const exactFinalPriceSatang = totalBeforeDiscountSatang - exactDiscountSatang;
     const exactFinalPrice = fromSatang(exactFinalPriceSatang);
     const exactDiscountAmount = fromSatang(exactDiscountSatang);
 
@@ -74,8 +132,8 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
 
     if (roundToInteger) {
       discountAmount = Math.round(exactDiscountAmount);
-      // Consistent with spreadsheet: final price = round(original price - rounded discount)
-      finalPrice = Math.max(0, Math.round(fromSatang(originalPriceSatang) - discountAmount));
+      // final price = round(total before discount - rounded discount)
+      finalPrice = Math.max(0, Math.round(fromSatang(totalBeforeDiscountSatang) - discountAmount));
     } else {
       discountAmount = fromSatang(Math.round(exactDiscountSatang));
       finalPrice = Math.max(0, fromSatang(Math.round(exactFinalPriceSatang)));
@@ -85,6 +143,8 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
       id: item.id,
       name: fallbackName,
       originalPrice: fromSatang(originalPriceSatang),
+      sharedPrice: fromSatang(sharedPriceSatang),
+      totalBeforeDiscount: fromSatang(totalBeforeDiscountSatang),
       percentShare: Math.round(percentShare * 100) / 100,
       discountAmount,
       finalPrice,
@@ -99,6 +159,8 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
 
   return {
     subtotal: fromSatang(subtotalSatang),
+    personalSubtotal: fromSatang(personalSubtotalSatang),
+    sharedSubtotal: fromSatang(sharedSubtotalSatang),
     deliveryFee,
     discount,
     netDiscount: fromSatang(netDiscountSatang),
@@ -106,8 +168,22 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
     totalCollected,
     roundingDifference,
     members,
+    sharedItems: processedSharedItems,
     splitMethod,
   };
+}
+
+/**
+ * Formats individual debt/reminder message for a specific member.
+ */
+export function formatIndividualPaymentText(
+  member: SplitMemberResult,
+  promptPayAccount?: string,
+): string {
+  const promptPayText = promptPayAccount?.trim()
+    ? `\nพร้อมเพย์: ${promptPayAccount.trim()}`
+    : '';
+  return `ยอดโอนค่าอาหารของ ${member.name}: ${member.finalPrice} บาท${promptPayText}`;
 }
 
 /**
@@ -115,13 +191,25 @@ export function calculateSplitBill(input: SplitBillInput): SplitBillResult {
  */
 export function formatSplitBillCopyText(
   result: SplitBillResult,
-  options?: { customHeader?: string; promptPayAccount?: string },
+  options?: {
+    customHeader?: string;
+    promptPayAccount?: string;
+    paidMemberIds?: string[];
+  },
 ): string {
   const header = options?.customHeader?.trim() || 'สรุปยอดหารค่าอาหาร (ตาลหาร)';
   const lines: string[] = [header, '------------------------'];
 
   const grandTotalFormatted = formatGrandTotal(result.grandTotal, 'บาท');
   lines.push(`ค่าอาหารรวม: ${formatPrice(result.subtotal, { unit: 'บาท' })}`);
+
+  if (result.sharedSubtotal > 0 && result.sharedItems.length > 0) {
+    lines.push(`- อาหารเดี่ยวรวม: ${formatPrice(result.personalSubtotal, { unit: 'บาท' })}`);
+    lines.push(`- รายการส่วนกลาง (Shared): ${formatPrice(result.sharedSubtotal, { unit: 'บาท' })}`);
+    result.sharedItems.forEach((si) => {
+      lines.push(`  • ${si.name}: ${si.price} บ. (${si.participantCount} คน, คนละ ${si.costPerPerson} บ.)`);
+    });
+  }
 
   if (result.deliveryFee > 0 || result.discount > 0) {
     const deliveryPart = result.deliveryFee > 0 ? `ค่าส่ง: +${result.deliveryFee} บ.` : '';
@@ -140,15 +228,26 @@ export function formatSplitBillCopyText(
   lines.push('------------------------');
   lines.push('ยอดโอนแยกรายคน:');
 
+  const paidIds = new Set(options?.paidMemberIds || []);
+
   result.members
-    .filter((m) => m.originalPrice > 0)
+    .filter((m) => m.totalBeforeDiscount > 0 || m.originalPrice > 0)
     .forEach((m, idx) => {
+      const isPaid = paidIds.has(m.id);
+      const paidTag = isPaid ? ' [✓ โอนแล้ว]' : '';
       const priceText = `${m.finalPrice} บาท`;
+
+      let detailBreakdown = '';
+      if (m.sharedPrice > 0) {
+        detailBreakdown = ` (ส่วนตัว ${m.originalPrice} + ส่วนกลาง ${m.sharedPrice})`;
+      }
+
       const discountNote =
         m.discountAmount !== 0
-          ? ` (เดิม ${m.originalPrice} ${m.discountAmount > 0 ? `ลดไป ${m.discountAmount}` : `เพิ่ม ${Math.abs(m.discountAmount)}`})`
+          ? ` (${m.discountAmount > 0 ? `ลดไป ${m.discountAmount}` : `เพิ่ม ${Math.abs(m.discountAmount)}`})`
           : '';
-      lines.push(`${idx + 1}. ${m.name}: ${priceText}${discountNote}`);
+
+      lines.push(`${idx + 1}. ${m.name}: ${priceText}${detailBreakdown}${discountNote}${paidTag}`);
     });
 
   if (result.roundingDifference !== 0) {
@@ -158,6 +257,13 @@ export function formatSplitBillCopyText(
     } else {
       lines.push(`* ยอดรวมรายคนหลังปัดเศษขาดจากบิลจริง ${Math.abs(result.roundingDifference)} บาท`);
     }
+  }
+
+  if (paidIds.size > 0) {
+    const totalCount = result.members.filter((m) => m.finalPrice > 0).length;
+    const paidCount = result.members.filter((m) => m.finalPrice > 0 && paidIds.has(m.id)).length;
+    lines.push('------------------------');
+    lines.push(`สถานะการชำระ: โอนแล้ว ${paidCount}/${totalCount} คน`);
   }
 
   if (options?.promptPayAccount?.trim()) {
@@ -219,7 +325,6 @@ export function parseQuickPasteText(rawText: string): Array<{ name: string; pric
     }
 
     // 2. Fallback: Parse natural text line: e.g. "1. กัส 79.5" or "กัส 79.5" or "กัส: 79.5 บาท"
-    // Clean leading index like "1. " or "1) " or "- "
     const cleanedLine = line.replace(/^(\d+[\.\)]\s*|-\s*)/, '').trim();
 
     // Regex to match "Name Price" or "Name: Price" or "Name - Price"
@@ -229,6 +334,18 @@ export function parseQuickPasteText(rawText: string): Array<{ name: string; pric
       const price = parseFloat(match[2]);
       if (name && !isNaN(price) && price > 0 && name !== 'รวม' && name !== 'ค่าอาหาร' && name !== 'ค่าส่ง' && name !== 'ส่วนลด') {
         parsed.push({ name, price });
+        continue;
+      }
+    }
+
+    // 3. Fallback: Check if number is at the beginning, e.g. "79.5 กัส"
+    const revMatch = cleanedLine.match(/^(\d+(\.\d+)?)\s*[:=,-]?\s*([^\d:=,-]+)/);
+    if (revMatch && revMatch[1] && revMatch[3]) {
+      const price = parseFloat(revMatch[1]);
+      const name = revMatch[3].trim();
+      if (name && !isNaN(price) && price > 0) {
+        parsed.push({ name, price });
+        continue;
       }
     }
   }
@@ -237,16 +354,17 @@ export function parseQuickPasteText(rawText: string): Array<{ name: string; pric
 }
 
 /**
- * Reorders an array by moving an item from startIndex to endIndex.
+ * Reorders an array by moving item at `fromIndex` to `toIndex`.
  */
-export function reorderArray<T>(list: T[], startIndex: number, endIndex: number): T[] {
-  if (startIndex < 0 || startIndex >= list.length || endIndex < 0 || endIndex >= list.length) {
+export function reorderArray<T>(list: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex === toIndex) return list;
+  if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) {
     return list;
   }
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
+  const result = [...list];
+  const removed = result.splice(fromIndex, 1)[0];
   if (removed !== undefined) {
-    result.splice(endIndex, 0, removed);
+    result.splice(toIndex, 0, removed);
   }
   return result;
 }
@@ -258,22 +376,25 @@ export function sortSplitItems<T extends { name: string; price: number | '' }>(
   items: T[],
   sortBy: 'PRICE_DESC' | 'PRICE_ASC' | 'NAME_ASC',
 ): T[] {
-  const list = [...items];
-  return list.sort((a, b) => {
-    const priceA = typeof a.price === 'number' ? a.price : 0;
-    const priceB = typeof b.price === 'number' ? b.price : 0;
-
-    if (sortBy === 'PRICE_DESC') {
-      return priceB - priceA;
-    }
-    if (sortBy === 'PRICE_ASC') {
-      return priceA - priceB;
-    }
-    if (sortBy === 'NAME_ASC') {
-      return a.name.localeCompare(b.name, 'th');
-    }
-    return 0;
-  });
+  const cloned = [...items];
+  switch (sortBy) {
+    case 'PRICE_DESC':
+      return cloned.sort((a, b) => {
+        const pA = typeof a.price === 'number' ? a.price : 0;
+        const pB = typeof b.price === 'number' ? b.price : 0;
+        return pB - pA;
+      });
+    case 'PRICE_ASC':
+      return cloned.sort((a, b) => {
+        const pA = typeof a.price === 'number' ? a.price : 0;
+        const pB = typeof b.price === 'number' ? b.price : 0;
+        return pA - pB;
+      });
+    case 'NAME_ASC':
+      return cloned.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    default:
+      return cloned;
+  }
 }
 
 export interface SplitBillSharePayload {
@@ -282,6 +403,7 @@ export interface SplitBillSharePayload {
   splitMethod: 'PROPORTIONAL' | 'EQUAL';
   promptPay: string;
   items: Array<{ id?: string; name: string; price: number | '' }>;
+  sharedItems?: Array<{ id?: string; name: string; price: number | ''; memberIds?: string[] }>;
 }
 
 export interface DecodedSplitBill {
@@ -290,11 +412,9 @@ export interface DecodedSplitBill {
   splitMethod: 'PROPORTIONAL' | 'EQUAL';
   promptPay: string;
   items: Array<{ id: string; name: string; price: number | '' }>;
+  sharedItems?: Array<{ id: string; name: string; price: number | ''; memberIds: string[] }>;
 }
 
-/**
- * Encodes a string (including UTF-8 Thai characters) to Base64URL without '+', '/', or '='.
- */
 function utf8ToBase64Url(str: string): string {
   const utf8Bytes = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
     String.fromCharCode(parseInt(p1, 16)),
@@ -319,13 +439,19 @@ export function encodeSplitBillToUrl(payload: SplitBillSharePayload): string {
       it.name || '',
       typeof it.price === 'number' ? it.price : Number(it.price) || 0,
     ]),
+    s: (payload.sharedItems || [])
+      .filter((si) => (typeof si.price === 'number' && si.price > 0) || si.name.trim() !== '')
+      .map((si) => [
+        si.name || '',
+        typeof si.price === 'number' ? si.price : Number(si.price) || 0,
+        si.memberIds || [],
+      ]),
   };
   return utf8ToBase64Url(JSON.stringify(compact));
 }
 
 /**
  * Decodes a URL query parameter string back into split bill data.
- * Resilient against missing base64 padding, space replacements from '+', and legacy formats.
  */
 export function decodeSplitBillFromUrl(raw: string): DecodedSplitBill | null {
   if (!raw || typeof raw !== 'string') return null;
@@ -362,7 +488,7 @@ export function decodeSplitBillFromUrl(raw: string): DecodedSplitBill | null {
 
     if (!parsedJson || typeof parsedJson !== 'object') return null;
 
-    // Check if new compact format { f, d, m, p, i: [[name, price], ...] }
+    // Check if new compact format { f, d, m, p, i: [[name, price], ...], s: [[name, price, [memberIds]], ...] }
     if (Array.isArray(parsedJson.i)) {
       return {
         deliveryFee: Number(parsedJson.f) || 0,
@@ -384,6 +510,18 @@ export function decodeSplitBillFromUrl(raw: string): DecodedSplitBill | null {
             price: price === 0 || price === '' ? '' : price,
           };
         }),
+        sharedItems: Array.isArray(parsedJson.s)
+          ? parsedJson.s.map((entry: any, idx: number) => ({
+              id: `shared-${idx + 1}`,
+              name: Array.isArray(entry) ? String(entry[0] || '') : '',
+              price: Array.isArray(entry)
+                ? typeof entry[1] === 'number'
+                  ? entry[1]
+                  : Number(entry[1]) || ''
+                : '',
+              memberIds: Array.isArray(entry) && Array.isArray(entry[2]) ? entry[2] : [],
+            }))
+          : [],
       };
     }
 
@@ -399,6 +537,7 @@ export function decodeSplitBillFromUrl(raw: string): DecodedSplitBill | null {
           name: typeof it.name === 'string' ? it.name : '',
           price: typeof it.price === 'number' ? it.price : Number(it.price) || '',
         })),
+        sharedItems: [],
       };
     }
 
