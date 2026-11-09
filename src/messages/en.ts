@@ -442,6 +442,8 @@ export const en: TranslationKeys = {
     calcTabList: 'Itemized List',
     calcClear: 'Clear',
     calcFormulaHistory: 'Calculation History',
+    finalPayable: 'Final to Pay',
+    rawPriceLabel: 'Original',
   },
   promptPayModal: {
     title: 'Thai QR Payment / PromptPay',

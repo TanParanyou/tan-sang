@@ -440,6 +440,8 @@ export const th = {
     calcTabList: 'แยกรายการ',
     calcClear: 'ล้าง',
     calcFormulaHistory: 'ประวัติการคำนวณ',
+    finalPayable: 'ยอดจ่ายจริง',
+    rawPriceLabel: 'ยอดเดิม',
   },
   promptPayModal: {
     title: 'Thai QR Payment / พร้อมเพย์',

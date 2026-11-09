@@ -132,11 +132,11 @@ export function MemberItemRow({
       {member.originalPrice > 0 && (
         <div
           onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
-          className="mt-1 flex items-center justify-between pl-8 sm:pl-9 pr-8 sm:pr-9 text-xs cursor-pointer group"
+          className="mt-1.5 flex items-center justify-between pl-8 sm:pl-9 pr-1 py-1.5 px-2 rounded-lg bg-subtle/50 hover:bg-subtle border border-hairline/60 cursor-pointer group transition-colors"
           title={t.split.clickToEditPrice}
         >
           <div className="flex items-center gap-1.5 text-ink-secondary font-mono text-[11px] truncate">
-            <span>{member.percentShare.toFixed(1)}%</span>
+            <span className="font-semibold text-ink-muted">{member.percentShare.toFixed(1)}%</span>
             {member.discountAmount !== 0 && (
               <span
                 className={cn(
@@ -151,9 +151,9 @@ export function MemberItemRow({
             )}
           </div>
 
-          <div className="flex items-baseline gap-1 font-mono shrink-0 pl-2">
-            <span className="text-[11px] text-ink-muted">{t.session.yourTotal}:</span>
-            <span className="text-xs sm:text-sm font-bold text-ink tabular-nums group-hover:text-chili transition-colors">
+          <div className="flex items-center gap-1.5 font-mono shrink-0 pl-2">
+            <span className="text-[11px] font-medium text-ink-secondary">{t.split.finalPayable}:</span>
+            <span className="text-xs sm:text-sm font-bold text-chili tabular-nums bg-surface px-2 py-0.5 rounded-md border border-hairline shadow-2xs group-hover:border-chili/40 transition-colors">
               {member.finalPrice} {t.common.baht}
             </span>
           </div>

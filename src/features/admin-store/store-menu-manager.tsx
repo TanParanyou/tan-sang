@@ -719,10 +719,15 @@ export function StoreMenuManager({
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-ink">
-                  {getLocalizedText(catalog.store.name, 'th')}
-                  {catalog.store.name.en && (
+                  {getLocalizedText(catalog.store.name, locale)}
+                  {locale === 'th' && catalog.store.name.en && (
                     <span className="ml-2 text-sm font-normal text-ink-muted">
                       ({catalog.store.name.en})
+                    </span>
+                  )}
+                  {locale === 'en' && catalog.store.name.th && catalog.store.name.en && (
+                    <span className="ml-2 text-sm font-normal text-ink-muted">
+                      ({catalog.store.name.th})
                     </span>
                   )}
                 </h1>
@@ -860,7 +865,7 @@ export function StoreMenuManager({
           ) : (
             catalog.storeWideOptions.map((opt) => {
               const isEditingThisOption = editingOptionId === opt.id;
-              const optTitle = getLocalizedText(opt.name, 'th');
+              const optTitle = getLocalizedText(opt.name, locale);
 
               if (isEditingThisOption) {
                 return (
@@ -1145,10 +1150,15 @@ export function StoreMenuManager({
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-base font-semibold text-ink">
-                            {getLocalizedText(menu.name, 'th')}
-                            {menu.name.en && (
+                            {getLocalizedText(menu.name, locale)}
+                            {locale === 'th' && menu.name.en && (
                               <span className="ml-1 text-xs font-normal text-ink-muted">
                                 ({menu.name.en})
+                              </span>
+                            )}
+                            {locale === 'en' && menu.name.th && menu.name.en && (
+                              <span className="ml-1 text-xs font-normal text-ink-muted">
+                                ({menu.name.th})
                               </span>
                             )}
                           </p>

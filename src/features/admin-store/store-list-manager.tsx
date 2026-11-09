@@ -425,10 +425,15 @@ export function StoreListManager({ initialStores }: { initialStores: Store[] }) 
                           </span>
                         </div>
                         <p className="mt-1 text-base font-semibold text-ink">
-                          {getLocalizedText(store.name, 'th')}
-                          {store.name.en ? (
+                          {getLocalizedText(store.name, locale)}
+                          {locale === 'th' && store.name.en ? (
                             <span className="ml-1 text-xs font-normal text-ink-muted">
                               ({store.name.en})
+                            </span>
+                          ) : null}
+                          {locale === 'en' && store.name.th && store.name.en ? (
+                            <span className="ml-1 text-xs font-normal text-ink-muted">
+                              ({store.name.th})
                             </span>
                           ) : null}
                         </p>
