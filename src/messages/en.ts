@@ -438,6 +438,10 @@ export const en: TranslationKeys = {
     quickAddDiscount: 'Quick add',
     totalSumDiscount: 'Total Discount',
     applyDiscount: 'Apply to Bill',
+    calcTabKeypad: 'Keypad',
+    calcTabList: 'Itemized List',
+    calcClear: 'Clear',
+    calcFormulaHistory: 'Calculation History',
   },
   promptPayModal: {
     title: 'Thai QR Payment / PromptPay',

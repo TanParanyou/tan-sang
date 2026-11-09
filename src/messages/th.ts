@@ -436,6 +436,10 @@ export const th = {
     quickAddDiscount: 'เพิ่มด่วน',
     totalSumDiscount: 'รวมส่วนลดทั้งหมด',
     applyDiscount: 'นำยอดไปใส่บิล',
+    calcTabKeypad: 'ปุ่มกดเลข',
+    calcTabList: 'แยกรายการ',
+    calcClear: 'ล้าง',
+    calcFormulaHistory: 'ประวัติการคำนวณ',
   },
   promptPayModal: {
     title: 'Thai QR Payment / พร้อมเพย์',
