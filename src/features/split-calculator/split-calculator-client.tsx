@@ -10,6 +10,7 @@ import {
   Sparkles,
   Clipboard,
   ArrowUpDown,
+  Info,
 } from 'lucide-react';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
@@ -18,6 +19,7 @@ import { Button, Toast } from '@/components/ui';
 import { useClipboardCopy } from '@/lib/hooks/use-clipboard-copy';
 import { useDragReorder } from '@/lib/hooks/use-drag-reorder';
 import { parsePromptPayTarget } from '@/lib/utils/promptpay';
+import { cn } from '@/lib/utils/cn';
 import { siteConfig } from '@/config/site';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { BillInfoSection } from './components/bill-info-section';
@@ -80,6 +82,7 @@ export function SplitCalculatorClient() {
   const [isQuickPasteOpen, setIsQuickPasteOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
+  const [showAllDetails, setShowAllDetails] = useState(false);
 
   // Reusable Hooks
   const { copy: copyToClipboard, isCopied, toastMessage, notify } = useClipboardCopy();
@@ -373,7 +376,7 @@ export function SplitCalculatorClient() {
   }, [items, t.split.memberPlaceholder]);
 
   return (
-    <div className="min-h-screen bg-canvas pb-28">
+    <div className="min-h-screen bg-canvas pb-32">
       <DevPersonaBar />
       <AppNavbar
         title={t.landing.harnCardTitle}
@@ -439,6 +442,24 @@ export function SplitCalculatorClient() {
 
               {/* Action Toolbar */}
               <div className="flex items-center gap-1.5">
+                {/* Toggle All Details (ดูข้อมูลทุกคน) */}
+                <button
+                  type="button"
+                  onClick={() => setShowAllDetails((prev) => !prev)}
+                  className={cn(
+                    'inline-flex h-[34px] items-center gap-1 rounded-theme px-2.5 text-xs font-medium border transition-colors shrink-0 box-border',
+                    showAllDetails
+                      ? 'bg-ink text-surface border-ink'
+                      : 'bg-subtle hover:bg-hairline text-ink-secondary border-hairline',
+                  )}
+                  title={showAllDetails ? t.split.hideAllDetails : t.split.toggleAllDetails}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">
+                    {showAllDetails ? t.split.hideAllDetails : t.split.toggleAllDetails}
+                  </span>
+                </button>
+
                 <div className="relative inline-flex items-center">
                   <select
                     aria-label={t.split.sortByPrice}
@@ -471,12 +492,13 @@ export function SplitCalculatorClient() {
               </div>
             </div>
 
-            {/* Table Header */}
-            <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-0.5 sm:px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full">
-              <span className="w-7 text-center shrink-0">#</span>
+            {/* Table Header: Tabular alignment with MemberItemRow */}
+            <div className="flex items-center text-[11px] font-bold uppercase tracking-wider text-ink-muted px-1 pt-1 border-b border-hairline pb-1.5 gap-1 sm:gap-2 w-full select-none">
+              <span className="w-6 sm:w-7 text-center shrink-0">#</span>
               <span className="flex-1 min-w-0 pl-1">{t.split.memberPlaceholder}</span>
-              <span className="w-[84px] sm:w-[96px] text-right pr-4 shrink-0">{t.split.pricePlaceholder}</span>
-              <span className="w-7 shrink-0" aria-hidden="true" />
+              <span className="w-[76px] sm:w-[90px] text-right pr-2 shrink-0">{t.split.rawPriceLabel}</span>
+              <span className="w-[64px] sm:w-[76px] text-center shrink-0 text-chili">{t.split.netToPay}</span>
+              <span className="w-6 sm:w-7 shrink-0" aria-hidden="true" />
             </div>
 
             {/* Members Rows */}
@@ -494,6 +516,7 @@ export function SplitCalculatorClient() {
                     rawPrice={priceVal}
                     rawName={rawItem?.name || ''}
                     isPaid={paidMemberIds.includes(member.id)}
+                    forceExpanded={showAllDetails}
                     onTogglePaid={() => handleTogglePaid(member.id)}
                     onCopyReminder={() => handleCopyIndividualReminder(member)}
                     isBeingDragged={draggedIndex === index}
@@ -544,7 +567,7 @@ export function SplitCalculatorClient() {
           />
         </div>
 
-        {/* Clean Primary Actions Block */}
+        {/* In-page Primary Actions Block */}
         <div className="flex flex-col sm:flex-row gap-2 pt-1 w-full">
           <Button
             type="button"
@@ -587,6 +610,63 @@ export function SplitCalculatorClient() {
           </Button>
         </div>
       </main>
+
+      {/* Sticky Bottom Summary & Action Dock */}
+      <aside
+        aria-label="Sticky bottom action dock"
+        className="fixed bottom-0 inset-x-0 z-20 bg-surface/95 backdrop-blur-md border-t border-hairline py-2.5 px-3 sm:px-6 shadow-lg"
+      >
+        <div className="mx-auto max-w-lg flex items-center justify-between gap-3">
+          {/* Left: Live Grand Total */}
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted truncate">
+              {t.split.grandTotalLive} ({calculationResult.members.length} {t.split.peopleCount})
+            </div>
+            <div className="flex items-baseline gap-1 font-mono font-bold text-lg sm:text-xl text-ink tabular-nums">
+              <span>{calculationResult.grandTotal}</span>
+              <span className="text-xs font-semibold text-ink-secondary">{t.common.baht}</span>
+            </div>
+          </div>
+
+          {/* Right: Quick Share & Copy Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="line"
+              size="md"
+              onClick={handleCopyText}
+              className="min-h-[44px] font-bold text-xs sm:text-sm px-3 sm:px-4 shadow-xs"
+            >
+              {isCopied ? (
+                <span className="inline-flex items-center gap-1.5 text-white">
+                  <Check className="h-4 w-4" />
+                  <span>{t.common.copied}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5">
+                  <Copy className="h-4 w-4" />
+                  <span>{t.split.shareLineSummary}</span>
+                </span>
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={handleShareLink}
+              className="min-h-[44px] px-3 font-bold text-xs sm:text-sm bg-surface border-hairline hover:bg-subtle text-ink shadow-xs"
+              title={t.split.shareLink}
+            >
+              {isLinkCopied ? (
+                <Check className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <Share2 className="h-4 w-4 text-chili" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </aside>
 
       {/* Modals */}
       <QuickPasteModal

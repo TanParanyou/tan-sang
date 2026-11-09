@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GripVertical, Trash2, CheckCircle2, Circle, Copy } from 'lucide-react';
+import {
+  GripVertical,
+  Trash2,
+  Copy,
+  CheckCircle2,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import { evaluateSimpleMath, hasMathOperators } from '@/lib/utils/math-expression';
@@ -11,9 +19,10 @@ interface MemberItemRowProps {
   index: number;
   totalMembers: number;
   member: SplitMemberResult;
-  rawPrice: number | '';
+  rawPrice: number | string;
   rawName: string;
   isPaid?: boolean;
+  forceExpanded?: boolean;
   onTogglePaid?: () => void;
   onCopyReminder?: () => void;
   isBeingDragged: boolean;
@@ -37,6 +46,7 @@ export function MemberItemRow({
   rawPrice,
   rawName,
   isPaid = false,
+  forceExpanded = false,
   onTogglePaid,
   onCopyReminder,
   isBeingDragged,
@@ -58,6 +68,10 @@ export function MemberItemRow({
   const personNameLabel = `${t.split.memberPlaceholder} ${personNum}`;
   const dragAria = t.split.dragPersonAria.replace('{index}', String(personNum));
   const deleteAria = t.split.deletePersonAria.replace('{index}', String(personNum));
+
+  // Local state for individual row expansion (ดูข้อมูลได้เมื่อแตะ)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const showDetails = forceExpanded || isExpanded;
 
   // Local draft state for inline math (e.g. "60+15")
   const [inputText, setInputText] = useState<string>(
@@ -107,13 +121,14 @@ export function MemberItemRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={cn(
-        'py-2 px-0.5 sm:px-1 transition-all rounded-theme select-none w-full max-w-full overflow-hidden box-border',
+        'py-2 px-1 transition-all rounded-theme select-none w-full max-w-full overflow-hidden box-border',
         isBeingDragged && 'opacity-30 bg-subtle border-dashed border-ink/40 scale-[0.98]',
         isDragTarget && 'border-t-2 border-t-chili bg-chili/5',
-        !isBeingDragged && !isDragTarget && 'hover:bg-subtle/50',
+        !isBeingDragged && !isDragTarget && 'hover:bg-subtle/40',
         isPaid && 'bg-emerald-500/5',
       )}
     >
+      {/* Single Clean Flat Row */}
       <div className="flex items-center gap-1 sm:gap-2 w-full min-w-0">
         {/* Drag Handle with Index (Touch & Mouse) */}
         <button
@@ -121,11 +136,11 @@ export function MemberItemRow({
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
-          className="flex h-9 w-7 shrink-0 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink cursor-grab active:cursor-grabbing touch-none p-0"
+          className="flex h-9 w-6 sm:w-7 shrink-0 items-center justify-center rounded-theme text-ink-muted hover:bg-subtle hover:text-ink cursor-grab active:cursor-grabbing touch-none p-0"
           title={t.split.dragToReorder}
           aria-label={dragAria}
         >
-          <GripVertical className="h-3 w-3 mr-0.5 opacity-60 shrink-0" />
+          <GripVertical className="h-3 w-3 mr-0.5 opacity-50 shrink-0" />
           <span className="font-mono text-xs font-bold text-ink-secondary">{personNum}</span>
         </button>
 
@@ -139,11 +154,11 @@ export function MemberItemRow({
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.currentTarget.select()}
           placeholder={personNameLabel}
-          className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/80 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+          className="min-w-0 flex-1 min-h-[40px] px-2.5 sm:px-3 bg-canvas/70 text-ink text-xs sm:text-sm font-medium border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
         />
 
         {/* Original Price / Inline Math Input */}
-        <div className="relative w-[84px] sm:w-[96px] shrink-0">
+        <div className="relative w-[76px] sm:w-[90px] shrink-0">
           <input
             id={`price-input-${member.id}`}
             type="text"
@@ -153,7 +168,6 @@ export function MemberItemRow({
             onChange={(e) => {
               const val = e.target.value;
               setInputText(val);
-              // If it's a plain number without operators, update price live
               if (!hasMathOperators(val)) {
                 onPriceChange(val);
               }
@@ -173,19 +187,50 @@ export function MemberItemRow({
             }}
             placeholder="0"
             title={t.split.inlineMathHint}
-            className="w-full min-w-0 min-h-[40px] pl-1.5 pr-5 bg-canvas/80 text-ink font-mono tabular-nums text-xs sm:text-sm font-bold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
+            className="w-full min-w-0 min-h-[40px] pl-1.5 pr-4 bg-canvas/70 text-ink font-mono tabular-nums text-xs sm:text-sm font-semibold text-right border border-hairline rounded-theme focus:outline-none focus:ring-1.5 focus:ring-ink focus:bg-surface transition-colors"
           />
-          <span className="absolute right-1.5 top-2.5 text-xs text-ink-muted pointer-events-none">
+          <span className="absolute right-1 top-2.5 text-xs text-ink-muted pointer-events-none">
             {t.common.baht}
           </span>
         </div>
+
+        {/* Net Payable Badge (Interactive: Click to expand details) */}
+        {member.totalBeforeDiscount > 0 ? (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className={cn(
+              'min-h-[40px] px-2 sm:px-2.5 rounded-theme border flex items-center justify-center gap-1 shrink-0 font-mono tabular-nums transition-all select-none',
+              isPaid
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                : showDetails
+                ? 'bg-ink text-surface border-ink shadow-2xs'
+                : 'bg-chili/10 text-chili border-chili/30 hover:bg-chili/20',
+            )}
+            title={showDetails ? t.split.collapseDetails : t.split.expandDetails}
+          >
+            <span className={cn('text-xs sm:text-sm font-bold', isPaid && 'line-through opacity-75')}>
+              {member.finalPrice}
+            </span>
+            <span className="text-[10px] opacity-75">{t.common.baht}</span>
+            {showDetails ? (
+              <ChevronUp className="h-3 w-3 opacity-70 shrink-0" />
+            ) : (
+              <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+            )}
+          </button>
+        ) : (
+          <div className="w-[64px] sm:w-[72px] shrink-0 text-center text-xs font-mono text-ink-muted py-2 select-none">
+            -
+          </div>
+        )}
 
         {/* Delete Row Button */}
         <button
           type="button"
           onClick={onRemove}
           disabled={totalMembers <= 1}
-          className="flex h-9 w-7 shrink-0 items-center justify-center text-ink-muted hover:text-red-600 disabled:opacity-20 transition-colors rounded-theme p-0"
+          className="flex h-9 w-6 sm:w-7 shrink-0 items-center justify-center text-ink-muted hover:text-red-600 disabled:opacity-20 transition-colors rounded-theme p-0"
           aria-label={deleteAria}
           title={t.split.deleteRowTitle}
         >
@@ -193,86 +238,76 @@ export function MemberItemRow({
         </button>
       </div>
 
-      {/* Member Breakdown Subline: Clean, tabular, interactive */}
-      {member.totalBeforeDiscount > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1.5 pl-8 sm:pl-9 pr-1 py-1.5 px-2 rounded-lg bg-subtle/50 hover:bg-subtle border border-hairline/60 transition-colors">
-          <div className="flex items-center gap-1.5 text-ink-secondary font-mono text-[11px] truncate">
-            <span className="font-semibold text-ink-muted">{member.percentShare.toFixed(1)}%</span>
-
-            {/* Shared Breakdown Note */}
-            {member.sharedPrice > 0 && (
-              <span className="text-ink-muted truncate hidden sm:inline">
-                ({t.split.personalShare} {member.originalPrice} + {t.split.sharedPortion} {member.sharedPrice})
+      {/* Expanded Details Drawer (กดดูข้อมูลได้) */}
+      {showDetails && member.totalBeforeDiscount > 0 && (
+        <div className="mt-2 ml-7 sm:ml-8 mr-1 p-2.5 rounded-lg bg-subtle/80 border border-hairline space-y-2 text-xs transition-all">
+          {/* Breakdown Info */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 text-ink-secondary font-mono text-[11px] pb-1.5 border-b border-hairline/60">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span>
+                {t.split.originalDishPrice}: <strong className="text-ink">{member.originalPrice}</strong> ฿
               </span>
-            )}
-
-            {/* Discount / Surcharge Pill */}
-            {member.discountAmount !== 0 && (
-              <span
-                className={cn(
-                  'font-medium truncate',
-                  member.discountAmount > 0 ? 'text-emerald-600' : 'text-red-600',
-                )}
-              >
-                {member.discountAmount > 0
-                  ? `(${t.split.discountPill.replace('{amount}', String(member.discountAmount))})`
-                  : `(${t.split.surchargePill.replace('{amount}', String(Math.abs(member.discountAmount)))})`}
-              </span>
-            )}
+              {member.sharedPrice > 0 && (
+                <span>
+                  + {t.split.sharedPortion}: <strong className="text-chili">{member.sharedPrice}</strong> ฿
+                </span>
+              )}
+              {member.discountAmount !== 0 && (
+                <span
+                  className={cn(
+                    'font-semibold',
+                    member.discountAmount > 0 ? 'text-emerald-600' : 'text-red-600',
+                  )}
+                >
+                  {member.discountAmount > 0
+                    ? `(-${member.discountAmount} ฿)`
+                    : `(+${Math.abs(member.discountAmount)} ฿)`}
+                </span>
+              )}
+            </div>
+            <div className="font-semibold text-ink-muted">
+              สัดส่วน {member.percentShare.toFixed(1)}%
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-            {/* Quick Copy Reminder Button */}
-            {onCopyReminder && member.finalPrice > 0 && (
-              <button
-                type="button"
-                onClick={onCopyReminder}
-                className="p-1 rounded text-ink-muted hover:text-ink hover:bg-surface transition-colors"
-                title={t.split.copyIndividualDebt}
-                aria-label={t.split.copyIndividualDebt}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-            )}
-
-            {/* Payable Amount Badge */}
-            <span
-              onClick={() => document.getElementById(`price-input-${member.id}`)?.focus()}
-              className={cn(
-                'text-xs sm:text-sm font-bold font-mono tabular-nums px-2 py-0.5 rounded-md border border-hairline shadow-2xs cursor-pointer transition-colors',
-                isPaid
-                  ? 'text-ink-muted line-through bg-canvas'
-                  : 'text-chili bg-surface hover:border-chili/40',
-              )}
-              title={t.split.clickToEditPrice}
-            >
-              {member.finalPrice} {t.common.baht}
-            </span>
-
-            {/* Paid Status Toggle Checkbox */}
-            {onTogglePaid && member.finalPrice > 0 && (
+          {/* Action Row: Payment Status Toggle + Copy Reminder */}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            {/* Paid Status Toggle */}
+            {onTogglePaid && (
               <button
                 type="button"
                 onClick={onTogglePaid}
                 className={cn(
-                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold transition-all border shrink-0',
+                  'inline-flex min-h-[32px] items-center gap-1.5 px-2.5 py-1 rounded-theme text-xs font-bold transition-all border shrink-0',
                   isPaid
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-canvas text-ink-muted border-hairline hover:text-ink hover:bg-subtle',
+                    : 'bg-surface text-ink-secondary border-hairline hover:text-ink hover:bg-canvas',
                 )}
-                title={isPaid ? t.split.paid : t.split.unpaid}
               >
                 {isPaid ? (
                   <>
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>{t.split.paid}</span>
                   </>
                 ) : (
                   <>
-                    <Circle className="h-3 w-3 opacity-40" />
+                    <Circle className="h-3.5 w-3.5 opacity-40" />
                     <span>{t.split.unpaid}</span>
                   </>
                 )}
+              </button>
+            )}
+
+            {/* Quick Copy Reminder */}
+            {onCopyReminder && (
+              <button
+                type="button"
+                onClick={onCopyReminder}
+                className="inline-flex min-h-[32px] items-center gap-1.5 px-2.5 py-1 rounded-theme text-xs font-semibold text-ink-secondary bg-surface border border-hairline hover:text-ink hover:bg-canvas transition-colors ml-auto"
+                title={t.split.copyIndividualDebt}
+              >
+                <Copy className="h-3.5 w-3.5 text-ink-muted" />
+                <span>{t.split.copyIndividualDebt}</span>
               </button>
             )}
           </div>
