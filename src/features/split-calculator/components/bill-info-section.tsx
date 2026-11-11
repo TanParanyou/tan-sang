@@ -100,11 +100,11 @@ export function BillInfoSection({
             <button
               type="button"
               onClick={() => setIsCalcModalOpen(true)}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-chili hover:text-ink transition-colors px-1.5 py-0.5 rounded-theme hover:bg-chili/10"
+              className="inline-flex items-center justify-center h-5 w-5 text-chili hover:text-ink transition-colors rounded-theme hover:bg-chili/10"
               title={t.split.discountCalcTitle}
+              aria-label={t.split.discountCalcTitle}
             >
-              <Calculator className="h-3 w-3" />
-              <span>{t.split.discountCalcBtn}</span>
+              <Calculator className="h-3.5 w-3.5" />
             </button>
           </div>
           <Input
