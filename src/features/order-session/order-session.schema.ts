@@ -123,6 +123,12 @@ export const CloseOrderSessionInputSchema = z.object({
 });
 export type CloseOrderSessionInput = z.infer<typeof CloseOrderSessionInputSchema>;
 
+export const ReopenOrderSessionInputSchema = z.object({
+  sessionId: z.string().uuid(),
+  actorUserId: z.string().trim().min(1).max(64),
+});
+export type ReopenOrderSessionInput = z.infer<typeof ReopenOrderSessionInputSchema>;
+
 export const DeleteOrderSessionInputSchema = z.object({
   sessionId: z.string().uuid(),
   actorUserId: z.string().trim().min(1).max(64),
@@ -133,6 +139,13 @@ export type DeleteOrderSessionInput = z.infer<typeof DeleteOrderSessionInputSche
 // ============================================================================
 // Summarization & Breakdown Output Contracts (Business Rule 2)
 // ============================================================================
+
+export interface OrderSessionFeeOptions {
+  deliveryFee?: number;
+  packagingFee?: number;
+  discount?: number;
+  splitMethod?: 'EQUAL' | 'PROPORTIONAL';
+}
 
 export interface GroupedOrderItemSummary {
   fingerprint: string;
@@ -155,6 +168,10 @@ export interface RecipientOrderBreakdown {
   pictureUrl?: string | null;
   totalQuantity: number;
   totalAmount: number;
+  deliveryFeeShare?: number;
+  discountShare?: number;
+  finalAmount?: number;
+  isPaid?: boolean;
   items: Array<{
     itemId: string;
     displayTitle: string;
@@ -171,6 +188,11 @@ export interface OrderSessionSummary {
   status: OrderSessionStatus;
   totalItemsCount: number;
   grandTotalAmount: number;
+  deliveryFee?: number;
+  packagingFee?: number;
+  discount?: number;
+  netPayableAmount?: number;
+  splitMethod?: 'EQUAL' | 'PROPORTIONAL';
   groupedItems: GroupedOrderItemSummary[];
   recipientBreakdowns: RecipientOrderBreakdown[];
   merchantCopyText: string;
@@ -181,3 +203,4 @@ export interface SessionHistoryItem {
   session: OrderSession;
   summary: OrderSessionSummary;
 }
+

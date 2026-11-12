@@ -10,6 +10,7 @@ import type {
 import { DomainError } from '@/server/errors/domain.error';
 import type { IOrderSessionRepository } from '@/server/repositories/order-session.repository';
 import {
+  calculateRecipientAllocations,
   formatKhunThongSplitText,
   formatMerchantOrderText,
   groupOrderItemsByRecipient,
@@ -133,6 +134,14 @@ class InMemoryOrderSessionRepository implements IOrderSessionRepository {
     if (!session) throw new Error('Session not found');
     session.status = 'CLOSED';
     session.closedAt = closedAtIso;
+    return session;
+  }
+
+  async reopenSession(sessionId: string): Promise<OrderSession> {
+    const session = this.sessions.get(sessionId);
+    if (!session) throw new Error('Session not found');
+    session.status = 'OPEN';
+    session.closedAt = null;
     return session;
   }
 }
@@ -640,5 +649,101 @@ describe('Tan-Sang Core Business Logic', () => {
     const grouped = groupOrderItemsForMerchant([item]);
     expect(grouped).toHaveLength(1);
     expect(grouped[0]!.recipients[0]!.pictureUrl).toBe(avatarUrl);
+  });
+
+  it('allows Host to reopen a closed session and enforces Host authority', async () => {
+    const repo = new InMemoryOrderSessionRepository();
+    const service = new OrderSessionService(repo);
+
+    const session = await service.createSession({
+      lineGroupId: 'G_REOPEN_TEST',
+      hostUserId: 'U_HOST_REOPEN',
+      storeId: 'S1',
+    });
+
+    // Close session
+    const closed = await service.closeSession({
+      sessionId: session.id,
+      actorUserId: 'U_HOST_REOPEN',
+    });
+    expect(closed.status).toBe('CLOSED');
+
+    // Non-host attempts to reopen -> should fail
+    await expect(
+      service.reopenSession({
+        sessionId: session.id,
+        actorUserId: 'U_NON_HOST',
+      }),
+    ).rejects.toMatchObject({
+      code: 'UNAUTHORIZED_HOST_ACTION',
+      statusCode: 403,
+    });
+
+    // Host reopens session -> should succeed
+    const reopened = await service.reopenSession({
+      sessionId: session.id,
+      actorUserId: 'U_HOST_REOPEN',
+    });
+    expect(reopened.status).toBe('OPEN');
+    expect(reopened.closedAt).toBeNull();
+  });
+
+  it('calculates fee & discount allocation with zero satang drift in both equal and proportional modes', () => {
+    const recipients = [
+      {
+        recipientName: 'ตาล',
+        totalQuantity: 2,
+        totalAmount: 120,
+        items: [],
+      },
+      {
+        recipientName: 'แอน',
+        totalQuantity: 1,
+        totalAmount: 60,
+        items: [],
+      },
+      {
+        recipientName: 'บอย',
+        totalQuantity: 1,
+        totalAmount: 70,
+        items: [],
+      },
+    ];
+
+    // Total food: 120 + 60 + 70 = 250 Baht
+    // Delivery fee: 35 Baht, Packaging: 10 Baht (Total Fee: 45 Baht)
+    // Discount: 50 Baht (Net adjustment: -5 Baht)
+    // Net Payable: 250 + 45 - 50 = 245 Baht
+
+    // 1. Equal mode
+    const equalResult = calculateRecipientAllocations(recipients, {
+      deliveryFee: 35,
+      packagingFee: 10,
+      discount: 50,
+      splitMethod: 'EQUAL',
+    });
+
+    expect(equalResult.grandTotalAmount).toBe(250);
+    expect(equalResult.netPayableAmount).toBe(245);
+    const sumFinalEqual = Math.round(
+      equalResult.recipientBreakdowns.reduce((sum, r) => sum + (r.finalAmount ?? 0) * 100, 0),
+    ) / 100;
+    expect(sumFinalEqual).toBe(245);
+
+    // 2. Proportional mode
+    const propResult = calculateRecipientAllocations(recipients, {
+      deliveryFee: 35,
+      packagingFee: 10,
+      discount: 50,
+      splitMethod: 'PROPORTIONAL',
+    });
+
+    expect(propResult.netPayableAmount).toBe(245);
+    const sumFinalProp = Math.round(
+      propResult.recipientBreakdowns.reduce((sum, r) => sum + (r.finalAmount ?? 0) * 100, 0),
+    ) / 100;
+    expect(sumFinalProp).toBe(245);
+    // ตาล has largest food amount (120), so receives the largest proportion of discount
+    expect(propResult.recipientBreakdowns[0]!.finalAmount).toBeLessThan(120);
   });
 });

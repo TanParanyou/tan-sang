@@ -20,6 +20,7 @@ export interface IOrderSessionRepository {
   deleteSession(sessionId: string): Promise<void>;
   updateReadyUsers(sessionId: string, readyUsers: ReadyParticipant[]): Promise<OrderSession>;
   closeSession(sessionId: string, closedAtIso: string): Promise<OrderSession>;
+  reopenSession(sessionId: string): Promise<OrderSession>;
 }
 
 export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
@@ -287,6 +288,25 @@ export class SupabaseOrderSessionRepository implements IOrderSessionRepository {
 
     if (error || !sessionRow) {
       throw new Error(`Failed to close session ${sessionId}: ${error?.message ?? 'Unknown error'}`);
+    }
+
+    const items = await this.fetchSessionItems(sessionId);
+    return this.mapSessionRow(sessionRow, items);
+  }
+
+  async reopenSession(sessionId: string): Promise<OrderSession> {
+    const { data: sessionRow, error } = await this.db
+      .from('order_sessions')
+      .update({
+        status: 'OPEN',
+        closed_at: null,
+      })
+      .eq('id', sessionId)
+      .select('*')
+      .single();
+
+    if (error || !sessionRow) {
+      throw new Error(`Failed to reopen session ${sessionId}: ${error?.message ?? 'Unknown error'}`);
     }
 
     const items = await this.fetchSessionItems(sessionId);

@@ -339,7 +339,7 @@ export function ReceiptSlipClient({ session, summary }: ReceiptSlipClientProps) 
                     <div className="flex items-center justify-between font-bold text-ink">
                       <span>{rec.recipientName}</span>
                       <span className="font-mono tabular-nums">
-                        {formatPrice(rec.totalAmount, {
+                        {formatPrice(rec.finalAmount ?? rec.totalAmount, {
                           isGrandTotalZero: summary.grandTotalAmount === 0,
                         })}
                       </span>

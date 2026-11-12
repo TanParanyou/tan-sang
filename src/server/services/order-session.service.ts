@@ -4,6 +4,7 @@ import {
   CreateOrderSessionInputSchema,
   DeleteOrderItemInputSchema,
   DeleteOrderSessionInputSchema,
+  ReopenOrderSessionInputSchema,
   ToggleParticipantReadyInputSchema,
   UpdateOrderItemInputSchema,
   type AddOrderItemInput,
@@ -13,7 +14,9 @@ import {
   type DeleteOrderSessionInput,
   type OrderItem,
   type OrderSession,
+  type OrderSessionFeeOptions,
   type OrderSessionSummary,
+  type ReopenOrderSessionInput,
   type SessionHistoryItem,
   type ToggleParticipantReadyInput,
   type UpdateOrderItemInput,
@@ -158,6 +161,37 @@ export class OrderSessionService {
   }
 
   /**
+   * Reopens a CLOSED session for editing or adjusting out-of-stock dishes. Only Host can reopen.
+   */
+  async reopenSession(rawInput: ReopenOrderSessionInput): Promise<OrderSession> {
+    const input = ReopenOrderSessionInputSchema.parse(rawInput);
+    const session = await this.requireSession(input.sessionId);
+
+    if (session.hostUserId !== input.actorUserId) {
+      throw new DomainError(
+        'UNAUTHORIZED_HOST_ACTION',
+        'เฉพาะผู้เปิดบิล (Host) เท่านั้นที่สามารถเปิดรับออเดอร์ต่อได้',
+        403,
+      );
+    }
+
+    if (session.status === 'OPEN') {
+      return session;
+    }
+
+    const existingOpen = await this.sessionRepo.findOpenSessionByGroupId(session.lineGroupId);
+    if (existingOpen && existingOpen.id !== session.id) {
+      throw new DomainError(
+        'ACTIVE_SESSION_ALREADY_EXISTS',
+        'มีห้องสั่งอาหารอื่นกำลังเปิดรับออเดอร์อยู่ในกลุ่มนี้แล้ว ไม่สามารถเปิดรอบนี้ซ้ำได้',
+        409,
+      );
+    }
+
+    return this.sessionRepo.reopenSession(session.id);
+  }
+
+  /**
    * Deletes an entire session.
    * - Host can delete directly.
    * - Non-host requires a valid Admin PIN from environment variables (ORDER_DELETE_PIN or ADMIN_PASSCODE).
@@ -190,7 +224,10 @@ export class OrderSessionService {
   /**
    * Generates the Grouped & Individual summary + Merchant copy text for a session.
    */
-  async getSessionSummary(sessionId: string): Promise<OrderSessionSummary> {
+  async getSessionSummary(
+    sessionId: string,
+    feeOptions?: OrderSessionFeeOptions,
+  ): Promise<OrderSessionSummary> {
     const session = await this.requireSession(sessionId);
     let storeDisplayName = session.customStoreName?.trim() || 'ร้านอาหาร';
 
@@ -201,7 +238,7 @@ export class OrderSessionService {
       }
     }
 
-    return buildOrderSessionSummary(session, storeDisplayName);
+    return buildOrderSessionSummary(session, storeDisplayName, feeOptions);
   }
 
   /**

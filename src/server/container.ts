@@ -521,6 +521,16 @@ class FallbackOrderSessionRepository implements IOrderSessionRepository {
     session.closedAt = closedAtIso;
     return session;
   }
+
+  async reopenSession(sessionId: string): Promise<OrderSession> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    session.status = 'OPEN';
+    session.closedAt = null;
+    return session;
+  }
 }
 
 // ============================================================================

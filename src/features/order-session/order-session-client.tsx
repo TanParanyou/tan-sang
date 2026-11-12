@@ -11,6 +11,7 @@ import {
   Clock,
   Coins,
   Copy,
+  CopyPlus,
   Dices,
   Globe,
   LayoutGrid,
@@ -20,6 +21,8 @@ import {
   Pencil,
   Plus,
   Printer,
+  QrCode,
+  RefreshCw,
   Search,
   Share2,
   Trash2,
@@ -30,6 +33,7 @@ import { cn } from '@/lib/utils/cn';
 import { DevPersonaBar } from '@/components/shared/dev-persona-bar';
 import { AppNavbar } from '@/components/shared/app-navbar';
 import { NamePromptModal } from '@/components/shared/name-prompt-modal';
+import { PromptPayQrModal } from '@/components/shared/promptpay-qr-modal';
 import { DeleteSessionButton } from '@/features/order-session/components/delete-session-button';
 import { useLiff } from '@/features/line/liff-provider';
 import type {
@@ -46,6 +50,7 @@ import { getRandomDish } from '@/features/food-randomizer/random-dishes';
 import { getLocalizedText, type SupportedLocale } from '@/lib/utils/i18n.schema';
 import { useI18n } from '@/lib/i18n/i18n-context';
 import {
+  buildOrderSessionSummary,
   calculateOrderItemTotals,
   formatOrderItemTitle,
 } from '@/server/services/order-calculator.service';
@@ -114,6 +119,73 @@ export function OrderSessionClient({
     description: '',
     onConfirm: () => {},
   });
+
+  // Delivery fee, packaging fee, discount, and settlement states
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [packagingFee, setPackagingFee] = useState<number>(0);
+  const [discount, setDiscount] = useState<number>(0);
+  const [splitMethod, setSplitMethod] = useState<'EQUAL' | 'PROPORTIONAL'>('EQUAL');
+  const [promptPayId, setPromptPayId] = useState<string>('');
+  const [paidRecipients, setPaidRecipients] = useState<string[]>([]);
+  const [isFeeSettingsOpen, setIsFeeSettingsOpen] = useState(false);
+  const [promptPayModalData, setPromptPayModalData] = useState<{
+    isOpen: boolean;
+    recipientName: string;
+    amount: number | null;
+  }>({
+    isOpen: false,
+    recipientName: '',
+    amount: null,
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`tan_sang_settlement_${sessionId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.deliveryFee === 'number') setDeliveryFee(parsed.deliveryFee);
+        if (typeof parsed.packagingFee === 'number') setPackagingFee(parsed.packagingFee);
+        if (typeof parsed.discount === 'number') setDiscount(parsed.discount);
+        if (parsed.splitMethod === 'EQUAL' || parsed.splitMethod === 'PROPORTIONAL') {
+          setSplitMethod(parsed.splitMethod);
+        }
+        if (typeof parsed.promptPayId === 'string') setPromptPayId(parsed.promptPayId);
+        if (Array.isArray(parsed.paidRecipients)) setPaidRecipients(parsed.paidRecipients);
+      } else {
+        const fallbackPp = localStorage.getItem('promptpay_account_target') || '';
+        if (fallbackPp) setPromptPayId(fallbackPp);
+      }
+    } catch {
+      // ignore
+    }
+  }, [sessionId]);
+
+  const updateSettlement = (updater: {
+    deliveryFee?: number;
+    packagingFee?: number;
+    discount?: number;
+    splitMethod?: 'EQUAL' | 'PROPORTIONAL';
+    promptPayId?: string;
+    paidRecipients?: string[];
+  }) => {
+    try {
+      const key = `tan_sang_settlement_${sessionId}`;
+      const current = JSON.parse(localStorage.getItem(key) || '{}');
+      const updated = {
+        deliveryFee,
+        packagingFee,
+        discount,
+        splitMethod,
+        promptPayId,
+        paidRecipients,
+        ...current,
+        ...updater,
+      };
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     try {
@@ -215,10 +287,23 @@ export function OrderSessionClient({
       query.state.data?.session.status === 'OPEN' ? 4000 : false,
   });
 
-  const { session, catalog, summary } = data;
+  const { session, catalog } = data;
   const isOpen = session.status === 'OPEN';
   const isHost = session.hostUserId === profile.userId;
   const isCurrentUserReady = session.readyUsers.some((u) => u.userId === profile.userId);
+
+  const storeDisplayName = catalog
+    ? getLocalizedText(catalog.store.name, locale)
+    : session.customStoreName?.trim() || t.session.customStore;
+
+  const summary = useMemo(() => {
+    return buildOrderSessionSummary(session, storeDisplayName, {
+      deliveryFee,
+      packagingFee,
+      discount,
+      splitMethod,
+    });
+  }, [session, storeDisplayName, deliveryFee, packagingFee, discount, splitMethod]);
 
   const availableOptions = useMemo<MenuOption[]>(() => {
     if (!catalog) return [];
@@ -507,6 +592,129 @@ export function OrderSessionClient({
       showToast(err.message);
     },
   });
+
+  const reopenSessionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REOPEN_SESSION',
+          actorUserId: profile.userId,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? t.session.reopenFailed);
+      }
+      return json.data;
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['order-session', sessionId], updated);
+      showToast(t.session.reopenSuccess);
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+  });
+
+  const handleCopyItemToSelf = async (item: OrderItem) => {
+    const chosenOptions = item.options.map((opt) => ({
+      optionId: opt.optionId ?? undefined,
+      optionName: opt.optionName,
+      price: opt.price,
+    }));
+
+    const payload = {
+      sessionId: session.id,
+      orderedByUserId: profile.userId,
+      recipientName: profile.displayName || t.session.useMyName,
+      pictureUrl: profile.pictureUrl ?? null,
+      menuId: item.menuId ?? undefined,
+      menuName: item.menuName,
+      variantName: item.variantName ?? undefined,
+      unitPrice: item.unitPrice,
+      quantity: 1,
+      note: item.note ?? undefined,
+      options: chosenOptions,
+    };
+
+    try {
+      const res = await fetch(`/api/v1/sessions/${sessionId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        data?: SessionDetailPayload;
+        error?: { message: string };
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error?.message ?? t.session.addOrderFailed);
+      }
+      queryClient.setQueryData(['order-session', sessionId], json.data);
+      showToast(t.session.copyItemSuccess.replace('{name}', item.menuName));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.session.addOrderFailed;
+      showToast(msg);
+    }
+  };
+
+  const togglePaidStatus = (name: string) => {
+    const isAlreadyPaid = paidRecipients.includes(name);
+    const updated = isAlreadyPaid
+      ? paidRecipients.filter((n) => n !== name)
+      : [...paidRecipients, name];
+    setPaidRecipients(updated);
+    updateSettlement({ paidRecipients: updated });
+  };
+
+  const handleCopyPaymentReminder = async () => {
+    const netPayable = summary.netPayableAmount ?? summary.grandTotalAmount;
+    const unpaidList = summary.recipientBreakdowns.filter(
+      (r) => !paidRecipients.includes(r.recipientName),
+    );
+    const paidList = summary.recipientBreakdowns.filter((r) =>
+      paidRecipients.includes(r.recipientName),
+    );
+
+    const lines: string[] = [
+      `📢 แจ้งยอดโอนค่าอาหารร้าน: ${storeDisplayName}`,
+      `ยอดสุทธิรวม: ${netPayable.toLocaleString('th-TH')} ฿ (ชำระแล้ว ${paidList.length}/${summary.recipientBreakdowns.length} คน)`,
+    ];
+
+    if (promptPayId) {
+      lines.push(`พร้อมเพย์: ${promptPayId}`);
+    }
+
+    if (unpaidList.length > 0) {
+      lines.push('------------------------');
+      lines.push('⏳ รอชำระ:');
+      unpaidList.forEach((r) => {
+        const amt = r.finalAmount ?? r.totalAmount;
+        lines.push(`• ${r.recipientName}: ${amt.toLocaleString('th-TH')} ฿`);
+      });
+    }
+
+    if (paidList.length > 0) {
+      lines.push('------------------------');
+      lines.push('✅ ชำระแล้ว:');
+      paidList.forEach((r) => {
+        const amt = r.finalAmount ?? r.totalAmount;
+        lines.push(`• ${r.recipientName}: ${amt.toLocaleString('th-TH')} ฿`);
+      });
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      showToast(t.session.copiedPaymentReminder);
+    }
+  };
 
   const handleCopyForMerchant = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -1178,6 +1386,16 @@ export function OrderSessionClient({
                             <span className="mr-1 font-mono text-sm font-semibold text-ink tabular-nums">
                               {lineTotal.toLocaleString('th-TH')} {t.common.baht}
                             </span>
+                            <button
+                              type="button"
+                              aria-label={`${t.session.copyItemToSelf}: ${title}`}
+                              onClick={() => handleCopyItemToSelf(item)}
+                              className="inline-flex min-h-[36px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-1 text-xs font-semibold text-ink-secondary hover:text-ink hover:bg-subtle hover:border-ink transition active:scale-95"
+                              title={t.session.copyItemToSelf}
+                            >
+                              <CopyPlus className="h-3.5 w-3.5 text-ink-muted" />
+                              <span className="hidden xs:inline">{t.session.copyItemToSelf}</span>
+                            </button>
                             {canMutate && (
                               <>
                                 <button
@@ -1237,6 +1455,33 @@ export function OrderSessionClient({
                 {t.session.shareBillTitle}
               </Button>
 
+              {isHost && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => {
+                    setConfirmDialog({
+                      isOpen: true,
+                      title: t.session.reopenConfirmTitle,
+                      description: t.session.reopenConfirmDesc,
+                      confirmText: t.session.reopenRoundButton,
+                      variant: 'primary',
+                      onConfirm: () => {
+                        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+                        reopenSessionMutation.mutate();
+                      },
+                    });
+                  }}
+                  loading={reopenSessionMutation.isPending}
+                  className="gap-1.5 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shrink-0"
+                  title={t.session.reopenRoundButton}
+                >
+                  <RefreshCw className="h-4 w-4 text-amber-700" />
+                  <span className="hidden sm:inline">{t.session.reopenRoundButton}</span>
+                </Button>
+              )}
+
               <DropdownMenu
                 align="right"
                 ariaLabel={t.session.quickCopyOptions}
@@ -1262,7 +1507,17 @@ export function OrderSessionClient({
                     icon: <Coins className="h-4 w-4 text-amber-600" />,
                     onClick: handleCopyKhunThong,
                   },
+                  {
+                    label: t.session.copyPaymentReminder,
+                    icon: <Copy className="h-4 w-4 text-emerald-600" />,
+                    onClick: handleCopyPaymentReminder,
+                  },
                   { type: 'separator' },
+                  {
+                    label: t.session.feeSettings,
+                    icon: <UtensilsCrossed className="h-4 w-4" />,
+                    onClick: () => setIsFeeSettingsOpen(true),
+                  },
                   {
                     label: t.session.openPrintSlip,
                     icon: <Printer className="h-4 w-4" />,
@@ -1356,44 +1611,189 @@ export function OrderSessionClient({
                 })}
               </Card>
             ) : (
-              <Card className="divide-y divide-hairline overflow-hidden">
-                {summary.recipientBreakdowns.map((person) => (
-                  <div key={person.recipientName} className="px-4 py-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={person.recipientName} src={person.pictureUrl} size="sm" />
-                        <span className="text-sm font-semibold text-ink">
-                          {person.recipientName}
+              <div className="space-y-3">
+                {/* Payment Tracking Dashboard Card */}
+                {(() => {
+                  const totalNet = summary.netPayableAmount ?? summary.grandTotalAmount;
+                  const totalRecipients = summary.recipientBreakdowns.length;
+                  const paidCount = summary.recipientBreakdowns.filter((r) =>
+                    paidRecipients.includes(r.recipientName),
+                  ).length;
+                  const paidAmount = summary.recipientBreakdowns
+                    .filter((r) => paidRecipients.includes(r.recipientName))
+                    .reduce((sum, r) => sum + (r.finalAmount ?? r.totalAmount), 0);
+                  const progressPct =
+                    totalNet > 0 ? Math.round((paidAmount / totalNet) * 100) : 0;
+
+                  return (
+                    <Card className="p-4 space-y-3 bg-canvas border border-hairline">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Coins className="h-4 w-4 text-emerald-600" />
+                          <span className="text-xs font-bold text-ink">{t.session.paymentTracker}</span>
+                        </div>
+                        <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full tabular-nums">
+                          {t.session.paidSummary
+                            .replace('{paid}', String(paidCount))
+                            .replace('{total}', String(totalRecipients))}{' '}
+                          ({progressPct}%)
                         </span>
                       </div>
-                      <span className="font-mono text-sm font-bold text-ink tabular-nums">
-                        {formatPrice(person.totalAmount, {
-                          isGrandTotalZero: summary.grandTotalAmount === 0,
-                        })}
-                      </span>
-                    </div>
-                    <ul className="mt-1.5 space-y-1">
-                      {person.items.map((item) => (
-                        <li
-                          key={item.itemId}
-                          className="flex items-baseline justify-between gap-2 text-xs text-ink-secondary"
+
+                      <div className="h-2 w-full rounded-full bg-subtle overflow-hidden border border-hairline">
+                        <div
+                          className="h-full bg-emerald-500 transition-all duration-300"
+                          style={{ width: `${Math.min(100, progressPct)}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-ink-secondary">
+                        <span>
+                          {t.session.paid}:{' '}
+                          <strong className="font-mono text-ink tabular-nums">
+                            {paidAmount.toLocaleString('th-TH')} {t.common.baht}
+                          </strong>
+                        </span>
+                        <span>
+                          {t.session.remainingAmount}:{' '}
+                          <strong className="font-mono text-chili tabular-nums">
+                            {Math.max(0, totalNet - paidAmount).toLocaleString('th-TH')}{' '}
+                            {t.common.baht}
+                          </strong>
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-hairline">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleCopyPaymentReminder}
+                          className="flex-1 text-xs"
                         >
-                          <span>
-                            • {item.displayTitle}
-                            {item.note ? ` [${item.note}]` : ''} × {item.quantity}
-                          </span>
-                          <span className="font-mono tabular-nums">
-                            {formatPrice(item.lineTotal, {
-                              isGrandTotalZero: summary.grandTotalAmount === 0,
-                              unpricedFallback: '-',
-                            })}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </Card>
+                          <Copy className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                          <span>{t.session.copyPaymentReminder}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setIsFeeSettingsOpen(true)}
+                          className="text-xs shrink-0"
+                        >
+                          <UtensilsCrossed className="h-3.5 w-3.5 mr-1" />
+                          <span>{t.session.feeSettings}</span>
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })()}
+
+                {/* Individual Recipient Itemized Breakdown */}
+                <Card className="divide-y divide-hairline overflow-hidden">
+                  {summary.recipientBreakdowns.map((person) => {
+                    const isPersonPaid = paidRecipients.includes(person.recipientName);
+                    const payableAmount = person.finalAmount ?? person.totalAmount;
+                    const hasAdjustments =
+                      Boolean(person.deliveryFeeShare && person.deliveryFeeShare > 0) ||
+                      Boolean(person.discountShare && person.discountShare > 0);
+
+                    return (
+                      <div key={person.recipientName} className="px-4 py-3.5 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Avatar name={person.recipientName} src={person.pictureUrl} size="sm" />
+                            <div className="truncate">
+                              <span className="text-sm font-semibold text-ink block truncate">
+                                {person.recipientName}
+                              </span>
+                              {hasAdjustments && (
+                                <span className="text-[11px] text-ink-muted">
+                                  {t.session.foodSubtotal}: {person.totalAmount}฿
+                                  {person.deliveryFeeShare ? ` +ค่าส่ง ${person.deliveryFeeShare}฿` : ''}
+                                  {person.discountShare ? ` -ส่วนลด ${person.discountShare}฿` : ''}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-mono text-base font-bold text-ink tabular-nums block">
+                              {formatPrice(payableAmount, {
+                                isGrandTotalZero: summary.grandTotalAmount === 0,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <ul className="space-y-1 pl-1">
+                          {person.items.map((item) => (
+                            <li
+                              key={item.itemId}
+                              className="flex items-baseline justify-between gap-2 text-xs text-ink-secondary"
+                            >
+                              <span>
+                                • {item.displayTitle}
+                                {item.note ? ` [${item.note}]` : ''} × {item.quantity}
+                              </span>
+                              <span className="font-mono tabular-nums">
+                                {formatPrice(item.lineTotal, {
+                                  isGrandTotalZero: summary.grandTotalAmount === 0,
+                                  unpricedFallback: '-',
+                                })}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-hairline">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!promptPayId) {
+                                setIsFeeSettingsOpen(true);
+                                showToast(t.session.promptPayPhoneOrId);
+                                return;
+                              }
+                              setPromptPayModalData({
+                                isOpen: true,
+                                recipientName: person.recipientName,
+                                amount: payableAmount,
+                              });
+                            }}
+                            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-semibold text-ink hover:bg-subtle transition active:scale-95"
+                          >
+                            <QrCode className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>{t.session.payWithPromptPay}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => togglePaidStatus(person.recipientName)}
+                            className={cn(
+                              'inline-flex min-h-[36px] items-center gap-1.5 rounded-theme px-3 py-1 text-xs font-semibold transition active:scale-95',
+                              isPersonPaid
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs'
+                                : 'border border-hairline bg-subtle text-ink-secondary hover:text-ink hover:bg-surface'
+                            )}
+                          >
+                            {isPersonPaid ? (
+                              <>
+                                <Check className="h-3.5 w-3.5" />
+                                <span>{t.session.paid}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="h-3.5 w-3.5 text-ink-muted" />
+                                <span>{t.session.unpaid}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Card>
+              </div>
             )}
 
             {/* Quick Copy Hub (Merchant & KhunThong with Tabs) */}
@@ -1857,6 +2257,164 @@ export function OrderSessionClient({
         currentName={profile.displayName}
         canClose={true}
       />
+
+      <PromptPayQrModal
+        isOpen={promptPayModalData.isOpen}
+        onClose={() => setPromptPayModalData((prev) => ({ ...prev, isOpen: false }))}
+        promptPayId={promptPayId || '0000000000'}
+        totalAmount={promptPayModalData.amount}
+        modalTitle={`${t.session.payWithPromptPay}: ${promptPayModalData.recipientName}`}
+      />
+
+      {isFeeSettingsOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        >
+          <div className="w-full max-w-md rounded-theme border border-hairline bg-surface p-5 shadow-theme space-y-4 animate-paper-slide">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-ink">{t.session.feeSettings}</h3>
+              <button
+                type="button"
+                aria-label={t.common.close}
+                onClick={() => setIsFeeSettingsOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-theme border border-hairline bg-subtle text-ink-secondary hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1">
+                  {t.session.deliveryFee} ({t.common.baht})
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={deliveryFee || ''}
+                  onChange={(e) => {
+                    const val = Math.max(0, Number(e.target.value) || 0);
+                    setDeliveryFee(val);
+                    updateSettlement({ deliveryFee: val });
+                  }}
+                  placeholder="0"
+                  className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline rounded-theme font-mono tabular-nums focus:border-ink focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1">
+                  {t.session.packagingFee} ({t.common.baht})
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={packagingFee || ''}
+                  onChange={(e) => {
+                    const val = Math.max(0, Number(e.target.value) || 0);
+                    setPackagingFee(val);
+                    updateSettlement({ packagingFee: val });
+                  }}
+                  placeholder="0"
+                  className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline rounded-theme font-mono tabular-nums focus:border-ink focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1">
+                  {t.session.discount} ({t.common.baht})
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={discount || ''}
+                  onChange={(e) => {
+                    const val = Math.max(0, Number(e.target.value) || 0);
+                    setDiscount(val);
+                    updateSettlement({ discount: val });
+                  }}
+                  placeholder="0"
+                  className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline rounded-theme font-mono tabular-nums focus:border-ink focus:outline-none text-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1.5">
+                  {t.session.splitMethod}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSplitMethod('EQUAL');
+                      updateSettlement({ splitMethod: 'EQUAL' });
+                    }}
+                    className={cn(
+                      'min-h-[44px] rounded-theme border text-xs font-semibold transition px-2',
+                      splitMethod === 'EQUAL'
+                        ? 'border-ink bg-ink text-surface'
+                        : 'border-hairline bg-surface text-ink hover:bg-subtle'
+                    )}
+                  >
+                    {t.session.splitEqual}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSplitMethod('PROPORTIONAL');
+                      updateSettlement({ splitMethod: 'PROPORTIONAL' });
+                    }}
+                    className={cn(
+                      'min-h-[44px] rounded-theme border text-xs font-semibold transition px-2',
+                      splitMethod === 'PROPORTIONAL'
+                        ? 'border-ink bg-ink text-surface'
+                        : 'border-hairline bg-surface text-ink hover:bg-subtle'
+                    )}
+                  >
+                    {t.session.splitProportional}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1">
+                  {t.session.promptPayPhoneOrId}
+                </label>
+                <input
+                  type="text"
+                  value={promptPayId}
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    setPromptPayId(val);
+                    updateSettlement({ promptPayId: val });
+                    try {
+                      localStorage.setItem('promptpay_account_target', val);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  placeholder={t.session.promptPayPhonePlaceholder}
+                  className="w-full min-h-[44px] h-[44px] px-3.5 bg-surface text-ink text-[16px] border border-hairline rounded-theme font-mono focus:border-ink focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => setIsFeeSettingsOpen(false)}
+                className="w-full"
+              >
+                {t.common.confirm}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

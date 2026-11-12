@@ -2,6 +2,7 @@ import type {
   GroupedOrderItemSummary,
   OrderItem,
   OrderSession,
+  OrderSessionFeeOptions,
   OrderSessionSummary,
   RecipientOrderBreakdown,
 } from '@/features/order-session/order-session.schema';
@@ -161,11 +162,13 @@ export function groupOrderItemsByRecipient(items: OrderItem[]): RecipientOrderBr
         pictureUrl: item.pictureUrl ?? null,
         totalQuantity: item.quantity,
         totalAmount: lineTotal,
+        finalAmount: lineTotal,
         items: [itemEntry],
       });
     } else {
       existing.totalQuantity += item.quantity;
       existing.totalAmount = fromSatang(toSatang(existing.totalAmount) + toSatang(lineTotal));
+      existing.finalAmount = existing.totalAmount;
       if (!existing.pictureUrl && item.pictureUrl) {
         existing.pictureUrl = item.pictureUrl;
       }
@@ -174,6 +177,135 @@ export function groupOrderItemsByRecipient(items: OrderItem[]): RecipientOrderBr
   }
 
   return Array.from(recipientMap.values());
+}
+
+/**
+ * Allocates delivery fee, packaging fee, and discounts among recipients with zero satang drift.
+ */
+export function calculateRecipientAllocations(
+  recipientBreakdowns: RecipientOrderBreakdown[],
+  feeOptions: OrderSessionFeeOptions = {},
+): {
+  recipientBreakdowns: RecipientOrderBreakdown[];
+  grandTotalAmount: number;
+  deliveryFee: number;
+  packagingFee: number;
+  discount: number;
+  netPayableAmount: number;
+  splitMethod: 'EQUAL' | 'PROPORTIONAL';
+} {
+  const deliveryFee = Math.max(0, feeOptions.deliveryFee || 0);
+  const packagingFee = Math.max(0, feeOptions.packagingFee || 0);
+  const discount = Math.max(0, feeOptions.discount || 0);
+  const splitMethod = feeOptions.splitMethod || 'EQUAL';
+
+  const totalFoodSatang = recipientBreakdowns.reduce((sum, r) => sum + toSatang(r.totalAmount), 0);
+  const deliveryFeeSatang = toSatang(deliveryFee);
+  const packagingFeeSatang = toSatang(packagingFee);
+  const totalFeeSatang = deliveryFeeSatang + packagingFeeSatang;
+  const discountSatang = toSatang(discount);
+  const grandTotalFood = fromSatang(totalFoodSatang);
+  const netPayableSatang = Math.max(0, totalFoodSatang + totalFeeSatang - discountSatang);
+  const netPayableAmount = fromSatang(netPayableSatang);
+
+  const activeRecipients = recipientBreakdowns.filter((r) => r.totalAmount > 0);
+  const count = activeRecipients.length;
+
+  if (count === 0 || (totalFeeSatang === 0 && discountSatang === 0)) {
+    return {
+      recipientBreakdowns: recipientBreakdowns.map((r) => ({
+        ...r,
+        deliveryFeeShare: 0,
+        discountShare: 0,
+        finalAmount: r.totalAmount,
+      })),
+      grandTotalAmount: grandTotalFood,
+      deliveryFee,
+      packagingFee,
+      discount,
+      netPayableAmount: grandTotalFood,
+      splitMethod,
+    };
+  }
+
+  let feeDistributedSatang = 0;
+  let discountDistributedSatang = 0;
+
+  const allocated = recipientBreakdowns.map((r, index) => {
+    if (r.totalAmount <= 0) {
+      return {
+        ...r,
+        _feeSatang: 0,
+        _discSatang: 0,
+      };
+    }
+
+    let myFeeSatang = 0;
+    let myDiscountSatang = 0;
+
+    if (splitMethod === 'EQUAL') {
+      const baseFee = Math.floor(totalFeeSatang / count);
+      const feeRemainder = totalFeeSatang % count;
+      myFeeSatang = baseFee + (index < feeRemainder ? 1 : 0);
+
+      const baseDisc = Math.floor(discountSatang / count);
+      const discRemainder = discountSatang % count;
+      myDiscountSatang = baseDisc + (index < discRemainder ? 1 : 0);
+    } else {
+      const ratio = totalFoodSatang > 0 ? toSatang(r.totalAmount) / totalFoodSatang : 1 / count;
+      myFeeSatang = Math.round(totalFeeSatang * ratio);
+      myDiscountSatang = Math.round(discountSatang * ratio);
+    }
+
+    feeDistributedSatang += myFeeSatang;
+    discountDistributedSatang += myDiscountSatang;
+
+    return {
+      ...r,
+      _feeSatang: myFeeSatang,
+      _discSatang: myDiscountSatang,
+    };
+  });
+
+  // Reconcile rounding difference
+  const activeItems = allocated.filter((r) => r.totalAmount > 0);
+  const firstActive = activeItems[0];
+  if (firstActive) {
+    const feeDiff = totalFeeSatang - feeDistributedSatang;
+    if (feeDiff !== 0) {
+      firstActive._feeSatang += feeDiff;
+    }
+    const discDiff = discountSatang - discountDistributedSatang;
+    if (discDiff !== 0) {
+      firstActive._discSatang += discDiff;
+    }
+  }
+
+  const finalBreakdowns: RecipientOrderBreakdown[] = allocated.map((r) => {
+    const foodSatang = toSatang(r.totalAmount);
+    const myNetSatang = Math.max(0, foodSatang + (r._feeSatang || 0) - (r._discSatang || 0));
+    return {
+      recipientName: r.recipientName,
+      pictureUrl: r.pictureUrl,
+      totalQuantity: r.totalQuantity,
+      totalAmount: r.totalAmount,
+      deliveryFeeShare: fromSatang(r._feeSatang || 0),
+      discountShare: fromSatang(r._discSatang || 0),
+      finalAmount: fromSatang(myNetSatang),
+      isPaid: r.isPaid,
+      items: r.items,
+    };
+  });
+
+  return {
+    recipientBreakdowns: finalBreakdowns,
+    grandTotalAmount: grandTotalFood,
+    deliveryFee,
+    packagingFee,
+    discount,
+    netPayableAmount,
+    splitMethod,
+  };
 }
 
 /**
@@ -225,6 +357,12 @@ export function formatKhunThongSplitText(
   grandTotalAmount: number,
   totalItemsCount: number,
   orderedAt?: string | null,
+  feeSummary?: {
+    deliveryFee?: number;
+    packagingFee?: number;
+    discount?: number;
+    netPayableAmount?: number;
+  },
 ): string {
   if (recipientBreakdowns.length === 0) {
     return `สรุปยอดสั่งอาหาร: ${storeDisplayName}\n(ยังไม่มีรายการอาหาร)`;
@@ -232,26 +370,65 @@ export function formatKhunThongSplitText(
 
   const grandTotalFormatted = formatGrandTotal(grandTotalAmount, 'บาท');
   const isGrandTotalZero = grandTotalAmount === 0;
+  const netPayable = feeSummary?.netPayableAmount ?? grandTotalAmount;
+  const deliveryFee = feeSummary?.deliveryFee ?? 0;
+  const packagingFee = feeSummary?.packagingFee ?? 0;
+  const discount = feeSummary?.discount ?? 0;
+  const hasFeeOrDiscount = deliveryFee > 0 || packagingFee > 0 || discount > 0;
 
   const lines: string[] = [
     `สรุปยอดสั่งอาหาร: ${storeDisplayName}`,
     ...(orderedAt ? [`วัน-เวลา: ${formatThaiDateTime(orderedAt)}`] : []),
-    grandTotalFormatted
-      ? `ยอดรวมทั้งหมด: ${grandTotalFormatted} (${totalItemsCount} รายการ)`
-      : `ยอดรวมทั้งหมด: ${totalItemsCount} รายการ (รอร้านคิดเงิน)`,
-    '------------------------',
-    'ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):',
   ];
+
+  if (hasFeeOrDiscount) {
+    lines.push(
+      grandTotalFormatted
+        ? `ยอดค่าอาหาร: ${grandTotalFormatted} (${totalItemsCount} รายการ)`
+        : `ยอดค่าอาหาร: ${totalItemsCount} รายการ`,
+    );
+    if (deliveryFee > 0) {
+      lines.push(`+ ค่าส่ง: ${formatPrice(deliveryFee, { unit: 'บาท' })}`);
+    }
+    if (packagingFee > 0) {
+      lines.push(`+ ค่าถุง/บริการ: ${formatPrice(packagingFee, { unit: 'บาท' })}`);
+    }
+    if (discount > 0) {
+      lines.push(`- ส่วนลด: ${formatPrice(discount, { unit: 'บาท' })}`);
+    }
+    lines.push(`ยอดสุทธิที่ต้องชำระ: ${formatGrandTotal(netPayable, 'บาท')}`);
+  } else {
+    lines.push(
+      grandTotalFormatted
+        ? `ยอดรวมทั้งหมด: ${grandTotalFormatted} (${totalItemsCount} รายการ)`
+        : `ยอดรวมทั้งหมด: ${totalItemsCount} รายการ (รอร้านคิดเงิน)`,
+    );
+  }
+
+  lines.push('------------------------');
+  lines.push('ยอดแยกรายคน (สำหรับโอนเงิน / ให้ขุนทองช่วยหาร):');
 
   recipientBreakdowns.forEach((r, index) => {
     const itemDetails = r.items
       .map((it) => `${it.displayTitle} x${it.quantity}`)
       .join(', ');
-    const amountStr = formatPrice(r.totalAmount, {
+
+    const targetAmount = hasFeeOrDiscount ? (r.finalAmount ?? r.totalAmount) : r.totalAmount;
+    const amountStr = formatPrice(targetAmount, {
       isGrandTotalZero,
       unit: 'บาท',
     });
-    lines.push(`${index + 1}. ${r.recipientName}: ${amountStr} (${itemDetails})`);
+
+    const adjustments: string[] = [];
+    if (r.deliveryFeeShare && r.deliveryFeeShare > 0) {
+      adjustments.push(`+ค่าส่ง ${formatPrice(r.deliveryFeeShare)}`);
+    }
+    if (r.discountShare && r.discountShare > 0) {
+      adjustments.push(`-ส่วนลด ${formatPrice(r.discountShare)}`);
+    }
+    const adjNote = adjustments.length > 0 ? ` (${adjustments.join(', ')})` : '';
+
+    lines.push(`${index + 1}. ${r.recipientName}: ${amountStr}${adjNote} (${itemDetails})`);
   });
 
   lines.push('------------------------');
@@ -266,13 +443,22 @@ export function formatKhunThongSplitText(
 export function buildOrderSessionSummary(
   session: OrderSession,
   storeDisplayName: string,
+  feeOptions: OrderSessionFeeOptions = {},
 ): OrderSessionSummary {
   const groupedItems = groupOrderItemsForMerchant(session.items);
-  const recipientBreakdowns = groupOrderItemsByRecipient(session.items);
+  const rawRecipientBreakdowns = groupOrderItemsByRecipient(session.items);
+
+  const {
+    recipientBreakdowns,
+    grandTotalAmount,
+    deliveryFee,
+    packagingFee,
+    discount,
+    netPayableAmount,
+    splitMethod,
+  } = calculateRecipientAllocations(rawRecipientBreakdowns, feeOptions);
 
   const totalItemsCount = groupedItems.reduce((sum, g) => sum + g.totalQuantity, 0);
-  const grandTotalSatang = groupedItems.reduce((sum, g) => sum + toSatang(g.totalPrice), 0);
-  const grandTotalAmount = fromSatang(grandTotalSatang);
   const sessionDate = session.closedAt ?? session.createdAt;
 
   return {
@@ -281,6 +467,11 @@ export function buildOrderSessionSummary(
     status: session.status,
     totalItemsCount,
     grandTotalAmount,
+    deliveryFee,
+    packagingFee,
+    discount,
+    netPayableAmount,
+    splitMethod,
     groupedItems,
     recipientBreakdowns,
     merchantCopyText: formatMerchantOrderText(storeDisplayName, groupedItems, sessionDate),
@@ -290,6 +481,13 @@ export function buildOrderSessionSummary(
       grandTotalAmount,
       totalItemsCount,
       sessionDate,
+      {
+        deliveryFee,
+        packagingFee,
+        discount,
+        netPayableAmount,
+      },
     ),
   };
 }
+

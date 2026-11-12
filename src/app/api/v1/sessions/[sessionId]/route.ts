@@ -15,6 +15,10 @@ const PatchSessionPayloadSchema = z.discriminatedUnion('action', [
     action: z.literal('CLOSE_SESSION'),
     actorUserId: z.string().trim().min(1).max(64),
   }),
+  z.object({
+    action: z.literal('REOPEN_SESSION'),
+    actorUserId: z.string().trim().min(1).max(64),
+  }),
 ]);
 
 const DeleteSessionPayloadSchema = z.object({
@@ -54,8 +58,13 @@ export async function PATCH(
         pictureUrl: payload.pictureUrl,
         isReady: payload.isReady,
       });
-    } else {
+    } else if (payload.action === 'CLOSE_SESSION') {
       await service.closeSession({
+        sessionId,
+        actorUserId: payload.actorUserId,
+      });
+    } else {
+      await service.reopenSession({
         sessionId,
         actorUserId: payload.actorUserId,
       });
