@@ -622,28 +622,31 @@ export function OrderSessionClient({
     },
   });
 
-  const handleCopyItemToSelf = async (item: OrderItem) => {
-    const chosenOptions = item.options.map((opt) => ({
-      optionId: opt.optionId ?? undefined,
-      optionName: opt.optionName,
-      price: opt.price,
-    }));
+  const [copyingItemId, setCopyingItemId] = useState<string | null>(null);
 
-    const payload = {
-      sessionId: session.id,
-      orderedByUserId: profile.userId,
-      recipientName: profile.displayName || t.session.useMyName,
-      pictureUrl: profile.pictureUrl ?? null,
-      menuId: item.menuId ?? undefined,
-      menuName: item.menuName,
-      variantName: item.variantName ?? undefined,
-      unitPrice: item.unitPrice,
-      quantity: 1,
-      note: item.note ?? undefined,
-      options: chosenOptions,
-    };
+  const copyItemMutation = useMutation({
+    mutationFn: async (item: OrderItem) => {
+      setCopyingItemId(item.id);
+      const chosenOptions = item.options.map((opt) => ({
+        optionId: opt.optionId ?? undefined,
+        optionName: opt.optionName,
+        price: opt.price,
+      }));
 
-    try {
+      const payload = {
+        sessionId: session.id,
+        orderedByUserId: profile.userId,
+        recipientName: profile.displayName || t.session.useMyName,
+        pictureUrl: profile.pictureUrl ?? null,
+        menuId: item.menuId ?? undefined,
+        menuName: item.menuName,
+        variantName: item.variantName ?? undefined,
+        unitPrice: item.unitPrice,
+        quantity: 1,
+        note: item.note ?? undefined,
+        options: chosenOptions,
+      };
+
       const res = await fetch(`/api/v1/sessions/${sessionId}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -657,12 +660,23 @@ export function OrderSessionClient({
       if (!json.ok || !json.data) {
         throw new Error(json.error?.message ?? t.session.addOrderFailed);
       }
-      queryClient.setQueryData(['order-session', sessionId], json.data);
-      showToast(t.session.copyItemSuccess.replace('{name}', item.menuName));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t.session.addOrderFailed;
-      showToast(msg);
-    }
+      return { data: json.data, menuName: item.menuName };
+    },
+    onSuccess: ({ data, menuName }) => {
+      queryClient.setQueryData(['order-session', sessionId], data);
+      showToast(t.session.copyItemSuccess.replace('{name}', menuName));
+    },
+    onError: (err: Error) => {
+      showToast(err.message);
+    },
+    onSettled: () => {
+      setCopyingItemId(null);
+    },
+  });
+
+  const handleCopyItemToSelf = (item: OrderItem) => {
+    if (copyItemMutation.isPending) return;
+    copyItemMutation.mutate(item);
   };
 
   const togglePaidStatus = (name: string) => {
@@ -1390,11 +1404,21 @@ export function OrderSessionClient({
                               type="button"
                               aria-label={`${t.session.copyItemToSelf}: ${title}`}
                               onClick={() => handleCopyItemToSelf(item)}
-                              className="inline-flex min-h-[36px] items-center gap-1 rounded-theme border border-hairline bg-surface px-2 py-1 text-xs font-semibold text-ink-secondary hover:text-ink hover:bg-subtle hover:border-ink transition active:scale-95"
+                              disabled={copyItemMutation.isPending}
+                              className={cn(
+                                "inline-flex min-h-[36px] items-center gap-1.5 rounded-theme border border-hairline bg-surface px-2.5 py-1 text-xs font-semibold text-ink-secondary hover:text-ink hover:bg-subtle hover:border-ink transition active:scale-95 disabled:opacity-50 disabled:pointer-events-none",
+                                copyingItemId === item.id && "border-ink bg-subtle"
+                              )}
                               title={t.session.copyItemToSelf}
                             >
-                              <CopyPlus className="h-3.5 w-3.5 text-ink-muted" />
-                              <span className="hidden xs:inline">{t.session.copyItemToSelf}</span>
+                              {copyingItemId === item.id ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin text-ink" />
+                              ) : (
+                                <CopyPlus className="h-3.5 w-3.5 text-ink-muted" />
+                              )}
+                              <span className="hidden xs:inline">
+                                {copyingItemId === item.id ? t.common.pleaseWait : t.session.copyItemToSelf}
+                              </span>
                             </button>
                             {canMutate && (
                               <>
